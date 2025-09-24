@@ -1,0 +1,149 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AMS.MainPage"
+             Title="Quản Lý Thuê Nhà"
+             BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="20,10">
+
+            <!-- HEADER -->
+            <Frame BackgroundColor="#2E86AB" CornerRadius="10" Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="QUẢN LÝ THUÊ NHÀ QLT" 
+                           TextColor="White" 
+                           FontSize="20" 
+                           FontAttributes="Bold" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Phiên bản 0.1 - Demo" 
+                           TextColor="#E0F7FA" 
+                           FontSize="12" 
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- THỐNG KÊ NHANH -->
+            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto" ColumnSpacing="10">
+                <!-- Phòng đang thuê -->
+                <Frame BackgroundColor="#4CAF50" CornerRadius="8" Padding="15">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label Text="5" FontSize="24" TextColor="White" 
+                               FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Phòng đang thuê" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Phòng trống -->
+                <Frame BackgroundColor="#FF9800" CornerRadius="8" Padding="15" Grid.Column="1">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label Text="2" FontSize="24" TextColor="White" 
+                               FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Phòng trống" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Doanh thu tháng -->
+                <Frame BackgroundColor="#9C27B0" CornerRadius="8" Padding="15" Grid.Column="2">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label Text="15.5Tr" FontSize="20" TextColor="White" 
+                               FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Doanh thu tháng" FontSize="10" TextColor="White" 
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- MENU CHỨC NĂNG CHÍNH -->
+            <Label Text="CHỨC NĂNG CHÍNH" FontSize="16" FontAttributes="Bold" 
+                   TextColor="#333" Margin="0,10,0,0"/>
+
+            <Grid RowDefinitions="80,80,80" ColumnDefinitions="*,*" RowSpacing="10" ColumnSpacing="10">
+                <!-- Quản lý Phòng -->
+                <Frame BackgroundColor="#2196F3" CornerRadius="10" Grid.Row="0" Grid.Column="0">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="🏠" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Quản lý Phòng" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnManageRoomsTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <!-- Quản lý Người thuê -->
+                <Frame BackgroundColor="#4CAF50" CornerRadius="10" Grid.Row="0" Grid.Column="1">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="👥" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Người thuê" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnManageTenantsTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <!-- Hợp đồng -->
+                <Frame BackgroundColor="#FF9800" CornerRadius="10" Grid.Row="1" Grid.Column="0">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="📄" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Hợp đồng" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnManageContractsTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <!-- Thanh toán -->
+                <Frame BackgroundColor="#9C27B0" CornerRadius="10" Grid.Row="1" Grid.Column="1">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="💰" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Thanh toán" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnManagePaymentsTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <!-- Báo cáo -->
+                <Frame BackgroundColor="#607D8B" CornerRadius="10" Grid.Row="2" Grid.Column="0">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="📊" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Báo cáo" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnReportsTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <!-- Cài đặt -->
+                <Frame BackgroundColor="#795548" CornerRadius="10" Grid.Row="2" Grid.Column="1">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="⚙️" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Cài đặt" FontSize="12" TextColor="White" 
+                               HorizontalOptions="Center" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSettingsTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+            </Grid>
+
+            <!-- THÔNG BÁO QUAN TRỌNG -->
+            <Frame BackgroundColor="#FFF3CD" CornerRadius="8" Padding="15" BorderColor="#FFEEBA">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="📢 Thông báo quan trọng" FontSize="14" FontAttributes="Bold" TextColor="#856404"/>
+                    <Label Text="• Hợp đồng APPLE hết hạn sau 5 ngày" FontSize="12" TextColor="#856404"/>
+                    <Label Text="• 2 phòng chưa đóng tiền tháng này" FontSize="12" TextColor="#856404"/>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
