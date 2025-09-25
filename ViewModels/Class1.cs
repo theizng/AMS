@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AMS.Models
+namespace AMS.ViewModels
 {
-    internal class hello
+    internal class Class1
     {
     }
 }

@@ -2,148 +2,310 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="AMS.MainPage"
-             Title="Quản Lý Thuê Nhà"
-             BackgroundColor="#F5F5F5">
+             Title="QLT - Quản Lý Thuê Nhà"
+             BackgroundColor="#F8FAFC">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="20" Padding="20,10">
+    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="250,*" Margin="0">
 
-            <!-- HEADER -->
-            <Frame BackgroundColor="#2E86AB" CornerRadius="10" Padding="15">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="QUẢN LÝ THUÊ NHÀ QLT" 
-                           TextColor="White" 
-                           FontSize="20" 
-                           FontAttributes="Bold" 
-                           HorizontalOptions="Center"/>
-                    <Label Text="Phiên bản 0.1 - Demo" 
-                           TextColor="#E0F7FA" 
-                           FontSize="12" 
-                           HorizontalOptions="Center"/>
+        <!-- SIDEBAR MENU -->
+        <Frame Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
+               BackgroundColor="#1E293B" CornerRadius="0" Padding="20,40,20,20"
+               HasShadow="True">
+
+            <VerticalStackLayout Spacing="30">
+                <!-- Logo & App Info -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🏠 QLT" FontSize="24" TextColor="White" 
+                           FontAttributes="Bold" HorizontalOptions="Start"/>
+                    <Label Text="Quản Lý Thuê Nhà" FontSize="14" TextColor="#94A3B8" 
+                           HorizontalOptions="Start"/>
+                    <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,10,0,0"/>
                 </VerticalStackLayout>
-            </Frame>
 
-            <!-- THỐNG KÊ NHANH -->
-            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto" ColumnSpacing="10">
-                <!-- Phòng đang thuê -->
-                <Frame BackgroundColor="#4CAF50" CornerRadius="8" Padding="15">
-                    <VerticalStackLayout HorizontalOptions="Center">
-                        <Label Text="5" FontSize="24" TextColor="White" 
-                               FontAttributes="Bold" HorizontalOptions="Center"/>
-                        <Label Text="Phòng đang thuê" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-                </Frame>
+                <!-- Navigation Menu - SỬ DỤNG FRAME THÔNG THƯỜNG -->
+                <VerticalStackLayout Spacing="8">
+                    <!-- Dashboard Button -->
+                    <Frame BackgroundColor="#0EA5E9" CornerRadius="10" Padding="15,12" 
+                           HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="📊" FontSize="16" TextColor="White" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Dashboard" FontSize="14" TextColor="White" 
+                                   FontAttributes="Bold" VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                    </Frame>
 
-                <!-- Phòng trống -->
-                <Frame BackgroundColor="#FF9800" CornerRadius="8" Padding="15" Grid.Column="1">
-                    <VerticalStackLayout HorizontalOptions="Center">
-                        <Label Text="2" FontSize="24" TextColor="White" 
-                               FontAttributes="Bold" HorizontalOptions="Center"/>
-                        <Label Text="Phòng trống" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-                </Frame>
+                    <!-- Menu Items - SỬ DỤNG FRAME + TAP GESTURE -->
+                    <Frame x:Name="RoomsMenu" BackgroundColor="Transparent" CornerRadius="10" 
+                           Padding="15,12" HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="🏠" FontSize="16" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Quản lý Phòng" FontSize="14" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnManageRoomsTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
 
-                <!-- Doanh thu tháng -->
-                <Frame BackgroundColor="#9C27B0" CornerRadius="8" Padding="15" Grid.Column="2">
-                    <VerticalStackLayout HorizontalOptions="Center">
-                        <Label Text="15.5Tr" FontSize="20" TextColor="White" 
-                               FontAttributes="Bold" HorizontalOptions="Center"/>
-                        <Label Text="Doanh thu tháng" FontSize="10" TextColor="White" 
-                               HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-                </Frame>
-            </Grid>
+                    <Frame x:Name="TenantsMenu" BackgroundColor="Transparent" CornerRadius="10" 
+                           Padding="15,12" HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="👥" FontSize="16" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Người thuê" FontSize="14" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnManageTenantsTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
 
-            <!-- MENU CHỨC NĂNG CHÍNH -->
-            <Label Text="CHỨC NĂNG CHÍNH" FontSize="16" FontAttributes="Bold" 
-                   TextColor="#333" Margin="0,10,0,0"/>
+                    <Frame x:Name="ContractsMenu" BackgroundColor="Transparent" CornerRadius="10" 
+                           Padding="15,12" HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="📄" FontSize="16" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Hợp đồng" FontSize="14" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnManageContractsTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
 
-            <Grid RowDefinitions="80,80,80" ColumnDefinitions="*,*" RowSpacing="10" ColumnSpacing="10">
-                <!-- Quản lý Phòng -->
-                <Frame BackgroundColor="#2196F3" CornerRadius="10" Grid.Row="0" Grid.Column="0">
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="🏠" FontSize="20" HorizontalOptions="Center"/>
-                        <Label Text="Quản lý Phòng" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnManageRoomsTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
+                    <Frame x:Name="PaymentsMenu" BackgroundColor="Transparent" CornerRadius="10" 
+                           Padding="15,12" HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="💰" FontSize="16" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Thanh toán" FontSize="14" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnManagePaymentsTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
 
-                <!-- Quản lý Người thuê -->
-                <Frame BackgroundColor="#4CAF50" CornerRadius="10" Grid.Row="0" Grid.Column="1">
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="👥" FontSize="20" HorizontalOptions="Center"/>
-                        <Label Text="Người thuê" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnManageTenantsTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
+                    <Frame x:Name="ReportsMenu" BackgroundColor="Transparent" CornerRadius="10" 
+                           Padding="15,12" HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="📈" FontSize="16" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Báo cáo" FontSize="14" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnReportsTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
 
-                <!-- Hợp đồng -->
-                <Frame BackgroundColor="#FF9800" CornerRadius="10" Grid.Row="1" Grid.Column="0">
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="📄" FontSize="20" HorizontalOptions="Center"/>
-                        <Label Text="Hợp đồng" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnManageContractsTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
-
-                <!-- Thanh toán -->
-                <Frame BackgroundColor="#9C27B0" CornerRadius="10" Grid.Row="1" Grid.Column="1">
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="💰" FontSize="20" HorizontalOptions="Center"/>
-                        <Label Text="Thanh toán" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnManagePaymentsTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
-
-                <!-- Báo cáo -->
-                <Frame BackgroundColor="#607D8B" CornerRadius="10" Grid.Row="2" Grid.Column="0">
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="📊" FontSize="20" HorizontalOptions="Center"/>
-                        <Label Text="Báo cáo" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnReportsTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
-
-                <!-- Cài đặt -->
-                <Frame BackgroundColor="#795548" CornerRadius="10" Grid.Row="2" Grid.Column="1">
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="⚙️" FontSize="20" HorizontalOptions="Center"/>
-                        <Label Text="Cài đặt" FontSize="12" TextColor="White" 
-                               HorizontalOptions="Center" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnSettingsTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
-            </Grid>
-
-            <!-- THÔNG BÁO QUAN TRỌNG -->
-            <Frame BackgroundColor="#FFF3CD" CornerRadius="8" Padding="15" BorderColor="#FFEEBA">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="📢 Thông báo quan trọng" FontSize="14" FontAttributes="Bold" TextColor="#856404"/>
-                    <Label Text="• Hợp đồng APPLE hết hạn sau 5 ngày" FontSize="12" TextColor="#856404"/>
-                    <Label Text="• 2 phòng chưa đóng tiền tháng này" FontSize="12" TextColor="#856404"/>
+                    <Frame x:Name="SettingsMenu" BackgroundColor="Transparent" CornerRadius="10" 
+                           Padding="15,12" HasShadow="False">
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="⚙️" FontSize="16" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                            <Label Text="Cài đặt" FontSize="14" TextColor="#94A3B8" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSettingsTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
                 </VerticalStackLayout>
-            </Frame>
+            </VerticalStackLayout>
+        </Frame>
 
-        </VerticalStackLayout>
-    </ScrollView>
+        <!-- MAIN CONTENT AREA -->
+        <ScrollView Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Margin="20">
+            <VerticalStackLayout Spacing="25">
 
+                <!-- HEADER -->
+                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start">
+                    <VerticalStackLayout>
+                        <Label Text="Tổng quan hệ thống" FontSize="28" 
+                               TextColor="#1E293B" FontAttributes="Bold"/>
+                        <Label Text="Chào mừng trở lại!" 
+                               FontSize="14" TextColor="#64748B" Margin="0,5,0,0"/>
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Grid.Column="1" Spacing="15" 
+                                         VerticalOptions="Center">
+                        <Frame BackgroundColor="White" Padding="12" CornerRadius="8" 
+                               HasShadow="True">
+                            <Label Text="🔔" FontSize="16"/>
+                        </Frame>
+                        <Frame BackgroundColor="White" Padding="12" CornerRadius="8" 
+                               HasShadow="True">
+                            <Label Text="👤" FontSize="16"/>
+                        </Frame>
+                    </HorizontalStackLayout>
+                </Grid>
+
+                <!-- QUICK STATS CARDS -->
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="15">
+                    <!-- Stat Card 1 -->
+                    <Frame BackgroundColor="White" CornerRadius="12" Padding="20" 
+                           HasShadow="True" Grid.Column="0">
+                        <VerticalStackLayout Spacing="10">
+                            <HorizontalStackLayout>
+                                <Label Text="✅" FontSize="20" VerticalOptions="Center"/>
+                                <Label Text="5" FontSize="24" TextColor="#10B981" 
+                                       FontAttributes="Bold" Margin="10,0,0,0"/>
+                            </HorizontalStackLayout>
+                            <Label Text="Phòng đang thuê" FontSize="12" TextColor="#64748B"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Stat Card 2 -->
+                    <Frame BackgroundColor="White" CornerRadius="12" Padding="20" 
+                           HasShadow="True" Grid.Column="1">
+                        <VerticalStackLayout Spacing="10">
+                            <HorizontalStackLayout>
+                                <Label Text="🔄" FontSize="20" VerticalOptions="Center"/>
+                                <Label Text="2" FontSize="24" TextColor="#F59E0B" 
+                                       FontAttributes="Bold" Margin="10,0,0,0"/>
+                            </HorizontalStackLayout>
+                            <Label Text="Phòng trống" FontSize="12" TextColor="#64748B"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Stat Card 3 -->
+                    <Frame BackgroundColor="White" CornerRadius="12" Padding="20" 
+                           HasShadow="True" Grid.Column="2">
+                        <VerticalStackLayout Spacing="10">
+                            <HorizontalStackLayout>
+                                <Label Text="💰" FontSize="20" VerticalOptions="Center"/>
+                                <Label Text="15.5Tr" FontSize="20" TextColor="#8B5CF6" 
+                                       FontAttributes="Bold" Margin="10,0,0,0"/>
+                            </HorizontalStackLayout>
+                            <Label Text="Doanh thu tháng" FontSize="12" TextColor="#64748B"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Stat Card 4 -->
+                    <Frame BackgroundColor="White" CornerRadius="12" Padding="20" 
+                           HasShadow="True" Grid.Column="3">
+                        <VerticalStackLayout Spacing="10">
+                            <HorizontalStackLayout>
+                                <Label Text="📈" FontSize="20" VerticalOptions="Center"/>
+                                <Label Text="85%" FontSize="24" TextColor="#EF4444" 
+                                       FontAttributes="Bold" Margin="10,0,0,0"/>
+                            </HorizontalStackLayout>
+                            <Label Text="Tỷ lệ lấp đầy" FontSize="12" TextColor="#64748B"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <!-- RECENT ACTIVITY & QUICK ACTIONS -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+
+                    <!-- Recent Activity -->
+                    <Frame BackgroundColor="White" CornerRadius="12" Padding="20" 
+                           HasShadow="True" Grid.Column="0">
+                        <VerticalStackLayout Spacing="15">
+                            <Label Text="📋 Hoạt động gần đây" FontSize="18" 
+                                   TextColor="#1E293B" FontAttributes="Bold"/>
+
+                            <!-- Activity Items - SỬ DỤNG STACKLAYOUT ĐƠN GIẢN -->
+                            <VerticalStackLayout Spacing="10">
+                                <ActivityItem Time="10:30" Action="Hợp đồng mới" 
+                                             Description="Phòng APPLE - Nguyễn Văn A"/>
+                                <ActivityItem Time="09:15" Action="Thanh toán" 
+                                             Description="Phòng BANANA - 3.500.000 VND"/>
+                                <ActivityItem Time="Hôm qua" Action="Bảo trì" 
+                                             Description="Sửa chữa phòng COCONUT"/>
+                                <ActivityItem Time="15/03" Action="Nhắc nhở" 
+                                             Description="Hợp đồng sắp hết hạn"/>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Quick Actions -->
+                    <Frame BackgroundColor="White" CornerRadius="12" Padding="20" 
+                           HasShadow="True" Grid.Column="1">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="⚡ Thao tác nhanh" FontSize="18" 
+                                   TextColor="#1E293B" FontAttributes="Bold"/>
+
+                            <Button Text="➕ Thêm phòng mới" Clicked="OnAddRoomTapped"
+                                    BackgroundColor="#0EA5E9" TextColor="White"
+                                    CornerRadius="8" HeightRequest="45"/>
+
+                            <Button Text="📝 Tạo hợp đồng" Clicked="OnCreateContractTapped"
+                                    BackgroundColor="#10B981" TextColor="White"
+                                    CornerRadius="8" HeightRequest="45"/>
+
+                            <Button Text="💸 Ghi nhận thanh toán" Clicked="OnRecordPaymentTapped"
+                                    BackgroundColor="#8B5CF6" TextColor="White"
+                                    CornerRadius="8" HeightRequest="45"/>
+
+                            <Button Text="📤 Xuất báo cáo" Clicked="OnExportReportTapped"
+                                    BackgroundColor="#F59E0B" TextColor="White"
+                                    CornerRadius="8" HeightRequest="45"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <!-- ALERTS SECTION -->
+                <Frame BackgroundColor="#FEF2F2" CornerRadius="12" Padding="20" 
+                       HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <HorizontalStackLayout>
+                            <Label Text="⚠️" FontSize="16" VerticalOptions="Center"/>
+                            <Label Text="Cảnh báo quan trọng" FontSize="16" 
+                                   TextColor="#DC2626" FontAttributes="Bold" 
+                                   Margin="10,0,0,0" VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" 
+                              RowSpacing="10" ColumnSpacing="15">
+                            <!-- Alert Items -->
+                            <Frame BackgroundColor="White" CornerRadius="8" Padding="15"
+                                   Grid.Row="0" Grid.Column="0">
+                                <VerticalStackLayout>
+                                    <Label Text="Hợp đồng hết hạn" FontSize="12" TextColor="#64748B"/>
+                                    <Label Text="2" FontSize="18" TextColor="#DC2626" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Frame>
+
+                            <Frame BackgroundColor="White" CornerRadius="8" Padding="15"
+                                   Grid.Row="0" Grid.Column="1">
+                                <VerticalStackLayout>
+                                    <Label Text="Chưa đóng tiền" FontSize="12" TextColor="#64748B"/>
+                                    <Label Text="3" FontSize="18" TextColor="#EA580C" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Frame>
+
+                            <Frame BackgroundColor="White" CornerRadius="8" Padding="15"
+                                   Grid.Row="1" Grid.Column="0">
+                                <VerticalStackLayout>
+                                    <Label Text="Bảo trì chờ xử lý" FontSize="12" TextColor="#64748B"/>
+                                    <Label Text="1" FontSize="18" TextColor="#CA8A04" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Frame>
+
+                            <Frame BackgroundColor="White" CornerRadius="8" Padding="15"
+                                   Grid.Row="1" Grid.Column="1">
+                                <VerticalStackLayout>
+                                    <Label Text="Phòng sắp trống" FontSize="12" TextColor="#64748B"/>
+                                    <Label Text="1" FontSize="18" TextColor="#2563EB" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Frame>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- FOOTER -->
+        <Frame Grid.Row="2" Grid.Column="1" BackgroundColor="#F1F5F9" 
+               CornerRadius="0" Padding="15" HasShadow="True">
+            <Label Text="QLT v0.1 © 2024 - Hệ thống Quản lý Thuê nhà" 
+                   FontSize="12" TextColor="#64748B" HorizontalOptions="Center"/>
+        </Frame>
+
+    </Grid>
 </ContentPage>

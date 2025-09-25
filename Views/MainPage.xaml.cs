@@ -1,6 +1,4 @@
-﻿using AMS;
-
-namespace AMS
+﻿namespace AMS
 {
     public partial class MainPage : ContentPage
     {
@@ -9,40 +7,56 @@ namespace AMS
             InitializeComponent();
         }
 
+        // Menu button tap handlers
         private async void OnManageRoomsTapped(object sender, EventArgs e)
         {
             await DisplayAlert("Thông báo", "Chuyển đến trang Quản lý Phòng", "OK");
-            // await Navigation.PushAsync(new RoomListPage());
         }
 
         private async void OnManageTenantsTapped(object sender, EventArgs e)
         {
-            await DisplayAlert("Thông báo", "Chuyển đến trang Quản lý Người thuê", "OK");
-            // await Navigation.PushAsync(new TenantListPage());
+            await DisplayAlert("Thông báo", "Chuyển đến trang Người thuê", "OK");
         }
 
         private async void OnManageContractsTapped(object sender, EventArgs e)
         {
             await DisplayAlert("Thông báo", "Chuyển đến trang Hợp đồng", "OK");
-            // await Navigation.PushAsync(new ContractListPage());
         }
 
         private async void OnManagePaymentsTapped(object sender, EventArgs e)
         {
             await DisplayAlert("Thông báo", "Chuyển đến trang Thanh toán", "OK");
-            // await Navigation.PushAsync(new PaymentListPage());
         }
 
         private async void OnReportsTapped(object sender, EventArgs e)
         {
             await DisplayAlert("Thông báo", "Chuyển đến trang Báo cáo", "OK");
-            // await Navigation.PushAsync(new ReportsPage());
         }
 
         private async void OnSettingsTapped(object sender, EventArgs e)
         {
             await DisplayAlert("Thông báo", "Chuyển đến trang Cài đặt", "OK");
-            // await Navigation.PushAsync(new SettingsPage());
+        }
+
+        // Quick action handlers
+        private async void OnAddRoomTapped(object sender, EventArgs e)
+        {
+            await DisplayAlert("Thông báo", "Thêm phòng mới", "OK");
+        }
+
+        private async void OnCreateContractTapped(object sender, EventArgs e)
+        {
+            await DisplayAlert("Thông báo", "Tạo hợp đồng mới", "OK");
+        }
+
+        private async void OnRecordPaymentTapped(object sender, EventArgs e)
+        {
+            await DisplayAlert("Thông báo", "Ghi nhận thanh toán", "OK");
+        }
+
+        private async void OnExportReportTapped(object sender, EventArgs e)
+        {
+            await DisplayAlert("Thông báo", "Xuất báo cáo", "OK");
         }
     }
 }
