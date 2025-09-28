@@ -17,5 +17,5 @@ public class HopDongThue
 
     // Navigation
     public HopDong? HopDong { get; set; }
-    public DbContext? KhachThue { get; set; }
+    public KhachThue? KhachThue { get; set; }
 }

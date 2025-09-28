@@ -26,20 +26,20 @@ public class QltDbContext : Microsoft.EntityFrameworkCore.DbContext
             .IsUnique();
 
         // HopDongThue: composite key
-        modelBuilder.Entity<HopDongThue>()
-            .HasKey(x => new { x.HopDongId, x.KhachThueId, x.TuNgay });
+            modelBuilder.Entity<HopDongThue>()
+                .HasKey(x => new { x.HopDongId, x.KhachThueId, x.TuNgay });
 
-        modelBuilder.Entity<HopDongThue>()
-            .HasOne(x => x.HopDong)
-            .WithMany(h => h.HopDongThues)
-            .HasForeignKey(x => x.HopDongId)
-            .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<HopDongThue>()
+                .HasOne(x => x.HopDong)
+                .WithMany(h => h.HopDongThues)
+                .HasForeignKey(x => x.HopDongId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<HopDongThue>()
-            .HasOne(x => x.KhachThue)
-            .WithMany(k => k.HopDongThues)
-            .HasForeignKey(x => x.KhachThueId)
-            .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<HopDongThue>()
+                .HasOne(x => x.KhachThue)
+                .WithMany(k => k.HopDongThues)
+                .HasForeignKey(x => x.KhachThueId)
+                .OnDelete(DeleteBehavior.Cascade);
 
         // DongHo: one per type per room
         modelBuilder.Entity<DongHo>()
