@@ -51,6 +51,7 @@ public class QltDbContext : Microsoft.EntityFrameworkCore.DbContext
             .HasIndex(c => new { c.DongHoId, c.Ky })
             .IsUnique();
 
+        /*
         // Money/decimal types for SQL Server
         modelBuilder.Entity<Phong>().Property(p => p.GiaThueCoBan).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<HopDong>().Property(p => p.TienCoc).HasColumnType("decimal(18,2)");
@@ -63,5 +64,6 @@ public class QltDbContext : Microsoft.EntityFrameworkCore.DbContext
         modelBuilder.Entity<ChiSoDongHo>().Property(p => p.ChiSo).HasColumnType("decimal(18,3)");
 
         base.OnModelCreating(modelBuilder);
+        */
     }
 }

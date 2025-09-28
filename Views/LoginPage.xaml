@@ -9,12 +9,12 @@
         Spacing="20"
         VerticalOptions="Center">
 
-        <Label Text="AMS Admin Login" FontSize="28" HorizontalOptions="Center" />
+        <Label Text="Quản lý thuê nhà" FontSize="28" HorizontalOptions="Center" />
+        <Label Text="Đăng nhập để tiếp tục" FontSize="18" HorizontalOptions="Center" />
+        <Entry x:Name="UsernameEntry" Placeholder="Tên đăng nhập" />
+        <Entry x:Name="PasswordEntry" Placeholder="Mật khẩu" IsPassword="True" />
 
-        <Entry x:Name="UsernameEntry" Placeholder="Username" />
-        <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" />
-
-        <Button Text="Login" Command="{Binding LoginCommand}" />
+        <Button Text="Đăng nhập" BackgroundColor="Grey" Command="{Binding LoginCommand}" />
 
         <Label Text="{Binding LoginMessage}" TextColor="Red" FontSize="14" HorizontalOptions="Center" />
 
