@@ -4,7 +4,13 @@ using System.Text;
 
 namespace AMS.ViewModels
 {
-    internal class Class1
+    internal class LoginViewModel
     {
+        public LoginViewModel()
+        {
+
+        }
+
+
     }
 }
