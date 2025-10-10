@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿/*
+using Microsoft.EntityFrameworkCore;
 using AMS.Models;
 
 namespace AMS.Data;
@@ -65,5 +66,6 @@ public class QltDbContext : Microsoft.EntityFrameworkCore.DbContext
 
         base.OnModelCreating(modelBuilder);
         */
-    }
-}
+//   }
+//}
+

@@ -1,11 +1,13 @@
-namespace AMS.Views;
+using AMS.ViewModels;
 
-public partial class LoginPage : ContentPage
+namespace AMS.Views
 {
-	public LoginPage()
-	{
-		InitializeComponent();
-
-		this.BindingContext = new ViewModels.LoginViewModel();
+    public partial class LoginPage : ContentPage
+    {
+        public LoginPage(LoginViewModel viewModel)
+        {
+            InitializeComponent();
+            BindingContext = viewModel;
+        }
     }
 }

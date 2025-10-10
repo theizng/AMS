@@ -83,11 +83,20 @@
                         BackgroundColor="#555"
                         TextColor="White" />
 
-                <Label Text="{Binding LoginMessage}"
-                       TextColor="Red"
-                       FontSize="14"
-                       HorizontalTextAlignment="Center"
-                       LineBreakMode="WordWrap" />
+                <!-- Thêm hiển thị loading khi đang xử lý đăng nhập -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}" 
+                   IsVisible="{Binding IsBusy}"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   Grid.Row="1"
+                   ZIndex="1" />
+
+                <!-- Sửa binding từ LoginMessage thành ErrorMessage để phù hợp với ViewModel -->
+                <Label Text="{Binding ErrorMessage}"
+                   TextColor="Red"
+                   FontSize="14"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap" />
 
             </VerticalStackLayout>
         </Grid>
