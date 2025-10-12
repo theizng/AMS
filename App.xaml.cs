@@ -22,7 +22,7 @@ namespace AMS
             else
             {
                 // Dùng loginViewModel đã được inject
-                MainPage = new NavigationPage(new LoginPage(loginViewModel));
+                MainPage = new LoginShell();
             }
         }
     }

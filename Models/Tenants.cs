@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AMS.Models
 {
-    public class User
+    public class Tenants
     {
         //Thuộc tính nhận dạng người thuê 
         public string Id { get; set; }

@@ -110,7 +110,7 @@ namespace AMS.ViewModels
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Loi dang nhap: {ex.Message}";
+                ErrorMessage = $"Lỗi đăng nhập: {ex.Message}";
             }
             finally
             {

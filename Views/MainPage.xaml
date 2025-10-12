@@ -4,7 +4,7 @@
              x:Class="AMS.Views.MainPage"
              Title="Trang chu">
     <VerticalStackLayout Spacing="25" Padding="30">
-        <Label Text="Dang nhap thanh cong!"
+        <Label Text="Đăng nhập thành công!"
                FontSize="Large"
                HorizontalOptions="Center" />
 

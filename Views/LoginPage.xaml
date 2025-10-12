@@ -1,104 +1,79 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="AMS.Views.LoginPage"
-    Title="Login">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AMS.Views.LoginPage"
+             Title="Đăng nhập hệ thống"
+             Shell.NavBarIsVisible="False">
 
-    <ScrollView>
-        <Grid Padding="40">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+    <Grid RowDefinitions="Auto, *">
+        <!-- Header -->
+        <VerticalStackLayout Grid.Row="0" 
+                             Padding="0,10,0,10"
+                             BackgroundColor="#6E8CFB">
+            <Image Source="logo.png" 
+                     
+                   HeightRequest="100" 
+                   WidthRequest="100" 
+                   HorizontalOptions="Center" />
+            <Label Text="PHẦN MỀM QUẢN LÝ THUÊ NHÀ"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   Margin="0,40,0,0"
+                   HorizontalOptions="Center" />
+        </VerticalStackLayout>
 
-            <VerticalStackLayout Grid.Row="1" Spacing="28">
+        <!-- Login Form - Sử dụng Border với cấu hình đơn giản hơn -->
+        <Border Grid.Row="1"
+                Margin="20,70,20,0"
+                StrokeShape="RoundRectangle 10"
+                Stroke="LightGray"
+                BackgroundColor="White"
+                StrokeThickness="1"
+                VerticalOptions="Start">
 
-                <VerticalStackLayout Spacing="6">
-                    <Label Text="Quản lý thuê nhà"
-                           FontSize="28"
-                           FontAttributes="Bold"
-                           HorizontalTextAlignment="Center" />
-                    <Label Text="Đăng nhập để tiếp tục"
-                           FontSize="16"
-                           TextColor="#555"
-                           HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
+            <VerticalStackLayout Padding="20" Spacing="15">
+                <Label Text="Vui lòng đăng nhập để tiếp tục"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,20" />
 
-                <!-- Username -->
-                <Border Stroke="#DDDDDD"
-                        StrokeThickness="1"
-                        Background="#F3F3F3"
-                        Padding="0">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8" />
-                    </Border.StrokeShape>
-                    <Grid ColumnDefinitions="Auto,*"
-                          ColumnSpacing="12"
-                          Padding="12,8"
-                          HeightRequest="50">
-                        <Image Source="user.png"
-                               WidthRequest="24"
-                               HeightRequest="24"
-                               VerticalOptions="Center" />
-                        <Entry Grid.Column="1"
-                               x:Name="UsernameEntry"
-                               Text="{Binding Username}"
-                               Placeholder="Tên đăng nhập"
-                               ClearButtonVisibility="WhileEditing"
-                               VerticalOptions="Center" />
-                    </Grid>
-                </Border>
+                <!-- Sử dụng Frame thay vì Border cho các trường nhập -->
+                <Frame Padding="5,0" 
+                       HasShadow="False" 
+                       BorderColor="LightGray" 
+                       CornerRadius="5">
+                    <Entry Placeholder="Tên đăng nhập"
+                           Text="{Binding Username}" />
+                </Frame>
 
-                <!-- Password -->
-                <Border Stroke="#DDDDDD"
-                        StrokeThickness="1"
-                        Background="#F3F3F3"
-                        Padding="0">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8" />
-                    </Border.StrokeShape>
-                    <Grid ColumnDefinitions="Auto,*"
-                          ColumnSpacing="12"
-                          Padding="12,8"
-                          HeightRequest="50">
-                        <Image Source="lock.png"
-                               WidthRequest="24"
-                               HeightRequest="24"
-                               VerticalOptions="Center" />
-                        <Entry Grid.Column="1"
-                               x:Name="PasswordEntry"
-                               Text="{Binding Password}"
-                               Placeholder="Mật khẩu"
-                               IsPassword="True"
-                               VerticalOptions="Center" />
-                    </Grid>
-                </Border>
+                <Frame Padding="5,0" 
+                       HasShadow="False" 
+                       BorderColor="LightGray" 
+                       CornerRadius="5">
+                    <Entry Placeholder="Mật khẩu"
+                           Text="{Binding Password}"
+                           IsPassword="True" />
+                </Frame>
+
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="Red"
+                       IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotEmptyConverter}}"
+                       Margin="10,0"/>
 
                 <Button Text="Đăng nhập"
+                        TextColor="White"
+                        BackgroundColor="#636CCB"
                         Command="{Binding LoginCommand}"
-                        HeightRequest="48"
-                        CornerRadius="8"
-                        BackgroundColor="#555"
-                        TextColor="White" />
+                        Margin="10,10"
+                        HeightRequest="50"
+                        CornerRadius="25"/>
 
-                <!-- Thêm hiển thị loading khi đang xử lý đăng nhập -->
-                <ActivityIndicator IsRunning="{Binding IsBusy}" 
-                   IsVisible="{Binding IsBusy}"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   Grid.Row="1"
-                   ZIndex="1" />
-
-                <!-- Sửa binding từ LoginMessage thành ErrorMessage để phù hợp với ViewModel -->
-                <Label Text="{Binding ErrorMessage}"
-                   TextColor="Red"
-                   FontSize="14"
-                   HorizontalTextAlignment="Center"
-                   LineBreakMode="WordWrap" />
-
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   HorizontalOptions="Center" />
             </VerticalStackLayout>
-        </Grid>
-    </ScrollView>
+        </Border>
+    </Grid>
 </ContentPage>
