@@ -1,7 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using AMS.Services;     // Cho IAuthService và AuthService
-using AMS.ViewModels;   // Cho LoginViewModel
-using AMS.Views;        // Cho LoginPage
+﻿using AMS.Data;
+using AMS.Services;
+using AMS.ViewModels;
+using AMS.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace AMS
 {
@@ -17,10 +20,21 @@ namespace AMS
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
+
+
+            // Đường dẫn tới file SQLite
+            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "ams.db");
+            // Đăng ký DbContext
+            builder.Services.AddDbContext<AMSDbContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}"));
+
             //Đăng ký Services
+            builder.Services.AddSingleton<ISecureStorage>(SecureStorage.Default);
             builder.Services.AddSingleton<IAuthService, AuthService>();
+
             //Đăng ký ViewModels
             builder.Services.AddTransient<LoginViewModel>(); 
+
             //Đăng ký Pages
             builder.Services.AddTransient<LoginPage>();
 #if DEBUG

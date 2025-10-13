@@ -6,12 +6,18 @@
     xmlns:local="clr-namespace:AMS.Views"
     Title="Phần mềm quản lý dịch vụ cho thuê">
 
+    <!-- Chỉ giữ lại MainPage -->
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:LoginPage}"
-        Route="LoginPage" />
-    <ShellContent
-        Title="Main"
+        Title="Trang chủ"
         ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
+
+    <!-- Thêm các trang khác sau khi bạn đã tạo chúng -->
+
+    <!-- Ví dụ: Uncomment khi bạn đã tạo RoomListPage
+    <ShellContent
+        Title="Danh sách phòng"
+        ContentTemplate="{DataTemplate local:RoomListPage}"
+        Route="RoomListPage" /> 
+    -->
 </Shell>

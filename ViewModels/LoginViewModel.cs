@@ -1,10 +1,7 @@
-﻿using System;
+﻿using AMS.Services;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows.Input;
-using AMS.Services;
-using Microsoft.Maui.Controls;
 
 namespace AMS.ViewModels
 {
@@ -16,6 +13,7 @@ namespace AMS.ViewModels
         private bool _isBusy;
         private string _errorMessage;
 
+        // Properties
         public string Username
         {
             get => _username;
@@ -72,7 +70,7 @@ namespace AMS.ViewModels
         }
 
         public ICommand LoginCommand { get; }
-
+            
         public LoginViewModel(IAuthService authService)
         {
             _authService = authService;
@@ -100,8 +98,8 @@ namespace AMS.ViewModels
 
                 if (result.Success)
                 {
-                    // Chuyển hướng đến trang chính
-                    await Shell.Current.GoToAsync("///MainPage");
+                    // Chuyển đến trang chính
+                    Application.Current.MainPage = new AppShell();
                 }
                 else
                 {

@@ -1,71 +1,48 @@
-﻿/*
+﻿using AMS.Models;
 using Microsoft.EntityFrameworkCore;
-using AMS.Models;
+using System;
+using System.IO;
 
-namespace AMS.Data;
-
-public class QltDbContext : Microsoft.EntityFrameworkCore.DbContext
+namespace AMS.Data
 {
-    public QltDbContext(DbContextOptions<QltDbContext> options) : base(options) { }
-
-    public DbSet<Nha> Nhas { get; set; } = null!;
-    public DbSet<Phong> Phongs { get; set; } = null!;
-    public DbSet<KhachThue> KhachThues { get; set; } = null!;
-    public DbSet<HopDong> HopDongs { get; set; } = null!;
-    public DbSet<HopDongThue> HopDongThues { get; set; } = null!;
-    public DbSet<HoaDon> HoaDons { get; set; } = null!;
-    public DbSet<DongHoaDon> DongHoaDons { get; set; } = null!;
-    public DbSet<ThanhToan> ThanhToans { get; set; } = null!;
-    public DbSet<DongHo> DongHos { get; set; } = null!;
-    public DbSet<ChiSoDongHo> ChiSoDongHos { get; set; } = null!;
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public class AMSDbContext : DbContext
     {
-        // MaPhong unique
-        modelBuilder.Entity<Phong>()
-            .HasIndex(p => p.MaPhong)
-            .IsUnique();
+        public DbSet<Admin> Admin { get; set; }
+        public DbSet<NguoiThue> NguoiThues { get; set; }
 
-        // HopDongThue: composite key
-            modelBuilder.Entity<HopDongThue>()
-                .HasKey(x => new { x.HopDongId, x.KhachThueId, x.TuNgay });
+        public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
+        {
+        }
 
-            modelBuilder.Entity<HopDongThue>()
-                .HasOne(x => x.HopDong)
-                .WithMany(h => h.HopDongThues)
-                .HasForeignKey(x => x.HopDongId)
-                .OnDelete(DeleteBehavior.Cascade);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<HopDongThue>()
-                .HasOne(x => x.KhachThue)
-                .WithMany(k => k.HopDongThues)
-                .HasForeignKey(x => x.KhachThueId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Seed admin account
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
 
-        // DongHo: one per type per room
-        modelBuilder.Entity<DongHo>()
-            .HasIndex(d => new { d.PhongId, d.Loai })
-            .IsUnique();
+            modelBuilder.Entity<Admin>().HasData(
+                new Admin
+                {
+                    AdminId = 1,
+                    Username = "admin",
+                    Email = "admin@example.com",
+                    PhoneNumber = "0123456789",
+                    PasswordHash = passwordHash,
+                    FullName = "Quản Trị Viên",
+                    LastLogin = DateTime.UtcNow
+                }
+            );
 
-        // ChiSoDongHo: one per meter per period
-        modelBuilder.Entity<ChiSoDongHo>()
-            .HasIndex(c => new { c.DongHoId, c.Ky })
-            .IsUnique();
-
-        /*
-        // Money/decimal types for SQL Server
-        modelBuilder.Entity<Phong>().Property(p => p.GiaThueCoBan).HasColumnType("decimal(18,2)");
-        modelBuilder.Entity<HopDong>().Property(p => p.TienCoc).HasColumnType("decimal(18,2)");
-        modelBuilder.Entity<HoaDon>().Property(p => p.TongTien).HasColumnType("decimal(18,2)");
-        modelBuilder.Entity<DongHoaDon>().Property(p => p.SoLuong).HasColumnType("decimal(18,2)");
-        modelBuilder.Entity<DongHoaDon>().Property(p => p.DonGia).HasColumnType("decimal(18,2)");
-        modelBuilder.Entity<DongHoaDon>().Property(p => p.ThanhTien).HasColumnType("decimal(18,2)");
-        modelBuilder.Entity<ThanhToan>().Property(p => p.SoTien).HasColumnType("decimal(18,2)");
-
-        modelBuilder.Entity<ChiSoDongHo>().Property(p => p.ChiSo).HasColumnType("decimal(18,3)");
-
-        base.OnModelCreating(modelBuilder);
-        */
-//   }
-//}
-
+            // Cấu hình cho NguoiThue
+            modelBuilder.Entity<NguoiThue>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.FullName).IsRequired();
+                entity.Property(e => e.IdCardNumber).IsRequired();
+                entity.Property(e => e.MonthlyRent).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.DepositAmount).HasColumnType("decimal(18, 2)");
+            });
+        }
+    }
+}

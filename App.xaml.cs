@@ -1,6 +1,5 @@
-﻿using AMS.Services;
-using AMS.ViewModels;
-using AMS.Views;
+﻿using AMS.Data;
+using AMS.Services;
 
 namespace AMS
 {
@@ -8,21 +7,35 @@ namespace AMS
     {
         private readonly IAuthService _authService;
 
-        // Inject thêm LoginViewModel qua constructor
-        public App(IAuthService authService, LoginViewModel loginViewModel)
+        public App(IAuthService authService)
         {
             InitializeComponent();
             _authService = authService;
 
-            // Kiểm tra trạng thái đăng nhập để quyết định trang khởi đầu
+            // Khởi tạo database
+            InitializeDatabaseAsync();
+
+            // Xác định trang khởi đầu dựa trên trạng thái đăng nhập
             if (_authService.IsLoggedIn())
             {
                 MainPage = new AppShell();
             }
             else
             {
-                // Dùng loginViewModel đã được inject
                 MainPage = new LoginShell();
+            }
+        }
+
+        private async void InitializeDatabaseAsync()
+        {
+            try
+            {
+                await DatabaseInitializer.InitializeAsync(IPlatformApplication.Current.Services);
+            }
+            catch (Exception ex)
+            {
+                // Xử lý lỗi khởi tạo database
+                Console.WriteLine($"Database initialization error: {ex.Message}");
             }
         }
     }
