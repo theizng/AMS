@@ -1,23 +1,38 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Shell
-    x:Class="AMS.AppShell"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:AMS.Views"
-    Title="Phần mềm quản lý dịch vụ cho thuê">
+<Shell x:Class="AMS.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:local="clr-namespace:AMS.Views"
+       Title="Phần mềm quản lý thuê phòng">
+   
+    <!-- Dashboard/Home as default -->
+    <ShellContent Title="Dashboard" 
+                  ContentTemplate="{DataTemplate local:MainPage}"
+                  Route="MainPage" />
 
-    <!-- Chỉ giữ lại MainPage -->
-    <ShellContent
-        Title="Trang chủ"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <!-- Management Section -->
+    <FlyoutItem Title="Quản lý" FlyoutIcon="management_icon.png">
+        <Tab Title="Phòng">
+            <ShellContent Title="Danh sách phòng" ContentTemplate="{DataTemplate local:RoomsPage}" Route="rooms" />
+            <ShellContent Title="Thêm phòng" ContentTemplate="{DataTemplate local:AddRoomPage}" Route="add-room" />
+        </Tab>
+        <Tab Title="Người thuê">
+            <ShellContent Title="Danh sách người thuê" ContentTemplate="{DataTemplate local:TenantsPage}" Route="tenants" />
+            <ShellContent Title="Thêm người thuê" ContentTemplate="{DataTemplate local:AddTenantPage}" Route="add-tenant" />
+        </Tab>
+        <!-- Additional management items -->
+    </FlyoutItem>
 
-    <!-- Thêm các trang khác sau khi bạn đã tạo chúng -->
+    <!-- Finance Section -->
+    <FlyoutItem Title="Tài chính" FlyoutIcon="finance_icon.png">
+        <ShellContent Title="Thanh toán" ContentTemplate="{DataTemplate local:PaymentsPage}" Route="payments" />
+        <ShellContent Title="Báo cáo" ContentTemplate="{DataTemplate local:ReportsPage}" Route="reports" />
+    </FlyoutItem>
 
-    <!-- Ví dụ: Uncomment khi bạn đã tạo RoomListPage
-    <ShellContent
-        Title="Danh sách phòng"
-        ContentTemplate="{DataTemplate local:RoomListPage}"
-        Route="RoomListPage" /> 
-    -->
+    <!-- Settings -->
+    <FlyoutItem Title="Cài đặt" FlyoutIcon="settings_icon.png">
+        <ShellContent Title="Tùy chọn" ContentTemplate="{DataTemplate local:SettingsPage}" Route="settings" />
+    </FlyoutItem>
+
+    <!-- Logout Item -->
+    <MenuItem Text="Đăng xuất" Command="{Binding LogoutCommand}" IconImageSource="logout_icon.png" />
 </Shell>

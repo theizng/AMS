@@ -1,19 +1,112 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:AMS.ViewModels"
              x:Class="AMS.Views.MainPage"
-             Title="Trang chủ">
-    <VerticalStackLayout Spacing="20" Padding="20">
-        <Label 
-            Text="Chào mừng đến với phần mềm quản lý cho thuê"
-            FontSize="24"
-            HorizontalOptions="Center" />
+             Title="Quản Lý Nhà Trọ">
 
-        <Label
-            Text="Đăng nhập thành công!"
-            FontSize="18"
-            HorizontalOptions="Center" />
+    <ScrollView>
+        <Grid RowDefinitions="Auto, Auto, *">
+            <!-- Header với thông tin thời gian và người dùng -->
+            <Grid Grid.Row="0" ColumnDefinitions="*, Auto" 
+                  BackgroundColor="#f5f5f5" Padding="15,10">
 
-        <!-- Thêm nội dung trang chính của bạn ở đây -->
-    </VerticalStackLayout>
+                <!-- Thời gian hiện tại -->
+                <VerticalStackLayout Grid.Column="0">
+                    <Label Text="Ngày giờ hiện tại" 
+                           FontSize="12" TextColor="#666666" />
+                    <Label Text="{Binding CurrentDateTime, StringFormat='{0:yyyy-MM-dd HH:mm:ss}'}" 
+                           FontSize="16" FontAttributes="Bold" />
+                </VerticalStackLayout>
+
+                <!-- Thông tin người dùng -->
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="End">
+                    <Label Text="Đăng nhập với" 
+                           FontSize="12" TextColor="#666666" />
+                    <Label Text="{Binding CurrentUser}" 
+                           FontSize="16" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Dashboard Stats -->
+            <Grid Grid.Row="1" Margin="10" ColumnDefinitions="*, *" RowDefinitions="Auto, Auto">
+                <!-- Tổng số phòng -->
+                <Frame Grid.Row="0" Grid.Column="0" Margin="5" BorderColor="#E0E0E0" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Tổng số phòng" FontSize="14" TextColor="#666666" />
+                        <Label Text="{Binding TotalRooms}" FontSize="24" FontAttributes="Bold" TextColor="#3498db" />
+                        <HorizontalStackLayout>
+                            <Label Text="{Binding OccupiedRooms}" TextColor="#e74c3c" />
+                            <Label Text=" phòng đang thuê" TextColor="#666666" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Doanh thu tháng -->
+                <Frame Grid.Row="0" Grid.Column="1" Margin="5" BorderColor="#E0E0E0" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Doanh thu tháng" FontSize="14" TextColor="#666666" />
+                        <Label Text="{Binding MonthlyRevenue, StringFormat='{0:N0} VNĐ'}" 
+                               FontSize="24" FontAttributes="Bold" TextColor="#2ecc71" />
+                        <Label Text="{Binding CurrentMonth, StringFormat='Tháng {0:MM/yyyy}'}" TextColor="#666666" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Công nợ hiện tại -->
+                <Frame Grid.Row="1" Grid.Column="0" Margin="5" BorderColor="#E0E0E0" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Công nợ hiện tại" FontSize="14" TextColor="#666666" />
+                        <Label Text="{Binding CurrentDebt, StringFormat='{0:N0} VNĐ'}" 
+                               FontSize="24" FontAttributes="Bold" TextColor="#e67e22" />
+                        <Label Text="{Binding DebtRooms, StringFormat='{0} phòng chưa thanh toán'}" 
+                               TextColor="#666666" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Bảo trì/Sự cố -->
+                <Frame Grid.Row="1" Grid.Column="1" Margin="5" BorderColor="#E0E0E0" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Bảo trì/Sự cố" FontSize="14" TextColor="#666666" />
+                        <Label Text="{Binding PendingMaintenance}" FontSize="24" 
+                               FontAttributes="Bold" TextColor="#9b59b6" />
+                        <Label Text="yêu cầu đang chờ xử lý" TextColor="#666666" />
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- Quick Actions -->
+            <Grid Grid.Row="2" Margin="10" ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto">
+                <Label Grid.Row="0" Grid.ColumnSpan="2" Text="Truy cập nhanh" 
+                       FontSize="18" FontAttributes="Bold" Margin="5" />
+
+                <!-- Quản lý phòng -->
+                <Button Grid.Row="1" Grid.Column="0" Margin="5"
+                        Text="Quản lý phòng" 
+                        Command="{Binding NavigateToCommand}" 
+                        CommandParameter="RoomsPage"
+                        BackgroundColor="#3498db" />
+
+                <!-- Quản lý người thuê -->
+                <Button Grid.Row="1" Grid.Column="1" Margin="5"
+                        Text="Quản lý người thuê" 
+                        Command="{Binding NavigateToCommand}" 
+                        CommandParameter="TenantsPage"
+                        BackgroundColor="#2ecc71" />
+
+                <!-- Thanh toán -->
+                <Button Grid.Row="2" Grid.Column="0" Margin="5"
+                        Text="Thanh toán" 
+                        Command="{Binding NavigateToCommand}" 
+                        CommandParameter="PaymentsPage"
+                        BackgroundColor="#e67e22" />
+
+                <!-- Báo cáo -->
+                <Button Grid.Row="2" Grid.Column="1" Margin="5"
+                        Text="Báo cáo" 
+                        Command="{Binding NavigateToCommand}" 
+                        CommandParameter="ReportsPage"
+                        BackgroundColor="#9b59b6" />
+            </Grid>
+        </Grid>
+    </ScrollView>
 </ContentPage>

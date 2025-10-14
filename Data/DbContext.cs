@@ -9,7 +9,7 @@ namespace AMS.Data
     {
         public DbSet<Admin> Admin { get; set; }
         public DbSet<NguoiThue> NguoiThues { get; set; }
-
+        //public DbSet<Phong>
         public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
         {
         }

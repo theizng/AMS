@@ -1,9 +1,12 @@
+
+using AMS.ViewModels;
 namespace AMS.Views;
 
 public partial class MainPage : ContentPage
 {
-	public MainPage()
+	public MainPage(MainPageViewModel viewmodel)
 	{
 		InitializeComponent();
+		BindingContext = viewmodel;
 	}
 }

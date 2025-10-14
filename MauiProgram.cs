@@ -34,7 +34,7 @@ namespace AMS
 
             //Đăng ký ViewModels
             builder.Services.AddTransient<LoginViewModel>(); 
-
+            builder.Services.AddTransient<MainPageViewModel>();
             //Đăng ký Pages
             builder.Services.AddTransient<LoginPage>();
 #if DEBUG
