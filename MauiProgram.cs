@@ -35,9 +35,16 @@ namespace AMS
             //Đăng ký ViewModels
             builder.Services.AddTransient<LoginViewModel>(); 
             builder.Services.AddTransient<MainPageViewModel>();
+            //Đăng ký Viewmodels CRUD:
+            builder.Services.AddTransient<HousesViewModel>();
+            builder.Services.AddTransient<HouseEditViewModel>();
             //Đăng ký Pages
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<MainPage>();
+            //Đăng ký Trang CRUD cho các Entity
+            builder.Services.AddTransient<HousesPage>();
+            builder.Services.AddTransient<EditHousePage>();
+
 #if DEBUG
             builder.Logging.AddDebug();
 #endif

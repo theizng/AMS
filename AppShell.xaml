@@ -6,21 +6,21 @@
        Title="Phần mềm quản lý thuê phòng">
 
     <!-- Dashboard/Home as default -->
-    <ShellContent Title="Dashboard" 
+    <ShellContent Title="Dashboard"
                   Icon="dashboard_icon.png"
                   ContentTemplate="{DataTemplate local:MainPage}"
                   Route="MainPage" />
 
     <!-- Management Section - Start with Houses -->
     <FlyoutItem Title="Quản lý" FlyoutIcon="management_icon.png">
-        <!-- Only show Houses management in flyout -->
-        <ShellContent Title="Quản lý nhà ở" 
-                      ContentTemplate="{DataTemplate local:HousesPage}" 
+        <!-- Use DI to create HousesPage: give it a name and don't set ContentTemplate here -->
+        <ShellContent x:Name="HousesShell"
+                      Title="Quản lý nhà ở"
                       Route="houses" />
 
-        <!-- Tenants can be accessed from top level since they span across houses -->
-        <ShellContent Title="Quản lý người thuê" 
-                      ContentTemplate="{DataTemplate local:TenantsPage}" 
+        <!-- Tenants can stay as-is for now -->
+        <ShellContent Title="Quản lý người thuê"
+                      ContentTemplate="{DataTemplate local:TenantsPage}"
                       Route="tenants" />
     </FlyoutItem>
 

@@ -96,7 +96,7 @@ namespace AMS.ViewModels
             }
         }
 
-        public int PendingMaintainence
+        public int PendingMaintenance
         {
             get => _pendingMaintenance;
             set
@@ -119,7 +119,6 @@ namespace AMS.ViewModels
         // Commands
         public ICommand NavigateToCommand { get; }
         public ICommand RefreshCommand { get; }
-        public ICommand LogoutCommand { get; }
 
         public MainPageViewModel(IAuthService authService, AMSDbContext dbContext)
         {
@@ -147,7 +146,7 @@ namespace AMS.ViewModels
             }
 
             // Load dữ liệu ban đầu
-            _ = LoadDashboardData();
+            LoadDashboardData();
 
             // Cài đặt timer để cập nhật thời gian hiện tại mỗi giây
             _timer = new System.Timers.Timer(1000); // 1 giây
@@ -160,20 +159,21 @@ namespace AMS.ViewModels
             try
             {
                 // Load room statistics
-                TotalRooms = await _dbContext.Phongs.CountAsync();
-                OccupiedRooms = await _dbContext.Phongs.CountAsync(r => r.Status == "Renting");
+                //TotalRooms = await _dbContext.Phongs.CountAsync();
+                //OccupiedRooms = await _dbContext.Phongs.CountAsync(r => r.Status == "Renting");
 
                 // TODO: Calculate actual values when payment/invoice models are ready
                 MonthlyRevenue = 15000000M;
                 CurrentDebt = 2500000M;
                 DebtRooms = 2;
-                PendingMaintainence = 3;
+                PendingMaintenance = 3;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading dashboard: {ex.Message}");
             }
         }
+
 
         private async void OnNavigateTo(string route)
         {
