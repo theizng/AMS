@@ -1,34 +1,40 @@
-<Shell x:Class="AMS.AppShell"
-       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<?xml version="1.0" encoding="utf-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:local="clr-namespace:AMS.Views"
+       x:Class="AMS.AppShell"
        Title="Phần mềm quản lý thuê phòng">
-   
+
     <!-- Dashboard/Home as default -->
     <ShellContent Title="Dashboard" 
+                  Icon="dashboard_icon.png"
                   ContentTemplate="{DataTemplate local:MainPage}"
                   Route="MainPage" />
 
-    <!-- Management Section -->
+    <!-- Management with sub-list -->
     <FlyoutItem Title="Quản lý" FlyoutIcon="management_icon.png">
-        <Tab Title="Phòng">
-            <ShellContent Title="Danh sách phòng" ContentTemplate="{DataTemplate local:RoomsPage}" Route="rooms" />
-            <ShellContent Title="Thêm phòng" ContentTemplate="{DataTemplate local:AddRoomPage}" Route="add-room" />
-        </Tab>
-        <Tab Title="Người thuê">
-            <ShellContent Title="Danh sách người thuê" ContentTemplate="{DataTemplate local:TenantsPage}" Route="tenants" />
-            <ShellContent Title="Thêm người thuê" ContentTemplate="{DataTemplate local:AddTenantPage}" Route="add-tenant" />
-        </Tab>
-        <!-- Additional management items -->
+        <!-- Child 1: Manage Houses (new page needed) -->
+        <ShellContent Title="Quản lý nhà ở" 
+                      ContentTemplate="{DataTemplate local:HousesPage}" 
+                      Route="houses" />
+        <!-- Child 2: Manage Rooms (reuses existing RoomsPage) -->
+        <ShellContent Title="Quản lý phòng" 
+                      ContentTemplate="{DataTemplate local:RoomsPage}" 
+                      Route="rooms" />
+        <!-- Child 3: Manage Tenants -->
+        <ShellContent Title="Quản lý người thuê" 
+                      ContentTemplate="{DataTemplate local:TenantsPage}" 
+                      Route="tenants" />
+        <!-- Fixed: Unique route -->
     </FlyoutItem>
 
-    <!-- Finance Section -->
+    <!-- FINANCIAL SECTION -->
     <FlyoutItem Title="Tài chính" FlyoutIcon="finance_icon.png">
         <ShellContent Title="Thanh toán" ContentTemplate="{DataTemplate local:PaymentsPage}" Route="payments" />
         <ShellContent Title="Báo cáo" ContentTemplate="{DataTemplate local:ReportsPage}" Route="reports" />
     </FlyoutItem>
 
-    <!-- Settings -->
+    <!-- SETTINGS SECTION -->
     <FlyoutItem Title="Cài đặt" FlyoutIcon="settings_icon.png">
         <ShellContent Title="Tùy chọn" ContentTemplate="{DataTemplate local:SettingsPage}" Route="settings" />
     </FlyoutItem>

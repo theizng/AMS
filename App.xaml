@@ -6,8 +6,12 @@
              x:Class="AMS.App">
     
     <Application.Resources>
+        
         <ResourceDictionary>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            
+            
+            
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />

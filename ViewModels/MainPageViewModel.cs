@@ -21,6 +21,99 @@ namespace AMS.ViewModels
         private DateTime _currentMonth;
         private System.Timers.Timer _timer;
 
+        public string CurrentUser
+        {
+            get => _currentUser;
+            set
+            {
+                _currentUser = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public DateTime CurrentDateTime
+        {
+            get => _currentDateTime;
+            set
+            {
+                _currentDateTime = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int TotalRooms
+        {
+            get => _totalRooms;
+            set
+            {
+                _totalRooms = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int OccupiedRooms
+        {
+            get => _occupiedRooms;
+            set
+            {
+                _occupiedRooms = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int DebtRooms
+        {
+            get => _debtRooms;
+            set
+            {
+                _debtRooms = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public decimal MonthlyRevenue
+        {
+            get => _monthlyRevenue;
+            set
+            {
+                _monthlyRevenue = value;
+                OnPropertyChanged();
+            }
+        }
+        
+        public decimal CurrentDebt
+        {
+            get => _currentDebt;
+            set
+            {
+                _currentDebt = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int PendingMaintainence
+        {
+            get => _pendingMaintenance;
+            set {
+                _pendingMaintenance = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int CurrentMonth         {
+            get => _currentMonth.Month;
+            set
+            {
+                _currentMonth = DateTime.Now;
+                OnPropertyChanged();
+            }
+        }
+
+
+        //Command để điều hướng
+        public ICommand NavigateToCommand { get; }
+        public ICommand RefreshCommand { get; }
+
         public MainPageViewModel(IAuthService authService, AMSDbContext dbContext)
         {
             _authService = authService;
@@ -48,25 +141,7 @@ namespace AMS.ViewModels
             _timer.Start();
         }
 
-        public string CurrentUser
-        {
-            get => _currentUser;
-            set
-            {
-                _currentUser = value;
-                OnPropertyChanged(); 
-            }
-        }
 
-        public DateTime CurrentDateTime
-        {
-            get => _currentDateTime;
-            set
-            {
-                _currentDateTime = value;
-                OnPropertyChanged();
-            }
-        }
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

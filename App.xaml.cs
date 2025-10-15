@@ -1,5 +1,6 @@
 ﻿using AMS.Data;
 using AMS.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AMS
 {
@@ -7,10 +8,13 @@ namespace AMS
     {
         private readonly IAuthService _authService;
 
-        public App(IAuthService authService)
+        public static IServiceProvider Services { get; private set; }
+
+        public App(IServiceProvider serviceProvider)
         {
             InitializeComponent();
-            _authService = authService;
+            Services = serviceProvider;
+            _authService = serviceProvider.GetRequiredService<IAuthService>();
 
             // Khởi tạo database
             InitializeDatabaseAsync();
@@ -30,7 +34,7 @@ namespace AMS
         {
             try
             {
-                await DatabaseInitializer.InitializeAsync(IPlatformApplication.Current.Services);
+                await DatabaseInitializer.InitializeAsync(Services);
             }
             catch (Exception ex)
             {
