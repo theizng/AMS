@@ -99,7 +99,7 @@ namespace AMS.ViewModels
                 if (result.Success)
                 {
                     // Chuyển đến trang chính
-                    Application.Current.MainPage = new AppShell();
+                    Application.Current.MainPage = new AppShell(_authService);
                 }
                 else
                 {

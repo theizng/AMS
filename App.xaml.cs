@@ -22,7 +22,7 @@ namespace AMS
             // Xác định trang khởi đầu dựa trên trạng thái đăng nhập
             if (_authService.IsLoggedIn())
             {
-                MainPage = new AppShell();
+                MainPage = new AppShell(_authService);
             }
             else
             {

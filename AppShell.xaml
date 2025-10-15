@@ -11,21 +11,17 @@
                   ContentTemplate="{DataTemplate local:MainPage}"
                   Route="MainPage" />
 
-    <!-- Management with sub-list -->
+    <!-- Management Section - Start with Houses -->
     <FlyoutItem Title="Quản lý" FlyoutIcon="management_icon.png">
-        <!-- Child 1: Manage Houses (new page needed) -->
+        <!-- Only show Houses management in flyout -->
         <ShellContent Title="Quản lý nhà ở" 
                       ContentTemplate="{DataTemplate local:HousesPage}" 
                       Route="houses" />
-        <!-- Child 2: Manage Rooms (reuses existing RoomsPage) -->
-        <ShellContent Title="Quản lý phòng" 
-                      ContentTemplate="{DataTemplate local:RoomsPage}" 
-                      Route="rooms" />
-        <!-- Child 3: Manage Tenants -->
+
+        <!-- Tenants can be accessed from top level since they span across houses -->
         <ShellContent Title="Quản lý người thuê" 
                       ContentTemplate="{DataTemplate local:TenantsPage}" 
                       Route="tenants" />
-        <!-- Fixed: Unique route -->
     </FlyoutItem>
 
     <!-- FINANCIAL SECTION -->
@@ -40,5 +36,5 @@
     </FlyoutItem>
 
     <!-- Logout Item -->
-    <MenuItem Text="Đăng xuất" Command="{Binding LogoutCommand}" IconImageSource="logout_icon.png" />
+    <MenuItem Text="Đăng xuất" Clicked="OnLogOutClicked" IconImageSource="logout_icon.png" />
 </Shell>
