@@ -10,27 +10,35 @@ namespace AMS
 
         public static IServiceProvider Services { get; private set; }
 
-        public App(IServiceProvider serviceProvider)
+        public App(IServiceProvider serviceProvider, IAuthService authService)
         {
             InitializeComponent();
             Services = serviceProvider;
-            _authService = serviceProvider.GetRequiredService<IAuthService>();
+            _authService = authService;
 
             // Khởi tạo database
             InitializeDatabaseAsync();
+        }
+        protected override Window CreateWindow(IActivationState activationState)
+        {
+            Page root = _authService.IsLoggedIn()
+                ? Services.GetRequiredService<AppShell>()
+                : Services.GetRequiredService<LoginShell>();
 
-            // Xác định trang khởi đầu dựa trên trạng thái đăng nhập
-            if (_authService.IsLoggedIn())
+            return new Window
             {
-                MainPage = new AppShell(_authService);
-            }
-            else
+                Page = root
+            };
+        }
+        public static void SetRootPage(Page page)
+        {
+            var window = Current?.Windows.FirstOrDefault();
+            if (window != null)
             {
-                MainPage = new LoginShell();
+                window.Page = page;
             }
         }
-
-        private async void InitializeDatabaseAsync()
+        private static async void InitializeDatabaseAsync()
         {
             try
             {
@@ -39,8 +47,9 @@ namespace AMS
             catch (Exception ex)
             {
                 // Xử lý lỗi khởi tạo database
-                Console.WriteLine($"Database initialization error: {ex.Message}");
+                Console.WriteLine($"Không thể khởi tạo database, check App.xaml.cs: {ex.Message}");
             }
         }
+        
     }
 }

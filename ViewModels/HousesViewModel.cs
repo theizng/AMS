@@ -1,4 +1,4 @@
-using AMS.Data;
+Ôªøusing AMS.Data;
 using AMS.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
@@ -91,7 +91,7 @@ namespace AMS.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Houses] Load error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("L?i", "KhÙng th? t?i danh s·ch nh‡.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("L·ªói", "Kh√¥ng th·ªÉ t·∫£i danh s√°ch nh√†.", "OK");
             }
             finally
             {
@@ -104,9 +104,9 @@ namespace AMS.ViewModels
             if (house == null) return;
 
             bool confirm = await Application.Current.MainPage.DisplayAlert(
-                "XÛa nh‡",
-                $"B?n ch?c ch?n mu?n xÛa nh‡ t?i:\n\"{house.DiaChi}\"?\nL?u ˝: cÛ th? ?nh h??ng ??n c·c phÚng liÍn quan.",
-                "XÛa",
+                "X√≥a nh√†",
+                $"B?n ch?c ch?n mu?n x√≥a nh√† t?i:\n\"{house.DiaChi}\"?\nL?u √Ω: c√≥ th? ?nh h??ng ??n c√°c ph√≤ng li√™n quan.",
+                "X√≥a",
                 "H?y"
             );
 
@@ -119,12 +119,12 @@ namespace AMS.ViewModels
 
                 Houses.Remove(house);
 
-                await Application.Current.MainPage.DisplayAlert("Th‡nh cÙng", "?„ xÛa nh‡.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Th√†nh c√¥ng", "ƒê√£ x√≥a nh√†.", "OK");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Houses] Delete error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("L?i", "KhÙng th? xÛa nh‡.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("L·ªói", "Kh√¥ng th·ªÉ x√≥a nh√†.", "OK");
             }
         }
 

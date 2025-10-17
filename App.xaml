@@ -4,13 +4,12 @@
              xmlns:local="clr-namespace:AMS"
              xmlns:converters="clr-namespace:AMS.Converters"
              x:Class="AMS.App">
-    
+
     <Application.Resources>
-        
         <ResourceDictionary>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             
-            
+  
             
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />

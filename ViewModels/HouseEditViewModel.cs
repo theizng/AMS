@@ -64,7 +64,7 @@ namespace AMS.ViewModels
         {
             if (string.IsNullOrWhiteSpace(DiaChi))
             {
-                await Application.Current.MainPage.DisplayAlert("Thiếu thông tin", "Vui lòng nhập địa chỉ.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Vui lòng nhập địa chỉ.", "OK");
                 return;
             }
 
@@ -88,7 +88,7 @@ namespace AMS.ViewModels
                     var entity = await _db.Nhas.FirstOrDefaultAsync(h => h.Id == Id);
                     if (entity == null)
                     {
-                        await Application.Current.MainPage.DisplayAlert("Lỗi", "Không tìm thấy nhà.", "OK");
+                        await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không tìm thấy nhà.", "OK");
                         return;
                     }
 
@@ -105,7 +105,7 @@ namespace AMS.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[EditHouse] Save error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("Lỗi", "Không thể lưu nhà.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể lưu nhà.", "OK");
             }
         }
 

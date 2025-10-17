@@ -27,7 +27,6 @@ namespace AMS.ViewModels
                 }
             }
         }
-
         public string Password
         {
             get => _password;
@@ -41,7 +40,6 @@ namespace AMS.ViewModels
                 }
             }
         }
-
         public bool IsBusy
         {
             get => _isBusy;
@@ -55,7 +53,6 @@ namespace AMS.ViewModels
                 }
             }
         }
-
         public string ErrorMessage
         {
             get => _errorMessage;
@@ -68,7 +65,6 @@ namespace AMS.ViewModels
                 }
             }
         }
-
         public ICommand LoginCommand { get; }
             
         public LoginViewModel(IAuthService authService)
@@ -76,14 +72,12 @@ namespace AMS.ViewModels
             _authService = authService;
             LoginCommand = new Command(async () => await ExecuteLoginCommand(), CanLogin);
         }
-
         private bool CanLogin()
         {
             return !IsBusy &&
                    !string.IsNullOrWhiteSpace(Username) &&
                    !string.IsNullOrWhiteSpace(Password);
         }
-
         private async Task ExecuteLoginCommand()
         {
             if (IsBusy)
@@ -99,7 +93,9 @@ namespace AMS.ViewModels
                 if (result.Success)
                 {
                     // Chuyển đến trang chính
-                    Application.Current.MainPage = new AppShell(_authService);
+                    //Application.Current.MainPage = new AppShell(_authService);
+                    var appShell = App.Services.GetRequiredService<AppShell>();
+                    App.SetRootPage(appShell);
                 }
                 else
                 {
@@ -115,7 +111,6 @@ namespace AMS.ViewModels
                 IsBusy = false;
             }
         }
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)

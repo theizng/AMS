@@ -8,40 +8,48 @@ namespace AMS
     {
         private readonly IAuthService _authService;
 
-        public AppShell(IAuthService authService)
+        public AppShell(IAuthService authService, IServiceProvider service)
         {
             InitializeComponent();
+
             _authService = authService;
 
-            // Use DI to resolve pages for ShellContent so constructors can get VMs from DI
-            // App.Services is set in App’s constructor
-            HousesShell.ContentTemplate = new DataTemplate(() => App.Services.GetRequiredService<HousesPage>());
+            // Wire ShellContent items to DI-created pages
+            SetDiTemplate(DashboardShell, typeof(MainPage));
+            SetDiTemplate(HousesShell, typeof(HousesPage));
+            SetDiTemplate(TenantsShell, typeof(TenantsPage));
+            SetDiTemplate(PaymentsShell, typeof(PaymentsPage));
+            SetDiTemplate(ReportsShell, typeof(ReportsPage));
+            SetDiTemplate(SettingsShell, typeof(SettingsPage));
 
-            // Register navigation routes
+            // Register routes for pages not in Shell tree (or for parameterized navigation)
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
             Routing.RegisterRoute("rooms", typeof(RoomsPage));
+
+        }
+
+        private static void SetDiTemplate(ShellContent shellContent, Type pageType)
+        {
+            // Factory that resolves the page via DI so constructor injection works
+            shellContent.ContentTemplate = new DataTemplate(() =>
+                App.Services.GetRequiredService(pageType));
         }
 
         private async void OnLogOutClicked(object sender, EventArgs e)
         {
-            bool confirm = await DisplayAlert(
-                "Đăng xuất",
-                "Bạn có chắc muốn đăng xuất?",
-                "Đăng xuất",
-                "Hủy"
-            );
-
+            bool confirm = await DisplayAlertAsync("Đăng xuất", "Bạn có chắc muốn đăng xuất?", "Đăng xuất", "Hủy");
             if (!confirm) return;
 
             try
             {
                 await _authService.LogoutAsync();
-                Application.Current.MainPage = new LoginShell();
+                var loginShell = App.Services.GetRequiredService<LoginShell>();
+                App.SetRootPage(loginShell);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Logout error: {ex.Message}");
-                await DisplayAlert("Lỗi", "Không thể đăng xuất", "OK");
+                await DisplayAlertAsync("Lỗi", "Không thể đăng xuất", "OK");
             }
         }
     }

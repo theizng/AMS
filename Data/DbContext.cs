@@ -5,7 +5,7 @@ using System.IO;
 
 namespace AMS.Data
 {
-    public class AMSDbContext : DbContext
+    public partial class AMSDbContext : DbContext
     {
         public DbSet<Admin> Admin { get; set; }
         public DbSet<NguoiThue> NguoiThues { get; set; }

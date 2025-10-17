@@ -5,34 +5,40 @@
        x:Class="AMS.AppShell"
        Title="Phần mềm quản lý thuê phòng">
 
-    <!-- Dashboard/Home as default -->
-    <ShellContent Title="Dashboard"
+    <!-- Dashboard/Home: use DI via code-behind -->
+    <ShellContent x:Name="DashboardShell"
+                  Title="Dashboard"
                   Icon="dashboard_icon.png"
-                  ContentTemplate="{DataTemplate local:MainPage}"
                   Route="MainPage" />
 
-    <!-- Management Section - Start with Houses -->
+    <!-- Management Section -->
     <FlyoutItem Title="Quản lý" FlyoutIcon="management_icon.png">
-        <!-- Use DI to create HousesPage: give it a name and don't set ContentTemplate here -->
+        <!-- Houses via DI -->
         <ShellContent x:Name="HousesShell"
                       Title="Quản lý nhà ở"
                       Route="houses" />
 
-        <!-- Tenants can stay as-is for now -->
-        <ShellContent Title="Quản lý người thuê"
-                      ContentTemplate="{DataTemplate local:TenantsPage}"
+        <!-- Tenants via DI -->
+        <ShellContent x:Name="TenantsShell"
+                      Title="Quản lý người thuê"
                       Route="tenants" />
     </FlyoutItem>
 
     <!-- FINANCIAL SECTION -->
     <FlyoutItem Title="Tài chính" FlyoutIcon="finance_icon.png">
-        <ShellContent Title="Thanh toán" ContentTemplate="{DataTemplate local:PaymentsPage}" Route="payments" />
-        <ShellContent Title="Báo cáo" ContentTemplate="{DataTemplate local:ReportsPage}" Route="reports" />
+        <ShellContent x:Name="PaymentsShell"
+                      Title="Thanh toán"
+                      Route="payments" />
+        <ShellContent x:Name="ReportsShell"
+                      Title="Báo cáo"
+                      Route="reports" />
     </FlyoutItem>
 
     <!-- SETTINGS SECTION -->
     <FlyoutItem Title="Cài đặt" FlyoutIcon="settings_icon.png">
-        <ShellContent Title="Tùy chọn" ContentTemplate="{DataTemplate local:SettingsPage}" Route="settings" />
+        <ShellContent x:Name="SettingsShell"
+                      Title="Tùy chọn"
+                      Route="settings" />
     </FlyoutItem>
 
     <!-- Logout Item -->
