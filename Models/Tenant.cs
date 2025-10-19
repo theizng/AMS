@@ -3,25 +3,26 @@ using System.Text.Json;
 
 namespace AMS.Models
 {
-    public class NguoiThue
+    public class Tenant
     {
         // Cập nhật ID để phù hợp với EF Core
-        public int Id { get; set; } // Primary key
+        public int IdTenant { get; set; } // Primary key
 
-        // Các thuộc tính khác của bạn
+        // Các thuộc tính khác 
         public string FullName { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
         public string IdCardNumber { get; set; }
         public DateTime DateOfBirth { get; set; }
         public string PermanentAddress { get; set; }
-        public string RoomId { get; set; }
+        public int? RoomId { get; set; }
         public DateTime MoveInDate { get; set; }
         public DateTime? MoveOutDate { get; set; }
         public decimal MonthlyRent { get; set; }
         public decimal DepositAmount { get; set; }
         public string ContractUrl { get; set; }
 
+        public Room? Room { get; set; } // Khóa ngoại đến Room
         // List cần được khởi tạo
         public string EmergencyContactsJson { get; set; } // Lưu dạng JSON
 

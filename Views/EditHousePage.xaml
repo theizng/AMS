@@ -12,7 +12,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="14">
             <Label Text="Địa chỉ" />
-            <Entry Text="{Binding DiaChi}" Placeholder="Nhập địa chỉ..." />
+            <Entry Text="{Binding Address}" Placeholder="Nhập địa chỉ..." />
 
             <Label Text="Tổng số phòng" />
             <Entry Text="{Binding TotalRooms}" Keyboard="Numeric" Placeholder="0" />

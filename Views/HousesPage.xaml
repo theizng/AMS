@@ -13,10 +13,10 @@
 
     <Grid RowDefinitions="Auto,*" Padding="10">
         <!-- Search -->
-        <HorizontalStackLayout Spacing="8">
+        <HorizontalStackLayout Spacing="8" Margin="0,0,0,10">
             <Entry Placeholder="Tìm kiếm theo địa chỉ hoặc ghi chú..."
                    Text="{Binding SearchText}" HorizontalOptions="FillAndExpand" />
-            <Button Text="Tìm" Command="{Binding SearchCommand}" />
+            <Button Text="Tìm" BackgroundColor="#6E8CFB" Command="{Binding SearchCommand}" />
         </HorizontalStackLayout>
 
         <!-- Houses list -->
@@ -37,7 +37,7 @@
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
                             <!-- Info -->
                             <VerticalStackLayout Grid.RowSpan="3" Grid.Column="0" Spacing="6">
-                                <Label Text="{Binding DiaChi}" FontSize="16" FontAttributes="Bold" />
+                                <Label Text="{Binding Address}" FontSize="16" FontAttributes="Bold" />
                                 <Label Text="{Binding TotalRooms, StringFormat='Tổng số phòng: {0}'}" />
                                 <Label Text="{Binding Notes}" TextColor="#777" FontSize="12" />
                             </VerticalStackLayout>

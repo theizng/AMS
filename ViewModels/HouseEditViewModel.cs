@@ -12,7 +12,7 @@ namespace AMS.ViewModels
         private readonly AMSDbContext _db;
 
         private int _id;
-        private string? _diaChi;
+        private string? _Address;
         private int _totalRooms;
         private string? _notes;
         private DateTime _createdAt;
@@ -23,7 +23,7 @@ namespace AMS.ViewModels
             _id == 0 ? "" : $"Tạo: {_createdAt:yyyy-MM-dd HH:mm} | Cập nhật: {_updatedAt:yyyy-MM-dd HH:mm}";
 
         public int Id { get => _id; set { _id = value; OnPropertyChanged(); OnPropertyChanged(nameof(PageTitle)); } }
-        public string? DiaChi { get => _diaChi; set { _diaChi = value; OnPropertyChanged(); } }
+        public string? Address { get => _Address; set { _Address = value; OnPropertyChanged(); } }
         public int TotalRooms { get => _totalRooms; set { _totalRooms = value; OnPropertyChanged(); } }
         public string? Notes { get => _notes; set { _notes = value; OnPropertyChanged(); } }
         public DateTime CreatedAt { get => _createdAt; set { _createdAt = value; OnPropertyChanged(); OnPropertyChanged(nameof(CreatedUpdatedInfo)); } }
@@ -49,10 +49,10 @@ namespace AMS.ViewModels
         {
             if (Id <= 0) return;
 
-            var entity = await _db.Nhas.FirstOrDefaultAsync(h => h.Id == Id);
+            var entity = await _db.Houses.FirstOrDefaultAsync(h => h.IdHouse == Id);
             if (entity != null)
             {
-                DiaChi = entity.DiaChi;
+                Address = entity.Address;
                 TotalRooms = entity.TotalRooms;
                 Notes = entity.Notes;
                 CreatedAt = entity.CreatedAt;
@@ -62,7 +62,7 @@ namespace AMS.ViewModels
 
         private async Task SaveAsync()
         {
-            if (string.IsNullOrWhiteSpace(DiaChi))
+            if (string.IsNullOrWhiteSpace(Address))
             {
                 await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Vui lòng nhập địa chỉ.", "OK");
                 return;
@@ -72,27 +72,27 @@ namespace AMS.ViewModels
             {
                 if (Id == 0)
                 {
-                    var entity = new Nha
+                    var entity = new House
                     {
-                        DiaChi = DiaChi?.Trim(),
+                        Address = Address?.Trim(),
                         TotalRooms = TotalRooms,
                         Notes = Notes,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
-                    _db.Nhas.Add(entity);
+                    _db.Houses.Add(entity);
                     await _db.SaveChangesAsync();
                 }
                 else
                 {
-                    var entity = await _db.Nhas.FirstOrDefaultAsync(h => h.Id == Id);
+                    var entity = await _db.Houses.FirstOrDefaultAsync(h => h.IdHouse== Id);
                     if (entity == null)
                     {
                         await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không tìm thấy nhà.", "OK");
                         return;
                     }
 
-                    entity.DiaChi = DiaChi?.Trim();
+                    entity.Address = Address?.Trim();
                     entity.TotalRooms = TotalRooms;
                     entity.Notes = Notes;
                     entity.UpdatedAt = DateTime.UtcNow;

@@ -12,11 +12,11 @@ namespace AMS.ViewModels
     {
         private readonly AMSDbContext _dbContext;
 
-        private ObservableCollection<Nha> _houses = new();
+        private ObservableCollection<House> _houses = new();
         private string _searchText = string.Empty;
         private bool _isRefreshing;
 
-        public ObservableCollection<Nha> Houses
+        public ObservableCollection<House> Houses
         {
             get => _houses;
             set { _houses = value; OnPropertyChanged(); }
@@ -49,16 +49,16 @@ namespace AMS.ViewModels
             RefreshCommand = new Command(async () => await LoadHousesAsync());
             SearchCommand = new Command(async () => await LoadHousesAsync());
             AddHouseCommand = new Command(async () => await Shell.Current.GoToAsync("edithouse"));
-            EditHouseCommand = new Command<Nha>(async (house) =>
+            EditHouseCommand = new Command<House>(async (house) =>
             {
                 if (house == null) return;
-                await Shell.Current.GoToAsync($"edithouse?houseId={house.Id}");
+                await Shell.Current.GoToAsync($"edithouse?houseId={house.IdHouse}");
             });
-            DeleteHouseCommand = new Command<Nha>(async (house) => await DeleteHouseAsync(house));
-            ViewRoomsCommand = new Command<Nha>(async (house) =>
+            DeleteHouseCommand = new Command<House>(async (house) => await DeleteHouseAsync(house));
+            ViewRoomsCommand = new Command<House>(async (house) =>
             {
                 if (house == null) return;
-                await Shell.Current.GoToAsync($"rooms?houseId={house.Id}");
+                await Shell.Current.GoToAsync($"rooms?houseId={house.IdHouse}");
             });
 
             _ = LoadHousesAsync();
@@ -70,23 +70,23 @@ namespace AMS.ViewModels
             {
                 IsRefreshing = true;
 
-                var query = _dbContext.Nhas.AsQueryable();
+                var query = _dbContext.Houses.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
                     var keyword = SearchText.Trim();
                     query = query.Where(h =>
-                        (h.DiaChi != null && EF.Functions.Like(h.DiaChi, $"%{keyword}%")) ||
+                        (h.Address != null && EF.Functions.Like(h.Address, $"%{keyword}%")) ||
                         (h.Notes != null && EF.Functions.Like(h.Notes, $"%{keyword}%"))
                     );
                 }
 
                 var items = await query
                     .OrderByDescending(h => h.UpdatedAt)
-                    .ThenByDescending(h => h.Id)
+                    .ThenByDescending(h => h.IdHouse)
                     .ToListAsync();
 
-                Houses = new ObservableCollection<Nha>(items);
+                Houses = new ObservableCollection<House>(items);
             }
             catch (Exception ex)
             {
@@ -99,22 +99,22 @@ namespace AMS.ViewModels
             }
         }
 
-        private async Task DeleteHouseAsync(Nha house)
+        private async Task DeleteHouseAsync(House house)
         {
             if (house == null) return;
 
-            bool confirm = await Application.Current.MainPage.DisplayAlert(
+            bool confirm = await Application.Current.MainPage.DisplayAlertAsync(
                 "Xóa nhà",
-                $"B?n ch?c ch?n mu?n xóa nhà t?i:\n\"{house.DiaChi}\"?\nL?u ý: có th? ?nh h??ng ??n các phòng liên quan.",
+                $"Bạn chắc chắn muốn xóa nhà tại:\n\"{house.Address}\"?\nLưu ý: có thể ảnh hưởng đến các phòng liên quan.",
                 "Xóa",
-                "H?y"
+                "Hủy"
             );
 
             if (!confirm) return;
 
             try
             {
-                _dbContext.Nhas.Remove(house);
+                _dbContext.Houses.Remove(house);
                 await _dbContext.SaveChangesAsync();
 
                 Houses.Remove(house);
