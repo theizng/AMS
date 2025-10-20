@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AMS.Views.EditRoomPage"
+             Title="{Binding PageTitle}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Lưu" Priority="0" Order="Primary" Command="{Binding SaveCommand}" />
+        <ToolbarItem Text="Hủy" Priority="1" Order="Primary" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+            <Label Text="Mã phòng" />
+            <Entry Text="{Binding RoomCode}" Placeholder="VD: BANANA, APPLE..." />
+
+            <Label Text="Trạng thái" />
+            <Picker ItemsSource="{x:Static models:Room.Status.GetValues(typeof(models:Room.Status))}" />
+
+            <Label Text="Diện tích (m²)" />
+            <Entry Text="{Binding Area}" Keyboard="Numeric" Placeholder="0" />
+
+            <Label Text="Giá thuê (đ)" />
+            <Entry Text="{Binding Price}" Keyboard="Numeric" Placeholder="0" />
+
+            <Label Text="Ghi chú" />
+            <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" />
+
+            <Label Text="{Binding CreatedUpdatedInfo}" TextColor="#777" FontSize="12" />
+
+            <Button Text="Lưu" Command="{Binding SaveCommand}" BackgroundColor="#2196F3" TextColor="White" />
+            <Button Text="Hủy" Command="{Binding CancelCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

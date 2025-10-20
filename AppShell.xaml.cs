@@ -25,6 +25,9 @@ namespace AMS
             // Register routes for pages not in Shell tree (or for parameterized navigation)
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
             Routing.RegisterRoute("rooms", typeof(RoomsPage));
+            Routing.RegisterRoute("editroom", typeof(EditRoomPage));
+
+
 
         }
 

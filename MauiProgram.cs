@@ -56,9 +56,12 @@ namespace AMS
             //Đăng ký ViewModels
             builder.Services.AddTransient<LoginViewModel>();
             builder.Services.AddTransient<MainPageViewModel>();
-            //Đăng ký Viewmodels CRUD:
+            //Đăng ký Viewmodels CRUD House:
             builder.Services.AddTransient<HousesViewModel>();
             builder.Services.AddTransient<HouseEditViewModel>();
+            //Đăng ký Viewmodels CRUD Room:
+            builder.Services.AddTransient<RoomsViewModel>();
+            builder.Services.AddTransient<RoomEditViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)
@@ -74,6 +77,8 @@ namespace AMS
             builder.Services.AddTransient<PaymentsPage>();
             builder.Services.AddTransient<ReportsPage>();
             builder.Services.AddTransient<SettingsPage>();
+            builder.Services.AddTransient<RoomsPage>();
+            builder.Services.AddTransient<EditRoomPage>();
             return builder;
         }
         public static MauiAppBuilder RegisterShells(this MauiAppBuilder builder)
