@@ -1,25 +1,34 @@
 ﻿using System.Globalization;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using AMS.Models;
 
-namespace AMS.Converters;
-
-public class StatusColorConverter : IValueConverter
+namespace AMS.Converters
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public class StatusColorConverter : IValueConverter
     {
-        var status = value as string;
-        return status switch
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            "Renting" => Colors.Red,
-            "Available" => Colors.Green,
-            "Maintenance" => Colors.Orange,
-            _ => Colors.Gray
-        };
-    }
+            if (value is Room.Status status)  // FIXED: Direct enum cast (value is Room.Status enum)
+            {
+                return status switch
+                {
+                    Room.Status.Available => Colors.Green,
+                    Room.Status.Occupied => Colors.Red,
+                    Room.Status.Maintaining => Colors.Orange,
+                    Room.Status.Inactive => Colors.Gray,  // Explicit for completeness
+                    _ => Colors.Gray
+                };
+            }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
+            // Fallback (if non-enum somehow)
+            System.Diagnostics.Debug.WriteLine($"[StatusColor] Unexpected value: {value} (type: {value?.GetType()})");  // Temp debug
+            return Colors.Gray;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

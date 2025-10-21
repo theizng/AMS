@@ -42,8 +42,7 @@ namespace AMS.ViewModels
                 {
                     _selectedStatusText = value;
                     OnPropertyChanged();
-                    // If you prefer live filtering, uncomment:
-                    // _ = LoadRoomsAsync();
+                    _ = LoadRoomsAsync();  // Live filter
                 }
             }
         }
@@ -62,7 +61,7 @@ namespace AMS.ViewModels
         public ICommand AddRoomCommand { get; }
         public ICommand EditRoomCommand { get; }
         public ICommand DeleteRoomCommand { get; }
-        public ICommand ChangeStatusCommand { get; }
+        public ICommand ViewDetailCommand { get; }  // NEW: Simple button nav
 
         public RoomsViewModel(AMSDbContext db)
         {
@@ -96,36 +95,12 @@ namespace AMS.ViewModels
 
             DeleteRoomCommand = new Command<Room>(async (room) => await DeleteRoomAsync(room));
 
-            ChangeStatusCommand = new Command<Room>(async (room) =>
+            // NEW: Simple detail nav (replaces status button)
+            ViewDetailCommand = new Command<Room>(async (room) =>
             {
                 if (room == null) return;
-
-                var choice = await Application.Current.MainPage.DisplayActionSheet(
-                    $"Đổi trạng thái phòng {room.RoomCode}",
-                    "Hủy", null,
-                    nameof(Room.Status.Available),
-                    nameof(Room.Status.Occupied),
-                    nameof(Room.Status.Maintaining),
-                    nameof(Room.Status.Inactive));
-
-                if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
-
-                try
-                {
-                    var newStatus = Enum.Parse<Room.Status>(choice);
-                    if (room.RoomStatus != newStatus)
-                    {
-                        room.RoomStatus = newStatus;
-                        room.UpdatedAt = DateTime.UtcNow;
-                        await _db.SaveChangesAsync();
-                        await LoadRoomsAsync();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Rooms] Change status error: {ex.Message}");
-                    await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể đổi trạng thái phòng.", "OK");
-                }
+                // FIXED: Single / for absolute Shell route (preserves ?query)
+                await Shell.Current.GoToAsync($"/detailroom?roomId={room.IdRoom}");
             });
         }
 
@@ -144,16 +119,14 @@ namespace AMS.ViewModels
             {
                 IsRefreshing = true;
 
-                IQueryable<Room> query = _db.Rooms;
+                IQueryable<Room> query = _db.Rooms.AsNoTracking();
 
-                // If houseId provided, filter by house; otherwise show all rooms
                 if (_houseId > 0)
                 {
                     query = query.Where(r => r.HouseID == _houseId);
                 }
                 else
                 {
-                    // Helpful when showing all rooms: include House for display
                     query = query.Include(r => r.House);
                 }
 
@@ -177,7 +150,12 @@ namespace AMS.ViewModels
                     .ThenBy(r => r.RoomCode)
                     .ToListAsync();
 
-                Rooms = new ObservableCollection<Room>(items);
+                // Force notify with Clear/Add
+                Rooms.Clear();
+                foreach (var item in items)
+                {
+                    Rooms.Add(item);
+                }
             }
             catch (Exception ex)
             {
@@ -194,7 +172,7 @@ namespace AMS.ViewModels
         {
             if (room == null) return;
 
-            bool confirm = await Application.Current.MainPage.DisplayAlert(
+            bool confirm = await Application.Current.MainPage.DisplayAlertAsync(
                 "Xóa phòng",
                 $"Bạn chắc chắn muốn xóa phòng:\n\"{room.RoomCode}\"?",
                 "Xóa",
@@ -210,12 +188,12 @@ namespace AMS.ViewModels
 
                 Rooms.Remove(room);
 
-                await Application.Current.MainPage.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Thành công", "Đã xóa phòng.", "OK");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Rooms] Delete error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("Lỗi", "Không thể xóa phòng.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể xóa phòng.", "OK");
             }
         }
 

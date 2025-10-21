@@ -64,13 +64,14 @@ namespace AMS.ViewModels
             _ = LoadHousesAsync();
         }
 
-        private async Task LoadHousesAsync()
+        public async Task LoadHousesAsync()
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[Houses] Loading houses...(Pre-query count {Houses.Count}"); //pre-log 
                 IsRefreshing = true;
 
-                var query = _dbContext.Houses.AsQueryable();
+                var query = _dbContext.Houses.AsNoTracking().AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
@@ -85,7 +86,19 @@ namespace AMS.ViewModels
                     .OrderByDescending(h => h.UpdatedAt)
                     .ThenByDescending(h => h.IdHouse)
                     .ToListAsync();
-
+                //NEW: Log cụ thể cho tất cả house 
+                System.Diagnostics.Debug.WriteLine($"[Houses] Loaded {items.Count} houses from database.");
+                foreach(var h in items)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Houses] House ID: {h.IdHouse}, Address: {h.Address}, UpdatedAt: {h.UpdatedAt}");
+                }
+                //NEW: Bắt buộc clear() và khôi phục lại để trình bày lên UI
+                Houses.Clear();
+                foreach(var h in items)
+                {
+                    Houses.Add(h);
+                }
+                System.Diagnostics.Debug.WriteLine($"[Houses] Houses collection updated. Current count: {Houses.Count}"); //post-log
                 Houses = new ObservableCollection<House>(items);
             }
             catch (Exception ex)

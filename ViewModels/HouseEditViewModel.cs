@@ -17,6 +17,7 @@ namespace AMS.ViewModels
         private string? _notes;
         private DateTime _createdAt;
         private DateTime _updatedAt;
+        private House? _currentHouse;  // Cache tracked entity for updates
 
         public string PageTitle => _id == 0 ? "Thêm nhà" : "Sửa nhà";
         public string CreatedUpdatedInfo =>
@@ -27,7 +28,7 @@ namespace AMS.ViewModels
         public int TotalRooms { get => _totalRooms; set { _totalRooms = value; OnPropertyChanged(); } }
         public string? Notes { get => _notes; set { _notes = value; OnPropertyChanged(); } }
         public DateTime CreatedAt { get => _createdAt; set { _createdAt = value; OnPropertyChanged(); OnPropertyChanged(nameof(CreatedUpdatedInfo)); } }
-        public DateTime UpdatedAt { get => _updatedAt; set { _updatedAt = value; OnPropertyChanged(); OnPropertyChanged(nameof(CreatedUpdatedInfo)); } }
+        public DateTime UpdatedAt { get => _updatedAt; set { _updatedAt = value; OnPropertyChanged(); OnPropertyChanged(nameof(CreatedUpdatedInfo)); } }  // FIXED: Proper call + ;
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -35,6 +36,7 @@ namespace AMS.ViewModels
         public HouseEditViewModel(AMSDbContext db)
         {
             _db = db;
+            _currentHouse = null;
             SaveCommand = new Command(async () => await SaveAsync());
             CancelCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
         }
@@ -49,14 +51,22 @@ namespace AMS.ViewModels
         {
             if (Id <= 0) return;
 
-            var entity = await _db.Houses.FirstOrDefaultAsync(h => h.IdHouse == Id);
-            if (entity != null)
+            try
             {
-                Address = entity.Address;
-                TotalRooms = entity.TotalRooms;
-                Notes = entity.Notes;
-                CreatedAt = entity.CreatedAt;
-                UpdatedAt = entity.UpdatedAt;
+                _currentHouse = await _db.Houses.FirstOrDefaultAsync(h => h.IdHouse == Id);
+                if (_currentHouse != null)
+                {
+                    Address = _currentHouse.Address;
+                    TotalRooms = _currentHouse.TotalRooms;
+                    Notes = _currentHouse.Notes;
+                    CreatedAt = _currentHouse.CreatedAt;
+                    UpdatedAt = _currentHouse.UpdatedAt;
+                    System.Diagnostics.Debug.WriteLine($"[HouseEdit] Loaded house {Id}: {_currentHouse.Address}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HouseEdit] Load error: {ex.Message}");
             }
         }
 
@@ -70,11 +80,21 @@ namespace AMS.ViewModels
 
             try
             {
-                if (Id == 0)
+                var trimmedAddress = Address?.Trim();
+
+                // NEW: Optional uniqueness check (prevents dups)
+                bool addressExists = Id > 0 ? await _db.Houses.AnyAsync(h => h.Address == trimmedAddress && h.IdHouse != Id) : await _db.Houses.AnyAsync(h => h.Address == trimmedAddress);
+                if (addressExists)
+                {
+                    await Application.Current.MainPage.DisplayAlertAsync("Trùng địa chỉ", "Địa chỉ này đã tồn tại.", "OK");
+                    return;
+                }
+
+                if (Id == 0)  // Add new
                 {
                     var entity = new House
                     {
-                        Address = Address?.Trim(),
+                        Address = trimmedAddress,
                         TotalRooms = TotalRooms,
                         Notes = Notes,
                         CreatedAt = DateTime.UtcNow,
@@ -82,30 +102,37 @@ namespace AMS.ViewModels
                     };
                     _db.Houses.Add(entity);
                     await _db.SaveChangesAsync();
+                    System.Diagnostics.Debug.WriteLine($"[HouseEdit] Added new house: {entity.Address} (ID: {entity.IdHouse})");
                 }
-                else
+                else  // Update existing
                 {
-                    var entity = await _db.Houses.FirstOrDefaultAsync(h => h.IdHouse== Id);
-                    if (entity == null)
+                    if (_currentHouse == null)
                     {
-                        await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không tìm thấy nhà.", "OK");
+                        await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không tìm thấy nhà để cập nhật.", "OK");
                         return;
                     }
 
-                    entity.Address = Address?.Trim();
-                    entity.TotalRooms = TotalRooms;
-                    entity.Notes = Notes;
-                    entity.UpdatedAt = DateTime.UtcNow;
+                    // Update cached tracked entity
+                    _currentHouse.Address = trimmedAddress;
+                    _currentHouse.TotalRooms = TotalRooms;
+                    _currentHouse.Notes = Notes;
+                    _currentHouse.UpdatedAt = DateTime.UtcNow;
+
+                    System.Diagnostics.Debug.WriteLine($"[HouseEdit] Updating house {Id}: New Address={_currentHouse.Address}, TotalRooms={_currentHouse.TotalRooms}");
 
                     await _db.SaveChangesAsync();
+
+                    // Verify post-save
+                    var verified = await _db.Houses.FirstOrDefaultAsync(h => h.IdHouse == Id);
+                    System.Diagnostics.Debug.WriteLine($"[HouseEdit] Post-save verify: Address={verified?.Address}, UpdatedAt={verified?.UpdatedAt}");
                 }
 
-                await Shell.Current.GoToAsync(".."); // back
+                await Shell.Current.GoToAsync("..");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[EditHouse] Save error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể lưu nhà.", "OK");
+                System.Diagnostics.Debug.WriteLine($"[HouseEdit] Save error: {ex.Message}\nStack: {ex.StackTrace}");
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", $"Không thể lưu nhà: {ex.Message}", "OK");
             }
         }
 

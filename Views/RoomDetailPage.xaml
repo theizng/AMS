@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:conv="clr-namespace:AMS.Converters"
+             x:Class="AMS.Views.RoomDetailPage"
+             Title="{Binding Title}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            
+            <!--<conv:NullToBoolConverter x:Key="NullToBoolConverter" /> -->
+                <!-- If you already added this earlier, keep it; otherwise remove the color binding below -->
+            <conv:StatusColorConverter x:Key="StatusColorConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Sửa" Priority="0" Order="Primary" Command="{Binding EditRoomCommand}" />
+        <ToolbarItem Text="Làm mới" Priority="1" Order="Primary" Command="{Binding RefreshCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+
+            <!-- Room header -->
+            <Frame Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="{Binding Room.RoomCode}" FontSize="22" FontAttributes="Bold" />
+                    <Label Text="{Binding HouseAddress}" TextColor="#666" />
+                    <HorizontalStackLayout Spacing="16">
+                        <Border BackgroundColor="#F4F4F4" Padding="6,2">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                            <Label Text="{Binding StatusText}"
+                                   TextColor="{Binding Room.RoomStatus, Converter={StaticResource StatusColorConverter}}"
+                                   FontAttributes="Bold" />
+                        </Border>
+                        <Label Text="{Binding AreaText}" />
+                        <Label Text="{Binding PriceText}" />
+                    </HorizontalStackLayout>
+                    <Label Text="{Binding Room.Notes}" TextColor="#777" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Current tenant -->
+            <Frame Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
+                <VerticalStackLayout Spacing="8">
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <Label Text="Người thuê hiện tại" FontAttributes="Bold" />
+                        <Label Text="(Trống)" TextColor="#777"
+                               IsVisible="{Binding CurrentTenant, Converter={StaticResource NullToBoolConverter}, ConverterParameter=Invert}" />
+                    </HorizontalStackLayout>
+
+                    <!-- If there is a tenant -->
+                    <Grid IsVisible="{Binding CurrentTenant, Converter={StaticResource NullToBoolConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label Text="{Binding CurrentTenant.FullName}" FontSize="18" FontAttributes="Bold" />
+                            <Label Text="{Binding CurrentTenant.IdCardNumber, StringFormat='CCCD/CMND: {0}'}" />
+                            <Label Text="{Binding CurrentTenant.PhoneNumber, StringFormat='SĐT: {0}'}" />
+                            <Label Text="{Binding CurrentTenant.Email, StringFormat='Email: {0}'}" />
+                            <Label Text="{Binding CurrentTenant.PermanentAddress, StringFormat='Địa chỉ: {0}'}" />
+                            <Label Text="{Binding CurrentTenant.MonthlyRent, StringFormat='Tiền thuê: {0:N0} đ'}" />
+                            <Label Text="{Binding CurrentTenant.DepositAmount, StringFormat='Đặt cọc: {0:N0} đ'}" />
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="{Binding CurrentTenant.MoveInDate, StringFormat='Ngày vào: {0:yyyy-MM-dd}'}" />
+                                <Label Text="{Binding CurrentTenant.MoveOutDate, StringFormat='Ngày ra: {0:yyyy-MM-dd}'}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <Button Text="Gọi"
+                                    Command="{Binding CallPhoneCommand}" />
+                            <Button Text="Hợp đồng"
+                                    Command="{Binding OpenContractCommand}" />
+                            <Button Text="Trả phòng"
+                                    BackgroundColor="#F44336" TextColor="White"
+                                    Command="{Binding MoveOutCommand}" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <!-- If empty -->
+                    <VerticalStackLayout IsVisible="{Binding CurrentTenant, Converter={StaticResource NullToBoolConverter}, ConverterParameter=Invert}">
+                        <Label Text="Chưa có người thuê cho phòng này." TextColor="#777"/>
+                        <Button Text="Thêm người thuê" Command="{Binding AddTenantCommand}" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Emergency contacts -->
+            <Frame Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10"
+                   IsVisible="{Binding CurrentTenant, Converter={StaticResource NullToBoolConverter}}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Liên hệ khẩn cấp" FontAttributes="Bold" />
+                    <FlexLayout Direction="Row" Wrap="Wrap" AlignItems="Center" AlignContent="Start">
+                        <CollectionView ItemsSource="{Binding CurrentTenant.EmergencyContacts}" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,4,8,4" Padding="8,4" BackgroundColor="#F4F4F4">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding .}" />
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Tenant history -->
+            <Frame Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Lịch sử thuê" FontAttributes="Bold" />
+                    <CollectionView ItemsSource="{Binding TenantHistory}" SelectionMode="None">
+                        <CollectionView.EmptyView>
+                            <Grid Padding="10">
+                                <Label Text="Chưa có lịch sử thuê." TextColor="#777" />
+                            </Grid>
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="0,6">
+                                    <Label Text="{Binding FullName}" FontAttributes="Bold" />
+                                    <Label Grid.Row="1" Text="{Binding IdCardNumber, StringFormat='CCCD/CMND: {0}'}" TextColor="#666" />
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="8" HorizontalOptions="End">
+                                        <Label Text="{Binding MoveInDate, StringFormat='{0:yyyy-MM-dd}'}" />
+                                        <Label Text="→" />
+                                        <Label Text="{Binding MoveOutDate, StringFormat='{0:yyyy-MM-dd}'}" />
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

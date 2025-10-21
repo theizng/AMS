@@ -62,6 +62,7 @@ namespace AMS
             //Đăng ký Viewmodels CRUD Room:
             builder.Services.AddTransient<RoomsViewModel>();
             builder.Services.AddTransient<RoomEditViewModel>();
+            builder.Services.AddTransient<RoomDetailViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)
@@ -79,6 +80,7 @@ namespace AMS
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<RoomsPage>();
             builder.Services.AddTransient<EditRoomPage>();
+            builder.Services.AddTransient<RoomDetailPage>();
             return builder;
         }
         public static MauiAppBuilder RegisterShells(this MauiAppBuilder builder)

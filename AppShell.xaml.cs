@@ -1,4 +1,5 @@
 ﻿using AMS.Services;
+using AMS.ViewModels;
 using AMS.Views;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,11 +27,26 @@ namespace AMS
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
             Routing.RegisterRoute("rooms", typeof(RoomsPage));
             Routing.RegisterRoute("editroom", typeof(EditRoomPage));
-
+            Routing.RegisterRoute("detailroom", typeof(RoomDetailPage));
+            Navigated += OnShellNavigated;
 
 
         }
-
+        private async void OnShellNavigated(object sender, ShellNavigatedEventArgs e)
+        {
+            var currentLocation = Shell.Current.CurrentState.Location.ToString().ToLowerInvariant();
+            System.Diagnostics.Debug.WriteLine($"[AppShell] Đã điều hướng đến trang: {currentLocation}");
+            //Làm mới lại trang để hiển thị các thông tin sau khi điều hướng tới/về
+            if(currentLocation.Contains("houses"))
+            {
+                if(Shell.Current.CurrentPage?.BindingContext is HousesViewModel vm)
+                {
+                    System.Diagnostics.Debug.WriteLine("[AppShell] Đang tải lại trang House");
+                    await vm.LoadHousesAsync();  
+                }
+            }
+            //TODO: thêm các trang khác dưới này nếu cần.
+        }
         private static void SetDiTemplate(ShellContent shellContent, Type pageType)
         {
             // Factory that resolves the page via DI so constructor injection works

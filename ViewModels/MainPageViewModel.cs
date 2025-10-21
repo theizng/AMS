@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using AMS.Models;
 
 namespace AMS.ViewModels
 {
@@ -159,8 +160,8 @@ namespace AMS.ViewModels
             try
             {
                 // Load room statistics
-                //TotalRooms = await _dbContext.Phongs.CountAsync();
-                //OccupiedRooms = await _dbContext.Phongs.CountAsync(r => r.Status == "Renting");
+                TotalRooms = await _dbContext.Rooms.CountAsync();
+                OccupiedRooms = await _dbContext.Rooms.CountAsync(r => r.RoomStatus == Room.Status.Occupied);
 
                 // TODO: Calculate actual values when payment/invoice models are ready
                 MonthlyRevenue = 15000000M;

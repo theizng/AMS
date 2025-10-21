@@ -20,6 +20,7 @@ namespace AMS.ViewModels
         private string? _notes;
         private DateTime _createdAt;
         private DateTime _updatedAt;
+        private Room? _currentRoom;  // Cache for updates
 
         public string PageTitle => _idRoom == 0 ? "Thêm phòng" : "Sửa phòng";
         public string CreatedUpdatedInfo =>
@@ -37,12 +38,14 @@ namespace AMS.ViewModels
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
+        public ICommand ChangeStatusCommand { get; }  // FIXED: No <Room> param
 
         public RoomEditViewModel(AMSDbContext db)
         {
             _db = db;
             SaveCommand = new Command(async () => await SaveAsync());
             CancelCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
+            ChangeStatusCommand = new Command(async () => await ChangeStatusAsync());  // FIXED: No param, uses VM state
         }
 
         public void SetHouseId(int houseId)
@@ -60,23 +63,59 @@ namespace AMS.ViewModels
         {
             if (IdRoom <= 0) return;
 
-            var entity = await _db.Rooms.FirstOrDefaultAsync(r => r.IdRoom == IdRoom);
-            if (entity != null)
+            _currentRoom = await _db.Rooms.FirstOrDefaultAsync(r => r.IdRoom == IdRoom);  // FIXED: Cache tracked
+            if (_currentRoom != null)
             {
-                HouseID = entity.HouseID;
-                RoomCode = entity.RoomCode;
-                RoomStatus = entity.RoomStatus;
-                Area = entity.Area;
-                Price = entity.Price;
-                Notes = entity.Notes;
-                CreatedAt = entity.CreatedAt;
-                UpdatedAt = entity.UpdatedAt;
+                HouseID = _currentRoom.HouseID;
+                RoomCode = _currentRoom.RoomCode;
+                RoomStatus = _currentRoom.RoomStatus;
+                Area = _currentRoom.Area;
+                Price = _currentRoom.Price;
+                Notes = _currentRoom.Notes;
+                CreatedAt = _currentRoom.CreatedAt;
+                UpdatedAt = _currentRoom.UpdatedAt;
+            }
+        }
+
+        // NEW: Dedicated status change (uses current VM state)
+        private async Task ChangeStatusAsync()
+        {
+            var currentCode = RoomCode ?? "N/A";
+            var choice = await Application.Current.MainPage.DisplayActionSheet(
+                $"Đổi trạng thái phòng {currentCode}",
+                "Hủy", null,
+                nameof(Room.Status.Available),
+                nameof(Room.Status.Occupied),
+                nameof(Room.Status.Maintaining),
+                nameof(Room.Status.Inactive));
+
+            if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
+
+            try
+            {
+                var newStatus = Enum.Parse<Room.Status>(choice);
+                if (RoomStatus != newStatus)
+                {
+                    RoomStatus = newStatus;  // Update VM
+                    UpdatedAt = DateTime.UtcNow;
+                    if (_currentRoom != null)  // Save if editing existing
+                    {
+                        _currentRoom.RoomStatus = newStatus;
+                        _currentRoom.UpdatedAt = DateTime.UtcNow;
+                        await _db.SaveChangesAsync();
+                    }
+                    await Application.Current.MainPage.DisplayAlertAsync("Thành công", $"Đã cập nhật trạng thái: {newStatus}.", "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[EditRoom] Change status error: {ex.Message}");
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể đổi trạng thái phòng.", "OK");
             }
         }
 
         private async Task SaveAsync()
         {
-            // Basic validations
             if (HouseID <= 0)
             {
                 await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Thiếu HouseId.", "OK");
@@ -87,12 +126,12 @@ namespace AMS.ViewModels
                 await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Vui lòng nhập mã phòng.", "OK");
                 return;
             }
-            if (Area <= 0)
+            if (Area <= 0)  // FIXED: Removed invalid 'is String'
             {
                 await Application.Current.MainPage.DisplayAlertAsync("Giá trị không hợp lệ", "Diện tích phải lớn hơn 0.", "OK");
                 return;
             }
-            if (Price < 0)
+            if (Price < 0)  // FIXED: Removed invalid 'is String'
             {
                 await Application.Current.MainPage.DisplayAlertAsync("Giá trị không hợp lệ", "Giá thuê không được âm.", "OK");
                 return;
@@ -102,7 +141,6 @@ namespace AMS.ViewModels
             {
                 var roomCode = RoomCode!.Trim().ToUpperInvariant();
 
-                // Unique per house
                 bool exists = await _db.Rooms.AnyAsync(r =>
                     r.HouseID == HouseID &&
                     r.RoomCode == roomCode &&
@@ -132,19 +170,19 @@ namespace AMS.ViewModels
                 }
                 else
                 {
-                    var entity = await _db.Rooms.FirstOrDefaultAsync(r => r.IdRoom == IdRoom);
-                    if (entity == null)
+                    if (_currentRoom == null)
                     {
                         await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không tìm thấy phòng.", "OK");
                         return;
                     }
 
-                    entity.RoomCode = roomCode;
-                    entity.RoomStatus = RoomStatus;
-                    entity.Area = Area;
-                    entity.Price = Price;
-                    entity.Notes = Notes;
-                    entity.UpdatedAt = DateTime.UtcNow;
+                    // FIXED: Update cached entity
+                    _currentRoom.RoomCode = roomCode;
+                    _currentRoom.RoomStatus = RoomStatus;
+                    _currentRoom.Area = Area;
+                    _currentRoom.Price = Price;
+                    _currentRoom.Notes = Notes;
+                    _currentRoom.UpdatedAt = DateTime.UtcNow;
 
                     await _db.SaveChangesAsync();
                 }

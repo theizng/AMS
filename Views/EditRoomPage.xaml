@@ -15,8 +15,11 @@
             <Entry Text="{Binding RoomCode}" Placeholder="VD: BANANA, APPLE..." />
 
             <Label Text="Trạng thái" />
-            <Picker ItemsSource="{x:Static models:Room.Status.GetValues(typeof(models:Room.Status))}" />
-
+            <Picker Title="Chọn trạng thái" 
+        ItemsSource="{Binding StatusOptions}"
+        SelectedItem="{Binding SelectedStatus}"
+        ItemDisplayBinding="{Binding Name}" />
+            <!-- Rest unchanged -->
             <Label Text="Diện tích (m²)" />
             <Entry Text="{Binding Area}" Keyboard="Numeric" Placeholder="0" />
 

@@ -17,6 +17,7 @@ namespace AMS
             _authService = authService;
 
         }
+
         protected override async void OnStart()
         {
             base.OnStart();

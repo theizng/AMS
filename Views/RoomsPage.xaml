@@ -26,22 +26,16 @@
             <Button Text="Tìm" BackgroundColor="#6E8CFB" Command="{Binding SearchCommand}" />
         </HorizontalStackLayout>
 
-        <!-- Status filter with Apply/Clear -->
-        <HorizontalStackLayout Grid.Row="1" Spacing="8">
-            <Label Text="Trạng thái:" VerticalOptions="Center" />
-            <Picker ItemsSource="{Binding StatusOptions}"
-                    SelectedItem="{Binding SelectedStatusText}"
-                    HorizontalOptions="Start" />
-            <Button Text="Áp dụng" Command="{Binding ApplyFilterCommand}" />
-            <Button Text="Xóa lọc" Command="{Binding ClearFilterCommand}" />
-        </HorizontalStackLayout>
+        <!-- Note on button -->
+        <Label Grid.Row="1" Text="Nhấn 'Xem chi tiết' để xem thông tin đầy đủ." TextColor="#777" FontSize="12" HorizontalOptions="Center" />
 
-        <!-- Pull-to-refresh uses RefreshView -->
+        <!-- Pull-to-refresh -->
         <RefreshView Grid.Row="2"
                      IsRefreshing="{Binding IsRefreshing}"
                      Command="{Binding RefreshCommand}">
             <CollectionView ItemsSource="{Binding Rooms}"
                             SelectionMode="None">
+                <!-- FIXED: No selection—just buttons -->
                 <CollectionView.EmptyView>
                     <Grid Padding="20">
                         <Label Text="Chưa có phòng nào. Hãy nhấn 'Thêm phòng' để tạo mới."
@@ -58,7 +52,7 @@
                                 <VerticalStackLayout Grid.RowSpan="4" Grid.Column="0" Spacing="6">
                                     <HorizontalStackLayout Spacing="8">
                                         <Label Text="{Binding RoomCode}" FontSize="18" FontAttributes="Bold" />
-                                        <!-- Badge using Border for rounded corners -->
+                                        <!-- Badge -->
                                         <Border BackgroundColor="#F4F4F4" Padding="6,2">
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="6" />
@@ -69,7 +63,6 @@
                                         </Border>
                                     </HorizontalStackLayout>
 
-                                    <!-- Show house address when listing all houses -->
                                     <Label Text="{Binding House.Address, StringFormat='Nhà: {0}'}"
                                            IsVisible="{Binding House}" />
 
@@ -78,11 +71,12 @@
                                     <Label Text="{Binding Notes}" TextColor="#777" FontSize="12" />
                                 </VerticalStackLayout>
 
-                                <!-- Actions -->
+                                <!-- Actions (swapped status button) -->
                                 <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                    <Button Text="Trạng thái..."
+                                    <!-- NEW: Detail button (replaces status) -->
+                                    <Button Text="Xem chi tiết"
                                             BackgroundColor="#8E24AA" TextColor="White"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChangeStatusCommand}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewDetailCommand}"
                                             CommandParameter="{Binding .}" />
                                     <Button Text="Sửa"
                                             BackgroundColor="#2196F3" TextColor="White"
