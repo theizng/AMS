@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.MaintenancePage"
-             Title="Quản lý bảo trì & sự cố"
+             x:Class="AMS.Views.MaintenancesPage"
+             Title="Quản lý bảo trì và sự cố"
              Shell.NavBarIsVisible="False">
 
     <Grid RowDefinitions="Auto, *">
@@ -15,7 +15,7 @@
                    HeightRequest="100"
                    WidthRequest="100"
                    HorizontalOptions="Center" />
-            <Label Text="QUẢN LÝ BẢO TRÌ & SỰ CỐ"
+            <Label Text="QUẢN LÝ BẢO TRÌ VÀ SỰ CỐ"
                    FontSize="24"
                    FontAttributes="Bold"
                    TextColor="White"

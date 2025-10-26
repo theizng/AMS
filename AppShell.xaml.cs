@@ -22,7 +22,7 @@ namespace AMS
             SetDiTemplate(PaymentsShell, typeof(PaymentsPage));
             SetDiTemplate(ReportsShell, typeof(ReportsPage));
             SetDiTemplate(SettingsShell, typeof(SettingsPage));
-
+            SetDiTemplate(MaintenancesShell, typeof(MaintenancesPage));
             // Register routes for pages not in Shell tree (or for parameterized navigation)
             //Trang quản lý nhà
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
@@ -33,7 +33,11 @@ namespace AMS
             //Trang người thuê nhà
             Routing.RegisterRoute("tenants", typeof(TenantsPage));
             Routing.RegisterRoute("edittenant", typeof(EditTenantPage));
+            //Trang quản lý bảo trì
+            Routing.RegisterRoute("maintenances", typeof(MaintenancesPage));
+            Routing.RegisterRoute("editmaintenance", typeof(EditMaintenancePage));
             Navigated += OnShellNavigated;
+
 
 
         }

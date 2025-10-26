@@ -52,7 +52,7 @@
                 </Grid>
 
                 <!-- Gửi thông báo -->
-                <Button Text="Tạo & Gửi thông báo tháng"
+                <Button Text="Tạo Và Gửi thông báo tháng"
                         TextColor="White"
                         BackgroundColor="#6E8CFB"
                         CornerRadius="25"

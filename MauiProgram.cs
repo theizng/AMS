@@ -87,6 +87,8 @@ namespace AMS
             builder.Services.AddTransient<RoomDetailPage>();
             builder.Services.AddTransient<EditTenantPage>();
             builder.Services.AddTransient<TenantsPage>();
+            builder.Services.AddTransient<MaintenancesPage>();
+            builder.Services.AddTransient<EditMaintenancePage>();
             return builder;
         }
         public static MauiAppBuilder RegisterShells(this MauiAppBuilder builder)

@@ -17,11 +17,14 @@
         <ShellContent x:Name="HousesShell"
                       Title="Quản lý nhà ở"
                       Route="houses" />
-
         <!-- Tenants via DI -->
         <ShellContent x:Name="TenantsShell"
                       Title="Quản lý người thuê"
                       Route="tenants" />
+        <!-- Maintainances via DI-->
+        <ShellContent x:Name="MaintenancesShell"
+                      Title="Danh sách bảo trì"
+                      Route="maintenances" />
     </FlyoutItem>
 
     <!-- FINANCIAL SECTION -->
