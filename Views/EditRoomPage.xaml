@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:AMS.Behaviors"
              x:Class="AMS.Views.EditRoomPage"
              Title="{Binding PageTitle}">
 
@@ -11,20 +12,53 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="14">
+
             <Label Text="Mã phòng" />
             <Entry Text="{Binding RoomCode}" Placeholder="VD: BANANA, APPLE..." />
 
             <Label Text="Trạng thái" />
-            <Picker Title="Chọn trạng thái" 
-        ItemsSource="{Binding StatusOptions}"
-        SelectedItem="{Binding SelectedStatus}"
-        ItemDisplayBinding="{Binding Name}" />
-            <!-- Rest unchanged -->
+            <Picker Title="Chọn trạng thái"
+                    ItemsSource="{Binding StatusOptions}"
+                    SelectedItem="{Binding SelectedStatus}"
+                    ItemDisplayBinding="{Binding .}" />
+
             <Label Text="Diện tích (m²)" />
-            <Entry Text="{Binding Area}" Keyboard="Numeric" Placeholder="0" />
+            <Entry Text="{Binding Area}" Keyboard="Numeric" Placeholder="0">
+                <Entry.Behaviors>
+                    <behaviors:DecimalNumberBehavior />
+                </Entry.Behaviors>
+            </Entry>
 
             <Label Text="Giá thuê (đ)" />
-            <Entry Text="{Binding Price}" Keyboard="Numeric" Placeholder="0" />
+            <Entry Text="{Binding Price}" Keyboard="Numeric" Placeholder="0">
+                <Entry.Behaviors>
+                    <!-- VND: typically integer -->
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
+
+            <Label Text="Số người tối đa" />
+            <Entry Text="{Binding MaxOccupants}" Keyboard="Numeric" Placeholder="1">
+                <Entry.Behaviors>
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
+
+            <Label Text="Xe miễn phí" />
+            <Entry Text="{Binding FreeBikeAllowance}" Keyboard="Numeric" Placeholder="1">
+                <Entry.Behaviors>
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
+
+            <Label Text="Phí xe thêm (đ)" />
+            <Entry Text="{Binding BikeExtraFeeText}"
+                   Keyboard="Numeric"
+                   Placeholder="Để trống nếu không tính">
+                <Entry.Behaviors>
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
 
             <Label Text="Ghi chú" />
             <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" />
@@ -33,6 +67,7 @@
 
             <Button Text="Lưu" Command="{Binding SaveCommand}" BackgroundColor="#2196F3" TextColor="White" />
             <Button Text="Hủy" Command="{Binding CancelCommand}" />
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

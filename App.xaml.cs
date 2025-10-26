@@ -16,23 +16,19 @@ namespace AMS
             Services = serviceProvider;
             _authService = authService;
 
-        }
-
-        protected override async void OnStart()
-        {
-            base.OnStart();
-            try 
+            try
             {
-                System.Diagnostics.Debug.WriteLine("Bắt đầu khởi tạo database...");
-                await DatabaseInitializer.InitializeAsync(Services);
+                System.Diagnostics.Debug.WriteLine("🔵 Bắt đầu khởi tạo database (migrate)...");
+                DatabaseInitializer.Initialize(Services); // sync migrate
                 System.Diagnostics.Debug.WriteLine("✅ Khởi tạo database thành công.");
             }
             catch (Exception ex)
             {
-                // Xử lý lỗi khởi tạo database
-                 System.Diagnostics.Debug.WriteLine($"Không thể khởi tạo database, check App.xaml.cs: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Không thể khởi tạo database: {ex.Message}");
             }
         }
+   
+
         protected override Window CreateWindow(IActivationState activationState)
         {
             Page root = _authService.IsLoggedIn()

@@ -34,11 +34,12 @@ namespace AMS
 
         public static MauiAppBuilder RegisterDataBase(this MauiAppBuilder builder)
         {
-            // Đăng ký các dịch vụ khác tại đây nếu cần
-            //Đăng ký DbContext
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "ams.db");
             builder.Services.AddDbContext<AMSDbContext>(options =>
-                options.UseSqlite($"Data Source={dbPath}"));
+                options.UseSqlite($"Data Source={dbPath}", sqlite =>
+                {
+                    sqlite.MigrationsAssembly("AMS"); // migrations live in the MAUI project
+                }));
             return builder;
         }
         public static MauiAppBuilder RegisterServices(this MauiAppBuilder builder)
@@ -63,6 +64,9 @@ namespace AMS
             builder.Services.AddTransient<RoomsViewModel>();
             builder.Services.AddTransient<RoomEditViewModel>();
             builder.Services.AddTransient<RoomDetailViewModel>();
+            //Đăng ký Viewmodels CRUD cho Tenant:
+            builder.Services.AddTransient<TenantsViewModel>();
+            builder.Services.AddTransient<TenantEditViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)
@@ -81,6 +85,8 @@ namespace AMS
             builder.Services.AddTransient<RoomsPage>();
             builder.Services.AddTransient<EditRoomPage>();
             builder.Services.AddTransient<RoomDetailPage>();
+            builder.Services.AddTransient<EditTenantPage>();
+            builder.Services.AddTransient<TenantsPage>();
             return builder;
         }
         public static MauiAppBuilder RegisterShells(this MauiAppBuilder builder)

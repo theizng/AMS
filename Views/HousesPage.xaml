@@ -45,15 +45,15 @@
                             <!-- Actions -->
                             <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
                                 <Button Text="Xem phòng"
-                                        BackgroundColor="#4CAF50" TextColor="White"
+                                        BackgroundColor="ForestGreen" TextColor="White"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRoomsCommand}"
                                         CommandParameter="{Binding .}" />
                                 <Button Text="Sửa"
-                                        BackgroundColor="#2196F3" TextColor="White"
+                                        BackgroundColor="DarkOrange" TextColor="White"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditHouseCommand}"
                                         CommandParameter="{Binding .}" />
                                 <Button Text="Xóa"
-                                        BackgroundColor="#F44336" TextColor="White"
+                                        BackgroundColor="#BF092F" TextColor="White"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteHouseCommand}"
                                         CommandParameter="{Binding .}" />
                             </VerticalStackLayout>

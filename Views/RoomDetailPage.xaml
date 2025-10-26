@@ -87,7 +87,7 @@
                             <Button Text="Hợp đồng"
                                     Command="{Binding OpenContractCommand}" />
                             <Button Text="Trả phòng"
-                                    BackgroundColor="#F44336" TextColor="White"
+                                    BackgroundColor="#BF092F" TextColor="White"
                                     Command="{Binding MoveOutCommand}" />
                         </VerticalStackLayout>
                     </Grid>

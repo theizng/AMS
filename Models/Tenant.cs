@@ -20,20 +20,22 @@ namespace AMS.Models
         public DateTime? MoveOutDate { get; set; }
         public decimal MonthlyRent { get; set; }
         public decimal DepositAmount { get; set; }
-        public string ContractUrl { get; set; }
+        public string? ContractUrl { get; set; }
 
         public Room? Room { get; set; } // Khóa ngoại đến Room
         // List cần được khởi tạo
         public string EmergencyContactsJson { get; set; } // Lưu dạng JSON
 
         public string Notes { get; set; }
-        public string ProfilePictureUrl { get; set; }
+        public string? ProfilePictureUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string CreatedBy { get; set; }
         public string UpdatedBy { get; set; }
         public bool IsActive { get; set; }
 
+        //navigation property
+        public ICollection<RoomOccupancy>? RoomOccupancies { get; set; }
         // Property không được map vào database
         [NotMapped]
         public List<string> EmergencyContacts

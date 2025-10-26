@@ -53,7 +53,6 @@ namespace AMS.ViewModels
             set { _isRefreshing = value; OnPropertyChanged(); }
         }
 
-        // Commands
         public ICommand RefreshCommand { get; }
         public ICommand SearchCommand { get; }
         public ICommand ApplyFilterCommand { get; }
@@ -61,7 +60,7 @@ namespace AMS.ViewModels
         public ICommand AddRoomCommand { get; }
         public ICommand EditRoomCommand { get; }
         public ICommand DeleteRoomCommand { get; }
-        public ICommand ViewDetailCommand { get; }  // NEW: Simple button nav
+        public ICommand ViewDetailCommand { get; }
 
         public RoomsViewModel(AMSDbContext db)
         {
@@ -81,7 +80,7 @@ namespace AMS.ViewModels
             {
                 if (_houseId <= 0)
                 {
-                    await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Thiếu HouseId.", "OK");
+                    await Shell.Current.DisplayAlert("Thiếu thông tin", "Thiếu HouseId.", "OK");
                     return;
                 }
                 await Shell.Current.GoToAsync($"editroom?houseId={_houseId}");
@@ -95,11 +94,9 @@ namespace AMS.ViewModels
 
             DeleteRoomCommand = new Command<Room>(async (room) => await DeleteRoomAsync(room));
 
-            // NEW: Simple detail nav (replaces status button)
             ViewDetailCommand = new Command<Room>(async (room) =>
             {
                 if (room == null) return;
-                // FIXED: Single / for absolute Shell route (preserves ?query)
                 await Shell.Current.GoToAsync($"/detailroom?roomId={room.IdRoom}");
             });
         }
@@ -119,16 +116,14 @@ namespace AMS.ViewModels
             {
                 IsRefreshing = true;
 
+                _db.ChangeTracker.Clear(); // reduce tracking conflicts
+
                 IQueryable<Room> query = _db.Rooms.AsNoTracking();
 
                 if (_houseId > 0)
-                {
                     query = query.Where(r => r.HouseID == _houseId);
-                }
                 else
-                {
                     query = query.Include(r => r.House);
-                }
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
@@ -141,26 +136,34 @@ namespace AMS.ViewModels
 
                 var status = SelectedStatusFilter;
                 if (status.HasValue)
-                {
                     query = query.Where(r => r.RoomStatus == status.Value);
-                }
 
                 var items = await query
                     .OrderBy(r => r.RoomStatus)
                     .ThenBy(r => r.RoomCode)
                     .ToListAsync();
 
-                // Force notify with Clear/Add
+                // Fetch active occupant counts for these rooms in one query
+                var ids = items.Select(r => r.IdRoom).ToList();
+                var counts = await _db.RoomOccupancies
+                    .AsNoTracking()
+                    .Where(o => ids.Contains(o.RoomId) && o.MoveOutDate == null)
+                    .GroupBy(o => o.RoomId)
+                    .Select(g => new { RoomId = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                var map = counts.ToDictionary(x => x.RoomId, x => x.Count);
+                foreach (var r in items)
+                    r.ActiveOccupants = map.TryGetValue(r.IdRoom, out var c) ? c : 0;
+
                 Rooms.Clear();
                 foreach (var item in items)
-                {
                     Rooms.Add(item);
-                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Rooms] Load error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể tải danh sách phòng.", "OK");
+                await Shell.Current.DisplayAlert("Lỗi", "Không thể tải danh sách phòng.", "OK");
             }
             finally
             {
@@ -172,7 +175,7 @@ namespace AMS.ViewModels
         {
             if (room == null) return;
 
-            bool confirm = await Application.Current.MainPage.DisplayAlertAsync(
+            bool confirm = await Shell.Current.DisplayAlert(
                 "Xóa phòng",
                 $"Bạn chắc chắn muốn xóa phòng:\n\"{room.RoomCode}\"?",
                 "Xóa",
@@ -183,17 +186,30 @@ namespace AMS.ViewModels
 
             try
             {
-                _db.Rooms.Remove(room);
+                var tracked = await _db.Rooms.FindAsync(room.IdRoom) ?? new Room { IdRoom = room.IdRoom };
+                _db.Attach(tracked);
+                _db.Remove(tracked);
                 await _db.SaveChangesAsync();
 
                 Rooms.Remove(room);
 
-                await Application.Current.MainPage.DisplayAlertAsync("Thành công", "Đã xóa phòng.", "OK");
+                await Shell.Current.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
+            }
+            catch (InvalidOperationException)
+            {
+                // tracking conflict fallback
+                _db.ChangeTracker.Clear();
+                var stub = new Room { IdRoom = room.IdRoom };
+                _db.Entry(stub).State = EntityState.Deleted;
+                await _db.SaveChangesAsync();
+
+                Rooms.Remove(room);
+                await Shell.Current.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Rooms] Delete error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể xóa phòng.", "OK");
+                await Shell.Current.DisplayAlert("Lỗi", "Không thể xóa phòng.", "OK");
             }
         }
 

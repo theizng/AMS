@@ -24,10 +24,15 @@ namespace AMS
             SetDiTemplate(SettingsShell, typeof(SettingsPage));
 
             // Register routes for pages not in Shell tree (or for parameterized navigation)
+            //Trang quản lý nhà
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
             Routing.RegisterRoute("rooms", typeof(RoomsPage));
+            //Trang quản lý phòng
             Routing.RegisterRoute("editroom", typeof(EditRoomPage));
             Routing.RegisterRoute("detailroom", typeof(RoomDetailPage));
+            //Trang người thuê nhà
+            Routing.RegisterRoute("tenants", typeof(TenantsPage));
+            Routing.RegisterRoute("edittenant", typeof(EditTenantPage));
             Navigated += OnShellNavigated;
 
 
@@ -35,13 +40,13 @@ namespace AMS
         private async void OnShellNavigated(object sender, ShellNavigatedEventArgs e)
         {
             var currentLocation = Shell.Current.CurrentState.Location.ToString().ToLowerInvariant();
-            System.Diagnostics.Debug.WriteLine($"[AppShell] Đã điều hướng đến trang: {currentLocation}");
+            System.Diagnostics.Debug.WriteLine($"[APPSHELL] Đã điều hướng đến trang: {currentLocation}");
             //Làm mới lại trang để hiển thị các thông tin sau khi điều hướng tới/về
             if(currentLocation.Contains("houses"))
             {
                 if(Shell.Current.CurrentPage?.BindingContext is HousesViewModel vm)
                 {
-                    System.Diagnostics.Debug.WriteLine("[AppShell] Đang tải lại trang House");
+                    System.Diagnostics.Debug.WriteLine("[APPSHELL] Đang tải lại trang House");
                     await vm.LoadHousesAsync();  
                 }
             }

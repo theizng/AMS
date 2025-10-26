@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AMS.Views.EditTenantPage"
+             Title="{Binding PageTitle}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Lưu" Priority="0" Order="Primary" Command="{Binding SaveCommand}" />
+        <ToolbarItem Text="Hủy" Priority="1" Order="Primary" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+            <Label Text="Họ tên" />
+            <Entry Text="{Binding FullName}" Placeholder="VD: Nguyễn Văn A" />
+
+            <Label Text="SĐT" />
+            <Entry Text="{Binding PhoneNumber}" Keyboard="Telephone" Placeholder="VD: 090..." />
+
+            <Label Text="CCCD/CMND" />
+            <Entry Text="{Binding IdCardNumber}" Placeholder="Số giấy tờ" />
+
+            <Label Text="Email" />
+            <Entry Text="{Binding Email}" Keyboard="Email" Placeholder="ví dụ: a@example.com" />
+
+            <Label Text="Ngày sinh" />
+            <DatePicker Date="{Binding DateOfBirth}" />
+
+            <Label Text="Địa chỉ thường trú" />
+            <Entry Text="{Binding PermanentAddress}" />
+
+            <Label Text="Ghi chú" />
+            <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" />
+
+            <Label Text="Ảnh đại diện (URL)" />
+            <Entry Text="{Binding ProfilePictureUrl}" Placeholder="https://..." />
+
+            <Label Text="Liên hệ khẩn cấp (mỗi dòng 1 mục)" />
+            <Editor Text="{Binding EmergencyContactsText}" AutoSize="TextChanges" HeightRequest="100" />
+
+            <Button Text="Lưu" Command="{Binding SaveCommand}" BackgroundColor="#2196F3" TextColor="White" />
+            <Button Text="Hủy" Command="{Binding CancelCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

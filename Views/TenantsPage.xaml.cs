@@ -1,9 +1,22 @@
-namespace AMS.Views;
+using AMS.ViewModels;
 
-public partial class TenantsPage : ContentPage
+namespace AMS.Views
 {
-	public TenantsPage()
-	{
-		InitializeComponent();
-	}
+    public partial class TenantsPage : ContentPage
+    {
+        public TenantsPage(TenantsViewModel vm)
+        {
+            InitializeComponent();
+            BindingContext = vm;
+        }
+
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext is TenantsViewModel vm)
+            {
+                vm.RefreshCommand.Execute(null);
+            }
+        }
+    }
 }

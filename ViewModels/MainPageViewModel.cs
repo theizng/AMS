@@ -1,11 +1,14 @@
-﻿using AMS.Data;
-using AMS.Services;
-using AMS.Views;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
+using AMS.Data;
 using AMS.Models;
+using AMS.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls;
 
 namespace AMS.ViewModels
 {
@@ -121,6 +124,7 @@ namespace AMS.ViewModels
         public ICommand NavigateToCommand { get; }
         public ICommand RefreshCommand { get; }
 
+        // Removed BindableObject dependency; use MainThread for UI dispatch
         public MainPageViewModel(IAuthService authService, AMSDbContext dbContext)
         {
             _authService = authService;
@@ -130,8 +134,8 @@ namespace AMS.ViewModels
             NavigateToCommand = new Command<string>(OnNavigateTo);
             RefreshCommand = new Command(async () => await LoadDashboardData());
 
-            // Khởi tạo các giá trị ban đầu
-            _currentDateTime = DateTime.UtcNow;
+            // Initial values (use local time)
+            _currentDateTime = DateTime.Now;
             _currentMonth = DateTime.Now;
 
             // Check if user is logged in
@@ -146,12 +150,15 @@ namespace AMS.ViewModels
                 return;
             }
 
-            // Load dữ liệu ban đầu
+            // Load initial data
             LoadDashboardData();
 
-            // Cài đặt timer để cập nhật thời gian hiện tại mỗi giây
-            _timer = new System.Timers.Timer(1000); // 1 giây
-            _timer.Elapsed += (s, e) => Device.BeginInvokeOnMainThread(() => CurrentDateTime = DateTime.UtcNow);
+            // Timer to update current time every second (use local time)
+            _timer = new System.Timers.Timer(1000);
+            _timer.Elapsed += (s, e) =>
+            {
+                MainThread.BeginInvokeOnMainThread(() => CurrentDateTime = DateTime.Now);
+            };
             _timer.Start();
         }
 
@@ -175,7 +182,6 @@ namespace AMS.ViewModels
             }
         }
 
-
         private async void OnNavigateTo(string route)
         {
             try
@@ -194,7 +200,7 @@ namespace AMS.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        // Cleanup when viewmodel is disposed
+        // Cleanup when viewmodel is disposed by GC
         ~MainPageViewModel()
         {
             _timer?.Stop();

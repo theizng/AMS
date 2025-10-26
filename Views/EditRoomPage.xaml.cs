@@ -1,29 +1,31 @@
 using AMS.ViewModels;
 
-namespace AMS.Views
-{
-    [QueryProperty(nameof(RoomId), "roomId")]
+namespace AMS.Views;
+
     [QueryProperty(nameof(HouseId), "houseId")]
+    [QueryProperty(nameof(RoomId), "roomId")]
     public partial class EditRoomPage : ContentPage
     {
-        public string? RoomId
-        {
-            set
-            {
-                if (BindingContext is RoomEditViewModel vm && int.TryParse(value, out int id))
-                {
-                    vm.SetRoomId(id);
-                }
-            }
-        }
+        private readonly RoomEditViewModel _vm;
 
         public string? HouseId
         {
             set
             {
-                if (BindingContext is RoomEditViewModel vm && int.TryParse(value, out int id))
+                if (int.TryParse(value, out var id))
                 {
-                    vm.SetHouseId(id);
+                    _vm.SetHouseId(id);
+                }
+            }
+        }
+
+        public string? RoomId
+        {
+            set
+            {
+                if (int.TryParse(value, out var id))
+                {
+                    _vm.SetRoomId(id);
                 }
             }
         }
@@ -31,7 +33,6 @@ namespace AMS.Views
         public EditRoomPage(RoomEditViewModel vm)
         {
             InitializeComponent();
-            BindingContext = vm;
+            BindingContext = _vm = vm;
         }
     }
-}
