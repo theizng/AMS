@@ -9,7 +9,8 @@
         <ResourceDictionary>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             
-  
+            <Color x:Key="SecondaryTextColor">#888888</Color>
+            <Color x:Key="PrimaryTextColor">white</Color>
             
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />

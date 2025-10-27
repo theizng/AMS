@@ -1,4 +1,7 @@
 ﻿using Microsoft.Identity.Client;
+using Microsoft.Extensions.DependencyInjection;  // Add for IServiceScopeFactory
+using Microsoft.EntityFrameworkCore;  // Add for DbContext
+using AMS.Data;  // Add for AMSDbContext
 using System;
 using System.IO;
 using System.Linq;
@@ -6,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Maui.Devices;  // For DeviceInfo
 
 namespace AMS.Services
 {
@@ -19,20 +23,31 @@ namespace AMS.Services
     {
         private readonly string _localDbPath;
         private readonly IPublicClientApplication _pca;
-        private readonly string[] _scopes = { "Files.ReadWrite.AppFolder" }; // app folder scope
+        private readonly IServiceScopeFactory _scopeFactory;  // Add for DbContext scope
+        private readonly string[] _scopes = { "Files.ReadWrite.AppFolder" };
 
-        // TODO: replace with your AAD app registration details
-        private const string ClientId = "YOUR_CLIENT_ID";
-        private const string Tenant = "common";
+        private const string ClientId = "5a97c8f3-02ca-4908-9d2f-19a323910b0d";
+        private const string Tenant = "consumers";  // Keep as-is for personal
 
-        public DatabaseSyncService()
+        public DatabaseSyncService(IServiceScopeFactory scopeFactory)  // Inject factory
         {
+            _scopeFactory = scopeFactory;
             _localDbPath = Path.Combine(FileSystem.AppDataDirectory, "ams.db");
+
+            string redirectUri;
+            if (DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                redirectUri = $"msal{ClientId}://auth";
+            }
+            else
+            {
+                redirectUri = "http://localhost";
+            }
 
             _pca = PublicClientApplicationBuilder
                 .Create(ClientId)
-                .WithAuthority(AzureCloudInstance.AzurePublic, Tenant)
-                .WithRedirectUri($"msal{ClientId}://auth")
+                .WithAuthority(AadAuthorityAudience.PersonalMicrosoftAccount)
+                .WithRedirectUri(redirectUri)
                 .Build();
         }
 
@@ -48,9 +63,7 @@ namespace AMS.Services
             }
             catch (MsalUiRequiredException)
             {
-                // Interactive fallback
                 result = await _pca.AcquireTokenInteractive(_scopes)
-                    // .WithParentActivityOrWindow(...) // optionally supply platform-specific parent
                     .ExecuteAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -72,68 +85,97 @@ namespace AMS.Services
             if (!File.Exists(_localDbPath))
                 throw new FileNotFoundException("Local DB not found.", _localDbPath);
 
-            var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-            using var client = CreateHttpClient(token);
-
-            // Graph upload URL for a file in the app's appFolder:
-            var url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:/{Uri.EscapeDataString(fileName)}:/content";
-
-            await using var fs = new FileStream(_localDbPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using var content = new StreamContent(fs);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-
-            using var req = new HttpRequestMessage(HttpMethod.Put, url) { Content = content };
-
-            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-
-            if (!resp.IsSuccessStatusCode)
+            // Copy DB to temp file to avoid lock (safe, fast for small DBs)
+            string tempPath = Path.GetTempFileName() + ".db";  // e.g., C:\Temp\tmp123.db
+            try
             {
-                var body = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Upload failed ({(int)resp.StatusCode}): {body}");
-                resp.EnsureSuccessStatusCode(); // will throw with status code info
+                File.Copy(_localDbPath, tempPath, overwrite: true);  // Copies unlocked
+                System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Copied DB to temp: {tempPath}");
+
+                var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+                using var client = CreateHttpClient(token);
+
+                var url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:/{Uri.EscapeDataString(fileName)}:/content";
+
+                await using var fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var content = new StreamContent(fs);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                using var req = new HttpRequestMessage(HttpMethod.Put, url) { Content = content };
+
+                using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var body = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Upload failed ({(int)resp.StatusCode}): {body}");
+                    resp.EnsureSuccessStatusCode();
+                }
+
+                System.Diagnostics.Debug.WriteLine("[DatabaseSync] Upload succeeded.");
             }
-
-            System.Diagnostics.Debug.WriteLine("[DatabaseSync] Upload succeeded.");
+            finally
+            {
+                // Clean up temp
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                    System.Diagnostics.Debug.WriteLine("[DatabaseSync] Temp file deleted.");
+                }
+            }
         }
-
         // Download file from /me/drive/special/approot:/{fileName}:/content
         public async Task DownloadDatabaseAsync(string fileName, CancellationToken cancellationToken = default)
         {
-            var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-            using var client = CreateHttpClient(token);
+            // Close DB connection before download (to avoid lock during write)
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AMSDbContext>();
+            db.Database.CloseConnection();
+            System.Diagnostics.Debug.WriteLine("[DatabaseSync] DB connection closed for download.");
 
-            var url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:/{Uri.EscapeDataString(fileName)}:/content";
-
-            using var req = new HttpRequestMessage(HttpMethod.Get, url);
-            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-
-            if (!resp.IsSuccessStatusCode)
+            try
             {
-                var body = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Download failed ({(int)resp.StatusCode}): {body}");
-                resp.EnsureSuccessStatusCode();
-            }
+                var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+                using var client = CreateHttpClient(token);
 
-            // Backup local DB
-            if (File.Exists(_localDbPath))
+                var url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:/{Uri.EscapeDataString(fileName)}:/content";
+
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var body = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Download failed ({(int)resp.StatusCode}): {body}");
+                    resp.EnsureSuccessStatusCode();
+                }
+
+                // Backup local DB
+                if (File.Exists(_localDbPath))
+                {
+                    try
+                    {
+                        File.Copy(_localDbPath, _localDbPath + ".backup", overwrite: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Backup failed: {ex.Message}");
+                    }
+                }
+
+                await using var responseStream = await resp.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                await using var outFs = new FileStream(_localDbPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                await responseStream.CopyToAsync(outFs, 81920, cancellationToken).ConfigureAwait(false);
+                await outFs.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+                System.Diagnostics.Debug.WriteLine("[DatabaseSync] Download and write succeeded.");
+            }
+            finally
             {
-                try
-                {
-                    File.Copy(_localDbPath, _localDbPath + ".backup", overwrite: true);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Backup failed: {ex.Message}");
-                    // continue - we still attempt to write the downloaded file
-                }
+                // Reopen DB connection
+                db.Database.OpenConnection();
+                System.Diagnostics.Debug.WriteLine("[DatabaseSync] DB connection reopened after download.");
             }
-
-            await using var responseStream = await resp.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            await using var outFs = new FileStream(_localDbPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            await responseStream.CopyToAsync(outFs, 81920, cancellationToken).ConfigureAwait(false);
-            await outFs.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-            System.Diagnostics.Debug.WriteLine("[DatabaseSync] Download and write succeeded.");
         }
     }
 }

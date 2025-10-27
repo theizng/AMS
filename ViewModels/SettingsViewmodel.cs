@@ -1,11 +1,12 @@
 ﻿// SettingsViewModel.cs (updated to match your existing ThemeService)
+using AMS.Data;
 using AMS.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.Networking;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-
 namespace AMS.ViewModels
 {
     public partial class SettingsViewModel : ObservableObject, INotifyPropertyChanged
@@ -57,46 +58,50 @@ namespace AMS.ViewModels
 
         private async Task BackupAsync()
         {
-            if (IsBusy) return;
+            if (IsBusy || Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            {
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không có kết nối internet.", "OK");
+                return;
+            }
             IsBusy = true;
-
             try
             {
                 await _syncService.UploadDatabaseAsync("ams.db");
-                await Application.Current.MainPage.DisplayAlert("Thành công", "Đã sao lưu cơ sở dữ liệu lên đám mây.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Thành công", "Đã sao lưu cơ sở dữ liệu lên đám mây.", "OK");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Settings] Backup error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("Lỗi", "Không thể sao lưu cơ sở dữ liệu.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", $"Không thể sao lưu: {ex.Message}", "OK");
             }
-            finally
-            {
-                IsBusy = false;
-            }
+            finally { IsBusy = false; }
         }
 
         private async Task RestoreAsync()
         {
-            if (IsBusy) return;
+            if (IsBusy || Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            {
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không có kết nối internet.", "OK");
+                return;
+            }
             IsBusy = true;
-
             try
             {
                 await _syncService.DownloadDatabaseAsync("ams.db");
-                await Application.Current.MainPage.DisplayAlert("Thành công", "Đã khôi phục cơ sở dữ liệu từ đám mây.", "OK");
+                //Tùy chọn: Tải lại Database sau khi khôi phục (đóng/mở lại context)
+                // Optional: Reinitialize DB after restore (close/reopen context)
+                // _dbContext?.Dispose(); // If injected
+                //Hoặc khởi động lại app
+                DatabaseInitializer.Initialize(App.Services);  // From your App.xaml.cs pattern
+                await Application.Current.MainPage.DisplayAlertAsync("Thành công", "Đã khôi phục cơ sở dữ liệu từ đám mây. Dữ liệu được làm mới.", "OK");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Settings] Restore error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("Lỗi", "Không thể khôi phục cơ sở dữ liệu.", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", $"Không thể khôi phục: {ex.Message}", "OK");
             }
-            finally
-            {
-                IsBusy = false;
-            }
+            finally { IsBusy = false; }
         }
-
         // Handle radio button changes
         partial void OnIsSystemThemeChanged(bool value)
         {

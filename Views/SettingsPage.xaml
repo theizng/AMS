@@ -1,27 +1,53 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:AMS.Converters"
              x:Class="AMS.Views.SettingsPage"
              Title="Cài đặt"
              BackgroundColor="{DynamicResource PageBackgroundColor}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InvertBoolConverter x:Key="InverseBoolConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="16">
             <Label Text="Giao diện" FontAttributes="Bold" FontSize="18"
-                   TextColor="{DynamicResource PrimaryTextColor}" />
+             TextColor="{DynamicResource PrimaryTextColor}" />
 
             <VerticalStackLayout Spacing="8">
-                <RadioButton x:Name="RbSystem"  Content="Theo hệ thống" GroupName="ThemeOptions" />
-                <RadioButton x:Name="RbLight"   Content="Chế độ sáng"    GroupName="ThemeOptions" />
-                <RadioButton x:Name="RbDark"    Content="Chế độ tối"     GroupName="ThemeOptions" />
+                <RadioButton Content="Theo hệ thống"
+                     GroupName="ThemeOptions"
+                     IsChecked="{Binding IsSystemTheme}" />
+                <RadioButton Content="Chế độ sáng"
+                     GroupName="ThemeOptions"
+                     IsChecked="{Binding IsLightTheme}" />
+                <RadioButton Content="Chế độ tối"
+                     GroupName="ThemeOptions"
+                     IsChecked="{Binding IsDarkTheme}" />
             </VerticalStackLayout>
 
             <Button Text="Chuyển đổi Sáng/Tối"
-                    Clicked="OnToggleClicked"
-                    BackgroundColor="{DynamicResource PrimaryColor}"
-                    TextColor="{DynamicResource SecondaryColor}" />
+              Command="{Binding ToggleThemeCommand}"
+              BackgroundColor="{DynamicResource PrimaryColor}"
+              TextColor="{DynamicResource SecondaryColor}" />
 
+            <Label Text="Đồng bộ cơ sở dữ liệu" FontAttributes="Bold" FontSize="18"
+             TextColor="{DynamicResource PrimaryTextColor}" />
+
+            <HorizontalStackLayout Spacing="12">
+                <Button Text="Sao lưu lên đám mây"
+                Command="{Binding BackupCommand}"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
+                <Button Text="Khôi phục từ đám mây"
+                Command="{Binding RestoreCommand}"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
+            </HorizontalStackLayout>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                         IsVisible="{Binding IsBusy}" />
             <Label Text="Thay đổi áp dụng ngay lập tức."
-                   TextColor="{DynamicResource SecondaryTextColor}" FontSize="12" />
+             TextColor="{DynamicResource SecondaryTextColor}" FontSize="12" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
