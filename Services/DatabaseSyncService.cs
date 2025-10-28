@@ -1,7 +1,9 @@
-﻿using Microsoft.Identity.Client;
-using Microsoft.Extensions.DependencyInjection;  // Add for IServiceScopeFactory
+﻿using AMS.Data;  // Add for AMSDbContext
 using Microsoft.EntityFrameworkCore;  // Add for DbContext
-using AMS.Data;  // Add for AMSDbContext
+using Microsoft.Extensions.DependencyInjection;  // Add for IServiceScopeFactory
+using Microsoft.Identity.Client;
+using Microsoft.Maui.Devices;  // For DeviceInfo
+using Microsoft.Maui.Storage;  // For FileSystem
 using System;
 using System.IO;
 using System.Linq;
@@ -9,7 +11,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Maui.Devices;  // For DeviceInfo
+using static Microsoft.Maui.ApplicationModel.Platform;  // For Platform.CurrentActivity on Android
 
 namespace AMS.Services
 {
@@ -63,9 +65,14 @@ namespace AMS.Services
             }
             catch (MsalUiRequiredException)
             {
-                result = await _pca.AcquireTokenInteractive(_scopes)
-                    .ExecuteAsync(cancellationToken)
-                    .ConfigureAwait(false);
+                // Interactive fallback with parent Activity for Android
+                var builder = _pca.AcquireTokenInteractive(_scopes);
+
+#if ANDROID
+        builder = builder.WithParentActivityOrWindow(Platform.CurrentActivity);
+#endif
+
+                result = await builder.ExecuteAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return result.AccessToken;
@@ -124,58 +131,54 @@ namespace AMS.Services
                 }
             }
         }
-        // Download file from /me/drive/special/approot:/{fileName}:/content
+
+        // replace or update the DownloadDatabaseAsync method in your DatabaseSyncService
         public async Task DownloadDatabaseAsync(string fileName, CancellationToken cancellationToken = default)
         {
-            // Close DB connection before download (to avoid lock during write)
-            using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AMSDbContext>();
-            db.Database.CloseConnection();
-            System.Diagnostics.Debug.WriteLine("[DatabaseSync] DB connection closed for download.");
+            var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            using var client = CreateHttpClient(token);
 
+            var url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:/{Uri.EscapeDataString(fileName)}:/content";
+
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Download failed ({(int)resp.StatusCode}): {body}");
+                resp.EnsureSuccessStatusCode();
+            }
+
+            // Save directly as ams_download.db (no .tmp)
+            string downloadPath = Path.Combine(FileSystem.AppDataDirectory, "ams_download.db");
+
+            // Delete any previous download file to avoid stale data (best-effort)
             try
             {
-                var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-                using var client = CreateHttpClient(token);
+                if (File.Exists(downloadPath))
+                    File.Delete(downloadPath);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Could not delete previous download file: {ex.Message}");
+                // continue - we'll still write a new file (CreateNew will fail if still exists)
+            }
 
-                var url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:/{Uri.EscapeDataString(fileName)}:/content";
-
-                using var req = new HttpRequestMessage(HttpMethod.Get, url);
-                using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-
-                if (!resp.IsSuccessStatusCode)
-                {
-                    var body = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                    System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Download failed ({(int)resp.StatusCode}): {body}");
-                    resp.EnsureSuccessStatusCode();
-                }
-
-                // Backup local DB
-                if (File.Exists(_localDbPath))
-                {
-                    try
-                    {
-                        File.Copy(_localDbPath, _localDbPath + ".backup", overwrite: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Backup failed: {ex.Message}");
-                    }
-                }
-
-                await using var responseStream = await resp.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                await using var outFs = new FileStream(_localDbPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            // Write response to downloadPath (use Create to overwrite if any race)
+            await using (var responseStream = await resp.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+            await using (var outFs = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
                 await responseStream.CopyToAsync(outFs, 81920, cancellationToken).ConfigureAwait(false);
                 await outFs.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
 
-                System.Diagnostics.Debug.WriteLine("[DatabaseSync] Download and write succeeded.");
-            }
-            finally
-            {
-                // Reopen DB connection
-                db.Database.OpenConnection();
-                System.Diagnostics.Debug.WriteLine("[DatabaseSync] DB connection reopened after download.");
-            }
+            System.Diagnostics.Debug.WriteLine($"[DatabaseSync] Downloaded file saved to: {downloadPath}");
+
+            // Mark that a restore is pending; on next app start we'll swap this file into place
+            Preferences.Set("db_restore_pending_path", downloadPath);
+            Preferences.Set("db_restore_pending_filename", fileName);
+            System.Diagnostics.Debug.WriteLine("[DatabaseSync] Restore pending flag set. App restart will apply the downloaded DB.");
         }
     }
 }

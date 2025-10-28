@@ -3,11 +3,14 @@ using AMS.Data;
 using AMS.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Networking;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using AMS.Services;
 namespace AMS.ViewModels
+
 {
     public partial class SettingsViewModel : ObservableObject, INotifyPropertyChanged
     {
@@ -81,27 +84,43 @@ namespace AMS.ViewModels
         {
             if (IsBusy || Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
             {
-                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không có kết nối internet.", "OK");
+                await Shell.Current.DisplayAlert("Lỗi", "Không có kết nối internet.", "OK");
                 return;
             }
             IsBusy = true;
+
             try
             {
                 await _syncService.DownloadDatabaseAsync("ams.db");
-                //Tùy chọn: Tải lại Database sau khi khôi phục (đóng/mở lại context)
-                // Optional: Reinitialize DB after restore (close/reopen context)
-                // _dbContext?.Dispose(); // If injected
-                //Hoặc khởi động lại app
-                DatabaseInitializer.Initialize(App.Services);  // From your App.xaml.cs pattern
-                await Application.Current.MainPage.DisplayAlertAsync("Thành công", "Đã khôi phục cơ sở dữ liệu từ đám mây. Dữ liệu được làm mới.", "OK");
+
+                // Notify user and ask to restart
+                var restart = await Shell.Current.DisplayAlert(
+                    "Khôi phục đã tải xong",
+                    "Cơ sở dữ liệu đã được tải về và sẽ được áp dụng sau khi khởi động lại ứng dụng. Khởi động lại ngay bây giờ?",
+                    "Khởi động lại",
+                    "Để sau");
+
+                if (restart)
+                {
+                    // Call platform-specific restart helper
+                    AppRestarter.RestartApp();
+                }
+                else
+                {
+                    await Shell.Current.DisplayAlert("Thông báo", "Khôi phục sẽ áp dụng sau khi bạn khởi động lại ứng dụng.", "OK");
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Settings] Restore error: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlertAsync("Lỗi", $"Không thể khôi phục: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlert("Lỗi", $"Không thể khôi phục: {ex.Message}", "OK");
             }
-            finally { IsBusy = false; }
+            finally
+            {
+                IsBusy = false;
+            }
         }
+
         // Handle radio button changes
         partial void OnIsSystemThemeChanged(bool value)
         {
