@@ -21,4 +21,12 @@ public partial class RoomsPage : ContentPage
         InitializeComponent();
         BindingContext = vm;
     }
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        if (BindingContext is RoomsViewModel vm)
+        {
+            vm.RefreshCommand.Execute(null);
+        }
+    }
 }

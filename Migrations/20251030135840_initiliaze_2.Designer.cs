@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AMS.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    [Migration("20251026002023_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251030135840_initiliaze_2")]
+    partial class initiliaze_2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -74,6 +74,45 @@ namespace AMS.Migrations
                         });
                 });
 
+            modelBuilder.Entity("AMS.Models.Bike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Plate")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("Plate");
+
+                    b.HasIndex("RoomId", "Plate")
+                        .IsUnique();
+
+                    b.ToTable("Bikes", (string)null);
+                });
+
             modelBuilder.Entity("AMS.Models.House", b =>
                 {
                     b.Property<int>("IdHouse")
@@ -103,17 +142,6 @@ namespace AMS.Migrations
                     b.HasKey("IdHouse");
 
                     b.ToTable("Houses");
-
-                    b.HasData(
-                        new
-                        {
-                            IdHouse = 1,
-                            Address = "123 Đường ABC, Quận XYZ, TP HCM",
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            Notes = "Nhà cho thuê 10 phòng",
-                            TotalRooms = 10,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("AMS.Models.Room", b =>
@@ -123,7 +151,7 @@ namespace AMS.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Area")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<decimal?>("BikeExtraFee")
                         .ValueGeneratedOnAdd()
@@ -134,6 +162,9 @@ namespace AMS.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int?>("EmergencyContactRoomOccupancyId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("FreeBikeAllowance")
                         .ValueGeneratedOnAdd()
@@ -152,7 +183,6 @@ namespace AMS.Migrations
                         .HasDefaultValue(1);
 
                     b.Property<string>("Notes")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Price")
@@ -160,10 +190,13 @@ namespace AMS.Migrations
 
                     b.Property<string>("RoomCode")
                         .IsRequired()
+                        .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("RoomStatus")
-                        .HasColumnType("INTEGER");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -172,82 +205,24 @@ namespace AMS.Migrations
 
                     b.HasKey("IdRoom");
 
-                    b.HasIndex("HouseID");
+                    b.HasIndex("EmergencyContactRoomOccupancyId");
 
                     b.HasIndex("HouseIdHouse");
 
-                    b.ToTable("Rooms");
+                    b.HasIndex("HouseID", "RoomCode")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
+                    b.ToTable("Rooms", t =>
                         {
-                            IdRoom = 1,
-                            Area = 25m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng thường",
-                            Price = 3000000m,
-                            RoomCode = "COCONUT",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 2,
-                            Area = 25m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng thường",
-                            Price = 3000000m,
-                            RoomCode = "APPLE",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 3,
-                            Area = 30m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng thường, có 1 con mèo",
-                            Price = 3500000m,
-                            RoomCode = "BANANA",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 4,
-                            Area = 35m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng có đồ cơ bản, có 2 con chó",
-                            Price = 4000000m,
-                            RoomCode = "PAPAYA",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 5,
-                            Area = 35m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng có đồ cơ bản",
-                            Price = 4000000m,
-                            RoomCode = "STRAWBERRY",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
+                            t.HasCheckConstraint("CK_Room_Area_Positive", "[Area] > 0");
+
+                            t.HasCheckConstraint("CK_Room_BikeExtraFee_NonNegative", "[BikeExtraFee] IS NULL OR [BikeExtraFee] >= 0");
+
+                            t.HasCheckConstraint("CK_Room_FreeBikeAllowance_NonNegative", "[FreeBikeAllowance] >= 0");
+
+                            t.HasCheckConstraint("CK_Room_MaxOccupants_Positive", "[MaxOccupants] >= 1");
+
+                            t.HasCheckConstraint("CK_Room_Price_NonNegative", "[Price] >= 0");
                         });
                 });
 
@@ -368,12 +343,36 @@ namespace AMS.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("AMS.Models.Bike", b =>
+                {
+                    b.HasOne("AMS.Models.Tenant", "OwnerTenant")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AMS.Models.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OwnerTenant");
+
+                    b.Navigation("Room");
+                });
+
             modelBuilder.Entity("AMS.Models.Room", b =>
                 {
+                    b.HasOne("AMS.Models.RoomOccupancy", null)
+                        .WithMany()
+                        .HasForeignKey("EmergencyContactRoomOccupancyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("AMS.Models.House", "House")
                         .WithMany()
                         .HasForeignKey("HouseID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("AMS.Models.House", null)

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:AMS.Behaviors"
              x:Class="AMS.Views.EditTenantPage"
              Title="{Binding PageTitle}">
 
@@ -15,10 +16,25 @@
             <Entry Text="{Binding FullName}" Placeholder="VD: Nguyễn Văn A" />
 
             <Label Text="SĐT" />
-            <Entry Text="{Binding PhoneNumber}" Keyboard="Telephone" Placeholder="VD: 090..." />
+            <Entry Text="{Binding PhoneNumber}"
+                   Keyboard="Telephone"
+                   Placeholder="VD: 090..."
+                   MaxLength="15">
+                <Entry.Behaviors>
+                    <!-- Only digits; allow you to keep consistent with EditRoomPage -->
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
 
             <Label Text="CCCD/CMND" />
-            <Entry Text="{Binding IdCardNumber}" Placeholder="Số giấy tờ" />
+            <Entry Text="{Binding IdCardNumber}"
+                   Placeholder="Số giấy tờ"
+                   Keyboard="Numeric"
+                   MaxLength="12">
+                <Entry.Behaviors>
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
 
             <Label Text="Email" />
             <Entry Text="{Binding Email}" Keyboard="Email" Placeholder="ví dụ: a@example.com" />

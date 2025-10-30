@@ -11,7 +11,7 @@ namespace AMS.Models
         public string Plate { get; set; } = "";
 
         //public string? OwnerName { get; set; }
-        public int OwnerId { get; set; }
+        public int? OwnerId { get; set; }
         public Tenant? OwnerTenant { get; set; }    
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

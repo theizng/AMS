@@ -1,317 +1,276 @@
 ﻿using AMS.Data;
 using AMS.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Maui.Storage;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Linq;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace AMS.ViewModels
 {
-    public class RoomDetailViewModel : INotifyPropertyChanged
+    public class RoomEditViewModel : INotifyPropertyChanged
     {
         private readonly AMSDbContext _db;
 
-        private int _roomId;
-        private Room? _room;
-        private string? _emergencyContactName;
-        private string? _emergencyContactPhone;
+        private int _idRoom;
+        private int _houseId;
+        private string? _roomCode;
+        private Room.Status _roomStatus = Room.Status.Available;
+        private decimal _area;
+        private decimal _price;
+        private string? _notes;
+        private int _maxOccupants = 1;
+        private int _freeBikeAllowance = 1;
+        private decimal? _bikeExtraFee;
+        private string? _bikeExtraFeeText;
+        private DateTime _createdAt;
+        private DateTime _updatedAt;
+        private Room? _currentRoom;
 
-        public Room? Room { get => _room; private set { _room = value; OnPropertyChanged(); } }
+        public string PageTitle => _idRoom == 0 ? "Thêm phòng" : "Sửa phòng";
+        public string CreatedUpdatedInfo =>
+            _idRoom == 0 ? "" : $"Tạo: {_createdAt:yyyy-MM-dd HH:mm} | Cập nhật: {_updatedAt:yyyy-MM-dd HH:mm}";
 
-        public ObservableCollection<RoomOccupancy> ActiveOccupancies { get; } = new();
-        public ObservableCollection<Bike> Bikes { get; } = new();
+        public int IdRoom { get => _idRoom; set { _idRoom = value; OnPropertyChanged(); OnPropertyChanged(nameof(PageTitle)); } }
+        public int HouseID { get => _houseId; set { _houseId = value; OnPropertyChanged(); } }
+        public string? RoomCode { get => _roomCode; set { _roomCode = value; OnPropertyChanged(); } }
 
-        public string? EmergencyContactName { get => _emergencyContactName; private set { _emergencyContactName = value; OnPropertyChanged(); } }
-        public string? EmergencyContactPhone { get => _emergencyContactPhone; private set { _emergencyContactPhone = value; OnPropertyChanged(); } }
+        public Room.Status RoomStatus
+        {
+            get => _roomStatus;
+            set
+            {
+                if (_roomStatus != value)
+                {
+                    _roomStatus = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(SelectedStatus));
+                }
+            }
+        }
 
-        public ICommand RefreshCommand { get; }
-        public ICommand AddTenantCommand { get; }
-        public ICommand RemoveTenantCommand { get; }
-        public ICommand ChooseEmergencyContactCommand { get; }
-        public ICommand AddBikeCommand { get; }
-        public ICommand RemoveBikeCommand { get; }
-        public ICommand CallPhoneCommand { get; }
+        public decimal Area { get => _area; set { _area = value; OnPropertyChanged(); } }
+        public decimal Price { get => _price; set { _price = value; OnPropertyChanged(); } }
+        public string? Notes { get => _notes; set { _notes = value; OnPropertyChanged(); } }
 
-        public RoomDetailViewModel(AMSDbContext db)
+        public int MaxOccupants { get => _maxOccupants; set { _maxOccupants = value; OnPropertyChanged(); } }
+        public int FreeBikeAllowance { get => _freeBikeAllowance; set { _freeBikeAllowance = value; OnPropertyChanged(); } }
+
+        public string? BikeExtraFeeText
+        {
+            get => _bikeExtraFeeText;
+            set { _bikeExtraFeeText = value; OnPropertyChanged(); }
+        }
+
+        public DateTime CreatedAt { get => _createdAt; set { _createdAt = value; OnPropertyChanged(); OnPropertyChanged(nameof(CreatedUpdatedInfo)); } }
+        public DateTime UpdatedAt { get => _updatedAt; set { _updatedAt = value; OnPropertyChanged(); OnPropertyChanged(nameof(CreatedUpdatedInfo)); } }
+
+        public IReadOnlyList<Room.Status> StatusOptions { get; } =
+            Enum.GetValues(typeof(Room.Status)).Cast<Room.Status>().ToList();
+
+        public Room.Status SelectedStatus
+        {
+            get => RoomStatus;
+            set { if (RoomStatus != value) RoomStatus = value; }
+        }
+
+        public ICommand SaveCommand { get; }
+        public ICommand CancelCommand { get; }
+        public ICommand ChangeStatusCommand { get; }
+
+        public RoomEditViewModel(AMSDbContext db)
         {
             _db = db;
-
-            RefreshCommand = new Command(async () => await LoadAsync());
-            AddTenantCommand = new Command(async () => await AddTenantAsync());
-            RemoveTenantCommand = new Command<RoomOccupancy>(async (occ) => await RemoveTenantAsync(occ));
-            ChooseEmergencyContactCommand = new Command(async () => await ChooseEmergencyContactAsync());
-            AddBikeCommand = new Command(async () => await AddBikeAsync());
-            RemoveBikeCommand = new Command<Bike>(async (b) => await RemoveBikeAsync(b));
-            CallPhoneCommand = new Command<string>(async (phone) =>
-            {
-                if (string.IsNullOrWhiteSpace(phone)) return;
-                try { await Launcher.OpenAsync($"tel:{phone}"); } catch { }
-            });
+            SaveCommand = new Command(async () => await SaveAsync());
+            CancelCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
+            ChangeStatusCommand = new Command(async () => await ChangeStatusAsync());
         }
 
-        public void SetRoomId(int roomId)
-        {
-            _roomId = roomId;
-            _ = LoadAsync();
-        }
+        public void SetHouseId(int houseId) => HouseID = houseId;
+        public void SetRoomId(int roomId) { IdRoom = roomId; _ = LoadAsync(); }
 
         private async Task LoadAsync()
         {
-            if (_roomId <= 0) return;
+            if (IdRoom <= 0) return;
+
+            _currentRoom = await _db.Rooms.AsNoTracking().FirstOrDefaultAsync(r => r.IdRoom == IdRoom);
+            if (_currentRoom != null)
+            {
+                HouseID = _currentRoom.HouseID;
+                RoomCode = _currentRoom.RoomCode;
+                RoomStatus = _currentRoom.RoomStatus;
+                Area = _currentRoom.Area;
+                Price = _currentRoom.Price;
+                Notes = _currentRoom.Notes;
+                MaxOccupants = _currentRoom.MaxOccupants;
+                FreeBikeAllowance = _currentRoom.FreeBikeAllowance;
+                _bikeExtraFee = _currentRoom.BikeExtraFee;
+                BikeExtraFeeText = _bikeExtraFee?.ToString(CultureInfo.InvariantCulture);
+                CreatedAt = _currentRoom.CreatedAt;
+                UpdatedAt = _currentRoom.UpdatedAt;
+            }
+        }
+
+        private async Task ChangeStatusAsync()
+        {
+            var currentCode = RoomCode ?? "N/A";
+            var choice = await Shell.Current.DisplayActionSheet(
+                $"Đổi trạng thái phòng {currentCode}",
+                "Hủy", null,
+                nameof(Room.Status.Available),
+                nameof(Room.Status.Occupied),
+                nameof(Room.Status.Maintaining),
+                nameof(Room.Status.Inactive));
+
+            if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
 
             try
             {
-                // Load room + current occupancies + tenants
-                var room = await _db.Rooms
-                    .Include(r => r.RoomOccupancies!)
-                        .ThenInclude(ro => ro.Tenant)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.IdRoom == _roomId);
-
-                Room = room;
-
-                // Active occupancies
-                ActiveOccupancies.Clear();
-                if (room?.RoomOccupancies != null)
+                var newStatus = Enum.Parse<Room.Status>(choice);
+                if (RoomStatus != newStatus)
                 {
-                    foreach (var occ in room.RoomOccupancies
-                                            .Where(ro => ro.MoveOutDate == null && ro.Tenant != null)
-                                            .OrderBy(ro => ro.MoveInDate))
+                    RoomStatus = newStatus;
+                    UpdatedAt = DateTime.UtcNow;
+
+                    if (IdRoom != 0)
                     {
-                        ActiveOccupancies.Add(occ);
+                        var tracked = await _db.Rooms.FindAsync(IdRoom);
+                        if (tracked is not null)
+                        {
+                            tracked.RoomStatus = newStatus;
+                            tracked.UpdatedAt = DateTime.UtcNow;
+                            await _db.SaveChangesAsync();
+                        }
                     }
+
+                    await Shell.Current.DisplayAlert("Thành công", $"Đã cập nhật trạng thái: {newStatus}.", "OK");
                 }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[EditRoom] Change status error: {ex.Message}");
+                await Shell.Current.DisplayAlert("Lỗi", "Không thể đổi trạng thái phòng.", "OK");
+            }
+        }
 
-                // Bikes with owner tenant included (for binding OwnerTenant.FullName)
-                Bikes.Clear();
-                var bikes = await _db.Bikes
-                    .AsNoTracking()
-                    .Include(b => b.OwnerTenant)
-                    .Where(b => b.RoomId == _roomId && b.IsActive)
-                    .OrderBy(b => b.CreatedAt)
-                    .ToListAsync();
-                foreach (var b in bikes) Bikes.Add(b);
+        private async Task<bool> ValidateAsync()
+        {
+            if (HouseID <= 0)
+                return await Fail("Thiếu thông tin", "Thiếu HouseId.");
 
-                // Emergency contact: from preference (or from Room if you later add nullable FK)
-                var key = $"room:{_roomId}:emergencyContactOccId";
-                if (Preferences.ContainsKey(key))
+            if (string.IsNullOrWhiteSpace(RoomCode))
+                return await Fail("Thiếu thông tin", "Vui lòng nhập mã phòng.");
+
+            // Normalize and validate RoomCode: only A-Z, 0-9, _ and -
+            var normalized = RoomCode.Trim().ToUpperInvariant();
+            if (!Regex.IsMatch(normalized, @"^[A-Z0-9_-]+$"))
+                return await Fail("Giá trị không hợp lệ", "Mã phòng chỉ được chứa chữ, số, gạch dưới (_) hoặc gạch ngang (-), không dấu cách.");
+
+            // Reflect normalization back to UI
+            RoomCode = normalized;
+
+            if (Area <= 0)
+                return await Fail("Giá trị không hợp lệ", "Diện tích phải lớn hơn 0.");
+
+            if (Price < 0)
+                return await Fail("Giá trị không hợp lệ", "Giá thuê không được âm.");
+
+            if (MaxOccupants < 1)
+                return await Fail("Giá trị không hợp lệ", "Số người tối đa phải >= 1.");
+
+            if (FreeBikeAllowance < 0)
+                return await Fail("Giá trị không hợp lệ", "Số xe miễn phí phải >= 0.");
+
+            // Parse optional BikeExtraFeeText
+            if (string.IsNullOrWhiteSpace(BikeExtraFeeText))
+            {
+                _bikeExtraFee = null;
+            }
+            else
+            {
+                if (!decimal.TryParse(BikeExtraFeeText, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee))
+                    return await Fail("Giá trị không hợp lệ", "Phí xe thêm không hợp lệ.");
+
+                if (fee < 0)
+                    return await Fail("Giá trị không hợp lệ", "Phí xe thêm không được âm.");
+
+                _bikeExtraFee = fee;
+            }
+
+            // Uniqueness check per house
+            bool exists = await _db.Rooms.AnyAsync(r =>
+                r.HouseID == HouseID &&
+                r.RoomCode == normalized &&
+                r.IdRoom != IdRoom);
+
+            if (exists)
+                return await Fail("Trùng mã", "Mã phòng đã tồn tại trong nhà này.");
+
+            return true;
+        }
+
+        private static Task<bool> Fail(string title, string message)
+            => Shell.Current.DisplayAlert(title, message, "OK").ContinueWith(_ => false);
+
+        private async Task SaveAsync()
+        {
+            if (!await ValidateAsync()) return;
+
+            try
+            {
+                var now = DateTime.UtcNow;
+                var roomCode = RoomCode!; // normalized already
+
+                if (IdRoom == 0)
                 {
-                    var occId = Preferences.Get(key, 0);
-                    var occ = ActiveOccupancies.FirstOrDefault(o => o.Id == occId) ?? ActiveOccupancies.FirstOrDefault();
-                    UpdateEmergencyFromOccupancy(occ);
+                    var entity = new Room
+                    {
+                        HouseID = HouseID,
+                        RoomCode = roomCode,
+                        RoomStatus = RoomStatus,
+                        Area = Area,
+                        Price = Price,
+                        Notes = Notes,
+                        MaxOccupants = MaxOccupants,
+                        FreeBikeAllowance = FreeBikeAllowance,
+                        BikeExtraFee = _bikeExtraFee,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    };
+                    _db.Rooms.Add(entity);
+                    await _db.SaveChangesAsync();
                 }
                 else
                 {
-                    UpdateEmergencyFromOccupancy(ActiveOccupancies.FirstOrDefault());
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] Load error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể tải chi tiết phòng.", "OK");
-            }
-        }
+                    var tracked = await _db.Rooms.FindAsync(IdRoom);
+                    if (tracked == null)
+                    {
+                        await Shell.Current.DisplayAlert("Lỗi", "Không tìm thấy phòng.", "OK");
+                        return;
+                    }
 
-        private void UpdateEmergencyFromOccupancy(RoomOccupancy? occ)
-        {
-            EmergencyContactName = occ?.Tenant?.FullName;
-            EmergencyContactPhone = occ?.Tenant?.PhoneNumber;
-        }
+                    tracked.RoomCode = roomCode;
+                    tracked.RoomStatus = RoomStatus;
+                    tracked.Area = Area;
+                    tracked.Price = Price;
+                    tracked.Notes = Notes;
+                    tracked.MaxOccupants = MaxOccupants;
+                    tracked.FreeBikeAllowance = FreeBikeAllowance;
+                    tracked.BikeExtraFee = _bikeExtraFee;
+                    tracked.UpdatedAt = now;
 
-        private async Task AddTenantAsync()
-        {
-            if (Room == null)
-            {
-                await Shell.Current.DisplayAlert("Lỗi", "Không tìm thấy phòng.", "OK");
-                return;
-            }
-            if (ActiveOccupancies.Count >= Room.MaxOccupants)
-            {
-                await Shell.Current.DisplayAlert("Vượt quá số người tối đa",
-                    $"Phòng này chỉ cho phép tối đa {Room.MaxOccupants} người.", "OK");
-                return;
-            }
-
-            try
-            {
-                var candidates = await _db.Tenants
-                    .AsNoTracking()
-                    .Where(t => !_db.RoomOccupancies.Any(ro => ro.TenantId == t.IdTenant && ro.MoveOutDate == null))
-                    .OrderBy(t => t.FullName)
-                    .Select(t => new { t.IdTenant, t.FullName, t.PhoneNumber })
-                    .ToListAsync();
-
-                if (candidates.Count == 0)
-                {
-                    await Shell.Current.DisplayAlert("Thông báo", "Không còn người thuê trống để gán.", "OK");
-                    return;
-                }
-
-                var labels = candidates.Select(c => $"{c.FullName} ({c.PhoneNumber})").ToArray();
-                var choice = await Shell.Current.DisplayActionSheet("Chọn người thuê", "Hủy", null, labels);
-                if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
-
-                var idx = Array.IndexOf(labels, choice);
-                if (idx < 0) return;
-                var picked = candidates[idx];
-
-                var occ = new RoomOccupancy
-                {
-                    RoomId = _roomId,
-                    TenantId = picked.IdTenant,
-                    MoveInDate = DateTime.Today,
-                    MoveOutDate = null
-                };
-                _db.RoomOccupancies.Add(occ);
-                await _db.SaveChangesAsync();
-
-                await LoadAsync();
-                await Shell.Current.DisplayAlert("Thành công", "Đã thêm người thuê vào phòng.", "OK");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] AddTenant error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể thêm người thuê.", "OK");
-            }
-        }
-
-        private async Task RemoveTenantAsync(RoomOccupancy? occ)
-        {
-            if (occ == null) return;
-            if (occ.MoveOutDate != null)
-            {
-                await Shell.Current.DisplayAlert("Lỗi", "Bản ghi thuê đã kết thúc.", "OK");
-                return;
-            }
-
-            bool confirm = await Shell.Current.DisplayAlert("Xác nhận",
-                $"Gỡ {occ.Tenant?.FullName} khỏi phòng?", "Gỡ", "Hủy");
-            if (!confirm) return;
-
-            try
-            {
-                var tracked = await _db.RoomOccupancies.FirstOrDefaultAsync(ro => ro.Id == occ.Id);
-                if (tracked == null)
-                {
-                    await Shell.Current.DisplayAlert("Lỗi", "Không tìm thấy bản ghi thuê.", "OK");
-                    return;
-                }
-
-                tracked.MoveOutDate = DateTime.Today;
-                await _db.SaveChangesAsync();
-
-                var key = $"room:{_roomId}:emergencyContactOccId";
-                if (Preferences.ContainsKey(key) && Preferences.Get(key, 0) == occ.Id)
-                    Preferences.Remove(key);
-
-                await LoadAsync();
-                await Shell.Current.DisplayAlert("Thành công", "Đã gỡ người thuê.", "OK");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] RemoveTenant error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể gỡ người thuê.", "OK");
-            }
-        }
-
-        private async Task ChooseEmergencyContactAsync()
-        {
-            if (ActiveOccupancies.Count == 0)
-            {
-                await Shell.Current.DisplayAlert("Thông báo", "Chưa có người thuê để chọn.", "OK");
-                return;
-            }
-
-            var labels = ActiveOccupancies.Select(o => $"{o.Tenant!.FullName} ({o.Tenant!.PhoneNumber})").ToArray();
-            var choice = await Shell.Current.DisplayActionSheet("Chọn người liên hệ", "Hủy", null, labels);
-            if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
-
-            var idx = Array.IndexOf(labels, choice);
-            if (idx < 0) return;
-
-            var picked = ActiveOccupancies[idx];
-            UpdateEmergencyFromOccupancy(picked);
-
-            // Persist preference (or later set Room.EmergencyContactRoomOccupancyId)
-            Preferences.Set($"room:{_roomId}:emergencyContactOccId", picked.Id);
-        }
-
-        private async Task AddBikeAsync()
-        {
-            if (_roomId <= 0) return;
-
-            if (ActiveOccupancies.Count == 0)
-            {
-                await Shell.Current.DisplayAlert("Thông báo", "Cần có người thuê hiện tại để gán chủ xe.", "OK");
-                return;
-            }
-
-            var plate = await Shell.Current.DisplayPromptAsync("Thêm xe", "Biển số:", "Lưu", "Hủy", maxLength: 32);
-            if (string.IsNullOrWhiteSpace(plate)) return;
-            var normalizedPlate = plate.Trim().ToUpperInvariant();
-
-            // Choose owner from current occupancies
-            var labels = ActiveOccupancies
-                .Select(o => $"{o.Tenant!.FullName} ({o.Tenant!.PhoneNumber})")
-                .ToArray();
-            var choice = await Shell.Current.DisplayActionSheet("Chọn chủ sở hữu", "Hủy", null, labels);
-            if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
-
-            var idx = Array.IndexOf(labels, choice);
-            if (idx < 0) return;
-            var ownerOcc = ActiveOccupancies[idx];
-            var ownerTenantId = ownerOcc.TenantId;
-
-            try
-            {
-                var entity = new Bike
-                {
-                    RoomId = _roomId,
-                    Plate = normalizedPlate,
-                    OwnerId = ownerTenantId,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _db.Add(entity);
-                await _db.SaveChangesAsync();
-
-                // Reload to include OwnerTenant for binding
-                await LoadAsync();
-            }
-            catch (DbUpdateException dbex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] AddBike DB error: {dbex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Biển số đã tồn tại trong phòng này.", "OK");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] AddBike error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể thêm xe.", "OK");
-            }
-        }
-
-        private async Task RemoveBikeAsync(Bike? bike)
-        {
-            if (bike == null) return;
-            bool confirm = await Shell.Current.DisplayAlert("Xóa xe", $"Xóa xe {bike.Plate}?", "Xóa", "Hủy");
-            if (!confirm) return;
-
-            try
-            {
-                var tracked = await _db.Bikes.FirstOrDefaultAsync(b => b.Id == bike.Id);
-                if (tracked != null)
-                {
-                    _db.Remove(tracked);
                     await _db.SaveChangesAsync();
                 }
-                Bikes.Remove(bike);
+
+                await Shell.Current.GoToAsync("..");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] RemoveBike error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể xóa xe.", "OK");
+                System.Diagnostics.Debug.WriteLine($"[EditRoom] Save error: {ex.Message}");
+                await Shell.Current.DisplayAlert("Lỗi", "Không thể lưu phòng.", "OK");
             }
         }
 

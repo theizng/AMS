@@ -20,18 +20,11 @@ namespace AMS.ViewModels
 
         public Room? Room { get => _room; private set { _room = value; OnPropertyChanged(); } }
 
-        // Bind directly to models
         public ObservableCollection<RoomOccupancy> ActiveOccupancies { get; } = new();
         public ObservableCollection<Bike> Bikes { get; } = new();
 
-        public string? EmergencyContactName
-        {
-            get => _emergencyContactName; private set { _emergencyContactName = value; OnPropertyChanged(); }
-        }
-        public string? EmergencyContactPhone
-        {
-            get => _emergencyContactPhone; private set { _emergencyContactPhone = value; OnPropertyChanged(); }
-        }
+        public string? EmergencyContactName { get => _emergencyContactName; private set { _emergencyContactName = value; OnPropertyChanged(); } }
+        public string? EmergencyContactPhone { get => _emergencyContactPhone; private set { _emergencyContactPhone = value; OnPropertyChanged(); } }
 
         public ICommand RefreshCommand { get; }
         public ICommand AddTenantCommand { get; }
@@ -70,7 +63,7 @@ namespace AMS.ViewModels
 
             try
             {
-                // Load Room + current occupancies + tenants
+                // Load room + current occupancies + tenants
                 var room = await _db.Rooms
                     .Include(r => r.RoomOccupancies!)
                         .ThenInclude(ro => ro.Tenant)
@@ -79,7 +72,7 @@ namespace AMS.ViewModels
 
                 Room = room;
 
-                // Active occupancies (MoveOutDate == null)
+                // Active occupancies
                 ActiveOccupancies.Clear();
                 if (room?.RoomOccupancies != null)
                 {
@@ -91,37 +84,27 @@ namespace AMS.ViewModels
                     }
                 }
 
-                // Bikes
+                // Bikes with owner tenant included (for binding OwnerTenant.FullName)
                 Bikes.Clear();
-                var bikes = await _db.Set<Bike>()
+                var bikes = await _db.Bikes
                     .AsNoTracking()
+                    .Include(b => b.OwnerTenant)
                     .Where(b => b.RoomId == _roomId && b.IsActive)
                     .OrderBy(b => b.CreatedAt)
                     .ToListAsync();
                 foreach (var b in bikes) Bikes.Add(b);
 
-                // Emergency contact from DB property if present; otherwise preferences
-                // TODO: Uncomment this block after adding Room.EmergencyContactRoomOccupancyId (int?) and migrating
-                
-                if (room?.EmergencyContactRoomOccupancyId is int contactOccId)
+                // Emergency contact: from preference (or from Room if you later add nullable FK)
+                var key = $"room:{_roomId}:emergencyContactOccId";
+                if (Preferences.ContainsKey(key))
                 {
-                    var occ = ActiveOccupancies.FirstOrDefault(o => o.IdRoomOccupancy == contactOccId);
+                    var occId = Preferences.Get(key, 0);
+                    var occ = ActiveOccupancies.FirstOrDefault(o => o.IdRoomOccupancy == occId) ?? ActiveOccupancies.FirstOrDefault();
                     UpdateEmergencyFromOccupancy(occ);
                 }
                 else
-                
                 {
-                    var key = $"room:{_roomId}:emergencyContactOccId";
-                    if (Preferences.ContainsKey(key))
-                    {
-                        var occId = Preferences.Get(key, 0);
-                        var occ = ActiveOccupancies.FirstOrDefault(o => o.IdRoomOccupancy == occId) ?? ActiveOccupancies.FirstOrDefault();
-                        UpdateEmergencyFromOccupancy(occ);
-                    }
-                    else
-                    {
-                        UpdateEmergencyFromOccupancy(ActiveOccupancies.FirstOrDefault());
-                    }
+                    UpdateEmergencyFromOccupancy(ActiveOccupancies.FirstOrDefault());
                 }
             }
             catch (Exception ex)
@@ -144,7 +127,6 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Không tìm thấy phòng.", "OK");
                 return;
             }
-            // Max occupants guard
             if (ActiveOccupancies.Count >= Room.MaxOccupants)
             {
                 await Shell.Current.DisplayAlertAsync("Vượt quá số người tối đa",
@@ -154,7 +136,6 @@ namespace AMS.ViewModels
 
             try
             {
-                // Tenants not in any active occupancy
                 var candidates = await _db.Tenants
                     .AsNoTracking()
                     .Where(t => !_db.RoomOccupancies.Any(ro => ro.TenantId == t.IdTenant && ro.MoveOutDate == null))
@@ -199,8 +180,6 @@ namespace AMS.ViewModels
         private async Task RemoveTenantAsync(RoomOccupancy? occ)
         {
             if (occ == null) return;
-
-            // If trying to remove a non-active occ (safety)
             if (occ.MoveOutDate != null)
             {
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Bản ghi thuê đã kết thúc.", "OK");
@@ -223,16 +202,6 @@ namespace AMS.ViewModels
                 tracked.MoveOutDate = DateTime.Today;
                 await _db.SaveChangesAsync();
 
-                // If emergency contact was this occupancy, clear it
-                // TODO: If Room.EmergencyContactRoomOccupancyId exists, clear it in DB; else clear preference
-                
-                var roomTracked = await _db.Rooms.FindAsync(_roomId);
-                if (roomTracked != null && roomTracked.EmergencyContactRoomOccupancyId == occ.IdRoomOccupancy)
-                {
-                    roomTracked.EmergencyContactRoomOccupancyId = null;
-                    await _db.SaveChangesAsync();
-                }
-                
                 var key = $"room:{_roomId}:emergencyContactOccId";
                 if (Preferences.ContainsKey(key) && Preferences.Get(key, 0) == occ.IdRoomOccupancy)
                     Preferences.Remove(key);
@@ -265,43 +234,56 @@ namespace AMS.ViewModels
             var picked = ActiveOccupancies[idx];
             UpdateEmergencyFromOccupancy(picked);
 
-            // Prefer DB persistence via Room.EmergencyContactRoomOccupancyId, fallback to Preferences
-            
-            var roomTracked = await _db.Rooms.FindAsync(_roomId);
-            if (roomTracked != null)
-            {
-                roomTracked.EmergencyContactRoomOccupancyId = picked.IdRoomOccupancy;
-                await _db.SaveChangesAsync();
-            }
-            else
-            {
-                Preferences.Set($"room:{_roomId}:emergencyContactOccId", picked.IdRoomOccupancy);
-            }
+            // Persist preference (or later set Room.EmergencyContactRoomOccupancyId)
+            Preferences.Set($"room:{_roomId}:emergencyContactOccId", picked.IdRoomOccupancy);
         }
 
         private async Task AddBikeAsync()
         {
             if (_roomId <= 0) return;
 
+            if (ActiveOccupancies.Count == 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Thông báo", "Cần có người thuê hiện tại để gán chủ xe.", "OK");
+                return;
+            }
+
             var plate = await Shell.Current.DisplayPromptAsync("Thêm xe", "Biển số:", "Lưu", "Hủy", maxLength: 32);
             if (string.IsNullOrWhiteSpace(plate)) return;
+            var normalizedPlate = plate.Trim().ToUpperInvariant();
 
-            var owner = await Shell.Current.DisplayPromptAsync("Thêm xe", "Chủ sở hữu (tùy chọn):", "Lưu", "Bỏ qua", maxLength: 80);
+            // Choose owner from current occupancies
+            var labels = ActiveOccupancies
+                .Select(o => $"{o.Tenant!.FullName} ({o.Tenant!.PhoneNumber})")
+                .ToArray();
+            var choice = await Shell.Current.DisplayActionSheet("Chọn chủ sở hữu", "Hủy", null, labels);
+            if (string.IsNullOrEmpty(choice) || choice == "Hủy") return;
+
+            var idx = Array.IndexOf(labels, choice);
+            if (idx < 0) return;
+            var ownerOcc = ActiveOccupancies[idx];
+            var ownerTenantId = ownerOcc.TenantId;
 
             try
             {
                 var entity = new Bike
                 {
                     RoomId = _roomId,
-                    Plate = plate.Trim().ToUpperInvariant(),
-                    OwnerName = string.IsNullOrWhiteSpace(owner) ? ActiveOccupancies.FirstOrDefault()?.Tenant?.FullName : owner!.Trim(),
+                    Plate = normalizedPlate,
+                    OwnerId = ownerTenantId,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
                 _db.Add(entity);
                 await _db.SaveChangesAsync();
 
-                Bikes.Add(entity);
+                // Reload to include OwnerTenant for binding
+                await LoadAsync();
+            }
+            catch (DbUpdateException dbex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[RoomDetail] AddBike DB error: {dbex.Message}");
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Biển số đã tồn tại trong phòng này.", "OK");
             }
             catch (Exception ex)
             {
@@ -318,7 +300,7 @@ namespace AMS.ViewModels
 
             try
             {
-                var tracked = await _db.Set<Bike>().FirstOrDefaultAsync(b => b.Id == bike.Id);
+                var tracked = await _db.Bikes.FirstOrDefaultAsync(b => b.Id == bike.Id);
                 if (tracked != null)
                 {
                     _db.Remove(tracked);

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>
+		<!--<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>-->
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<AndroidLinkMode>None</AndroidLinkMode>
 		<!-- Note for MacCatalyst:

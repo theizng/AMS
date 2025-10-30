@@ -87,9 +87,8 @@ namespace AMS.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
 
-                    b.Property<string>("OwnerName")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Plate")
                         .IsRequired()
@@ -100,6 +99,8 @@ namespace AMS.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
 
                     b.HasIndex("Plate");
 
@@ -138,17 +139,6 @@ namespace AMS.Migrations
                     b.HasKey("IdHouse");
 
                     b.ToTable("Houses");
-
-                    b.HasData(
-                        new
-                        {
-                            IdHouse = 1,
-                            Address = "123 Đường ABC, Quận XYZ, TP HCM",
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            Notes = "Nhà cho thuê 10 phòng",
-                            TotalRooms = 10,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("AMS.Models.Room", b =>
@@ -230,78 +220,6 @@ namespace AMS.Migrations
                             t.HasCheckConstraint("CK_Room_MaxOccupants_Positive", "[MaxOccupants] >= 1");
 
                             t.HasCheckConstraint("CK_Room_Price_NonNegative", "[Price] >= 0");
-                        });
-
-                    b.HasData(
-                        new
-                        {
-                            IdRoom = 1,
-                            Area = 25m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng thường",
-                            Price = 3000000m,
-                            RoomCode = "COCONUT",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 2,
-                            Area = 25m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng thường",
-                            Price = 3000000m,
-                            RoomCode = "APPLE",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 3,
-                            Area = 30m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng thường, có 1 con mèo",
-                            Price = 3500000m,
-                            RoomCode = "BANANA",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 4,
-                            Area = 35m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng có đồ cơ bản, có 2 con chó",
-                            Price = 4000000m,
-                            RoomCode = "PAPAYA",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            IdRoom = 5,
-                            Area = 35m,
-                            CreatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc),
-                            FreeBikeAllowance = 1,
-                            HouseID = 1,
-                            MaxOccupants = 0,
-                            Notes = "Phòng có đồ cơ bản",
-                            Price = 4000000m,
-                            RoomCode = "STRAWBERRY",
-                            RoomStatus = 0,
-                            UpdatedAt = new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -424,11 +342,19 @@ namespace AMS.Migrations
 
             modelBuilder.Entity("AMS.Models.Bike", b =>
                 {
+                    b.HasOne("AMS.Models.Tenant", "OwnerTenant")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AMS.Models.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("OwnerTenant");
 
                     b.Navigation("Room");
                 });

@@ -98,7 +98,10 @@ namespace AMS.ViewModels
             {
                 IsRefreshing = true;
 
-                IQueryable<Tenant> query = _db.Tenants;
+                // IMPORTANT: prevent stale tracked entities
+                _db.ChangeTracker.Clear();
+
+                IQueryable<Tenant> query = _db.Tenants.AsNoTracking();
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
@@ -121,6 +124,7 @@ namespace AMS.ViewModels
                     .ThenByDescending(t => t.IdTenant)
                     .ToListAsync();
 
+                // Force ItemsSource rebind so CollectionView updates immediately
                 Tenants = new ObservableCollection<Tenant>(items);
             }
             catch (Exception ex)
@@ -142,6 +146,7 @@ namespace AMS.ViewModels
             {
                 // Prevent deactivating if tenant is currently assigned to any room (active occupancy)
                 bool inAnyActiveRoom = await _db.RoomOccupancies
+                    .AsNoTracking()
                     .AnyAsync(o => o.TenantId == tenant.IdTenant && o.MoveOutDate == null);
 
                 if (inAnyActiveRoom)
@@ -177,9 +182,12 @@ namespace AMS.ViewModels
                 entity.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
 
-                // Update list item
+                // Update current item for instant UI feedback
                 tenant.IsActive = active;
                 tenant.UpdatedAt = entity.UpdatedAt;
+
+                // Optional: fully reload list to reflect sorting by UpdatedAt
+                await LoadTenantsAsync();
 
                 await Application.Current.MainPage.DisplayAlertAsync("Thành công",
                     active ? "Đã kích hoạt." : "Đã ngừng hoạt động.", "OK");

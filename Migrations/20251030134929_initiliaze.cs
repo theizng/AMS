@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AMS.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initiliaze : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -51,20 +51,56 @@ namespace AMS.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Bikes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    RoomId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Plate = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false),
+                    OwnerId = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Bikes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RoomOccupancies",
+                columns: table => new
+                {
+                    IdRoomOccupancy = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    RoomId = table.Column<int>(type: "INTEGER", nullable: false),
+                    TenantId = table.Column<int>(type: "INTEGER", nullable: false),
+                    MoveInDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    MoveOutDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DepositContribution = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    BikeCount = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RoomOccupancies", x => x.IdRoomOccupancy);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Rooms",
                 columns: table => new
                 {
                     IdRoom = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     HouseID = table.Column<int>(type: "INTEGER", nullable: false),
-                    RoomCode = table.Column<string>(type: "TEXT", nullable: false),
-                    RoomStatus = table.Column<int>(type: "INTEGER", nullable: false),
-                    Area = table.Column<decimal>(type: "TEXT", nullable: false),
+                    RoomCode = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false),
+                    RoomStatus = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
+                    Area = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", nullable: false),
+                    Notes = table.Column<string>(type: "TEXT", nullable: true),
                     MaxOccupants = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 1),
                     FreeBikeAllowance = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 1),
                     BikeExtraFee = table.Column<decimal>(type: "decimal(18,2)", nullable: true, defaultValue: 100000m),
+                    EmergencyContactRoomOccupancyId = table.Column<int>(type: "INTEGER", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     HouseIdHouse = table.Column<int>(type: "INTEGER", nullable: true)
@@ -72,17 +108,28 @@ namespace AMS.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Rooms", x => x.IdRoom);
+                    table.CheckConstraint("CK_Room_Area_Positive", "[Area] > 0");
+                    table.CheckConstraint("CK_Room_BikeExtraFee_NonNegative", "[BikeExtraFee] IS NULL OR [BikeExtraFee] >= 0");
+                    table.CheckConstraint("CK_Room_FreeBikeAllowance_NonNegative", "[FreeBikeAllowance] >= 0");
+                    table.CheckConstraint("CK_Room_MaxOccupants_Positive", "[MaxOccupants] >= 1");
+                    table.CheckConstraint("CK_Room_Price_NonNegative", "[Price] >= 0");
                     table.ForeignKey(
                         name: "FK_Rooms_Houses_HouseID",
                         column: x => x.HouseID,
                         principalTable: "Houses",
                         principalColumn: "IdHouse",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Rooms_Houses_HouseIdHouse",
                         column: x => x.HouseIdHouse,
                         principalTable: "Houses",
                         principalColumn: "IdHouse");
+                    table.ForeignKey(
+                        name: "FK_Rooms_RoomOccupancies_EmergencyContactRoomOccupancyId",
+                        column: x => x.EmergencyContactRoomOccupancyId,
+                        principalTable: "RoomOccupancies",
+                        principalColumn: "IdRoomOccupancy",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -122,36 +169,6 @@ namespace AMS.Migrations
                         principalColumn: "IdRoom");
                 });
 
-            migrationBuilder.CreateTable(
-                name: "RoomOccupancies",
-                columns: table => new
-                {
-                    IdRoomOccupancy = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    RoomId = table.Column<int>(type: "INTEGER", nullable: false),
-                    TenantId = table.Column<int>(type: "INTEGER", nullable: false),
-                    MoveInDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    MoveOutDate = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    DepositContribution = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    BikeCount = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RoomOccupancies", x => x.IdRoomOccupancy);
-                    table.ForeignKey(
-                        name: "FK_RoomOccupancies_Rooms_RoomId",
-                        column: x => x.RoomId,
-                        principalTable: "Rooms",
-                        principalColumn: "IdRoom",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_RoomOccupancies_Tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "Tenants",
-                        principalColumn: "IdTenant",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
             migrationBuilder.InsertData(
                 table: "Admin",
                 columns: new[] { "AdminId", "CreatedAt", "Email", "FullName", "LastLogin", "PasswordHash", "PhoneNumber", "UpdatedAt", "Username" },
@@ -164,15 +181,31 @@ namespace AMS.Migrations
 
             migrationBuilder.InsertData(
                 table: "Rooms",
-                columns: new[] { "IdRoom", "Area", "CreatedAt", "FreeBikeAllowance", "HouseID", "HouseIdHouse", "Notes", "Price", "RoomCode", "RoomStatus", "UpdatedAt" },
+                columns: new[] { "IdRoom", "Area", "CreatedAt", "EmergencyContactRoomOccupancyId", "FreeBikeAllowance", "HouseID", "HouseIdHouse", "Notes", "Price", "RoomCode", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, 25m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), 1, 1, null, "Phòng thường", 3000000m, "COCONUT", 0, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
-                    { 2, 25m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), 1, 1, null, "Phòng thường", 3000000m, "APPLE", 0, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
-                    { 3, 30m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), 1, 1, null, "Phòng thường, có 1 con mèo", 3500000m, "BANANA", 0, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
-                    { 4, 35m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), 1, 1, null, "Phòng có đồ cơ bản, có 2 con chó", 4000000m, "PAPAYA", 0, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
-                    { 5, 35m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), 1, 1, null, "Phòng có đồ cơ bản", 4000000m, "STRAWBERRY", 0, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) }
+                    { 1, 25m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), null, 1, 1, null, "Phòng thường", 3000000m, "COCONUT", new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
+                    { 2, 25m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), null, 1, 1, null, "Phòng thường", 3000000m, "APPLE", new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
+                    { 3, 30m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), null, 1, 1, null, "Phòng thường, có 1 con mèo", 3500000m, "BANANA", new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
+                    { 4, 35m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), null, 1, 1, null, "Phòng có đồ cơ bản, có 2 con chó", 4000000m, "PAPAYA", new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) },
+                    { 5, 35m, new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc), null, 1, 1, null, "Phòng có đồ cơ bản", 4000000m, "STRAWBERRY", new DateTime(2023, 1, 1, 12, 0, 0, 0, DateTimeKind.Utc) }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bikes_OwnerId",
+                table: "Bikes",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bikes_Plate",
+                table: "Bikes",
+                column: "Plate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bikes_RoomId_Plate",
+                table: "Bikes",
+                columns: new[] { "RoomId", "Plate" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RoomOccupancies_RoomId_MoveOutDate",
@@ -185,9 +218,15 @@ namespace AMS.Migrations
                 columns: new[] { "TenantId", "MoveOutDate" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Rooms_HouseID",
+                name: "IX_Rooms_EmergencyContactRoomOccupancyId",
                 table: "Rooms",
-                column: "HouseID");
+                column: "EmergencyContactRoomOccupancyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Rooms_HouseID_RoomCode",
+                table: "Rooms",
+                columns: new[] { "HouseID", "RoomCode" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Rooms_HouseIdHouse",
@@ -198,25 +237,68 @@ namespace AMS.Migrations
                 name: "IX_Tenants_RoomId",
                 table: "Tenants",
                 column: "RoomId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Bikes_Rooms_RoomId",
+                table: "Bikes",
+                column: "RoomId",
+                principalTable: "Rooms",
+                principalColumn: "IdRoom",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Bikes_Tenants_OwnerId",
+                table: "Bikes",
+                column: "OwnerId",
+                principalTable: "Tenants",
+                principalColumn: "IdTenant",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_RoomOccupancies_Rooms_RoomId",
+                table: "RoomOccupancies",
+                column: "RoomId",
+                principalTable: "Rooms",
+                principalColumn: "IdRoom",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_RoomOccupancies_Tenants_TenantId",
+                table: "RoomOccupancies",
+                column: "TenantId",
+                principalTable: "Tenants",
+                principalColumn: "IdTenant",
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_RoomOccupancies_Rooms_RoomId",
+                table: "RoomOccupancies");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Tenants_Rooms_RoomId",
+                table: "Tenants");
+
             migrationBuilder.DropTable(
                 name: "Admin");
 
             migrationBuilder.DropTable(
-                name: "RoomOccupancies");
-
-            migrationBuilder.DropTable(
-                name: "Tenants");
+                name: "Bikes");
 
             migrationBuilder.DropTable(
                 name: "Rooms");
 
             migrationBuilder.DropTable(
                 name: "Houses");
+
+            migrationBuilder.DropTable(
+                name: "RoomOccupancies");
+
+            migrationBuilder.DropTable(
+                name: "Tenants");
         }
     }
 }
