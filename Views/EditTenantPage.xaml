@@ -32,9 +32,6 @@
             <Label Text="Ghi chú" />
             <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" />
 
-            <Label Text="Ảnh đại diện (URL)" />
-            <Entry Text="{Binding ProfilePictureUrl}" Placeholder="https://..." />
-
             <Label Text="Liên hệ khẩn cấp (mỗi dòng 1 mục)" />
             <Editor Text="{Binding EmergencyContactsText}" AutoSize="TextChanges" HeightRequest="100" />
 

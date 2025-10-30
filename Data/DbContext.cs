@@ -1,7 +1,6 @@
 ﻿using AMS.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.IO;
 
 namespace AMS.Data
 {
@@ -12,6 +11,7 @@ namespace AMS.Data
         public DbSet<Room> Rooms { get; set; }
         public DbSet<House> Houses { get; set; }
         public DbSet<RoomOccupancy> RoomOccupancies { get; set; } = null!;
+        public DbSet<Bike> Bikes { get; set; } = null!;
 
         public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
         {
@@ -21,9 +21,8 @@ namespace AMS.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Seed admin account
-            //string passwordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
-            var fixedDate = new DateTime(2023, 1, 1, 12, 0, 0, DateTimeKind.Utc);  // Fixed date cho tất cả seed (thay năm/tháng/ngày nếu cần)
+            // Seed admin account (fixed dates to keep migrations stable)
+            var fixedDate = new DateTime(2023, 1, 1, 12, 0, 0, DateTimeKind.Utc);
             modelBuilder.Entity<Admin>().HasData(
                 new Admin
                 {
@@ -37,7 +36,7 @@ namespace AMS.Data
                 }
             );
 
-            //Cấu hình cho Nhà
+            // HOUSE
             modelBuilder.Entity<House>(entity =>
             {
                 entity.HasKey(e => e.IdHouse);
@@ -45,62 +44,142 @@ namespace AMS.Data
                 entity.Property(e => e.TotalRooms).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            }
-            );
+            });
 
-            // Cấu hình cho Phòng
+            // ROOM
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasKey(e => e.IdRoom);
-                entity.Property(e => e.RoomCode).IsRequired();
+
+                entity.Property(e => e.HouseID).IsRequired();
+                entity.Property(e => e.RoomCode).IsRequired().HasMaxLength(32);
+
+                // Unique RoomCode per House
+                entity.HasIndex(e => new { e.HouseID, e.RoomCode }).IsUnique();
+
+                // Money/number columns (SQLite: affinity Numeric)
+                entity.Property(e => e.Area).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.RoomStatus).IsRequired();
+                entity.Property(e => e.BikeExtraFee).HasColumnType("decimal(18,2)").HasDefaultValue(100000m);
+
+                // Defaults
+                entity.Property(e => e.MaxOccupants).HasDefaultValue(1);
+                entity.Property(e => e.FreeBikeAllowance).HasDefaultValue(1);
+
+                // Status as int, default Available (optional)
+                entity.Property(e => e.RoomStatus)
+                      .HasConversion<int>()
+                      .HasDefaultValue(Room.Status.Available);
+
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                //Relationship với House
+                // Relationship with House
                 entity.HasOne(e => e.House)
-                    .WithMany()
-                    .HasForeignKey(e => e.HouseID);
+                      .WithMany()
+                      .HasForeignKey(e => e.HouseID)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Keep history when deleting Room (do not cascade delete RoomOccupancies)
+                entity.HasMany(e => e.RoomOccupancies)
+                      .WithOne(ro => ro.Room!)
+                      .HasForeignKey(ro => ro.RoomId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // CHECK constraints (SQLite supports)
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Room_Area_Positive", "[Area] > 0");
+                    t.HasCheckConstraint("CK_Room_Price_NonNegative", "[Price] >= 0");
+                    t.HasCheckConstraint("CK_Room_MaxOccupants_Positive", "[MaxOccupants] >= 1");
+                    t.HasCheckConstraint("CK_Room_FreeBikeAllowance_NonNegative", "[FreeBikeAllowance] >= 0");
+                    t.HasCheckConstraint("CK_Room_BikeExtraFee_NonNegative", "[BikeExtraFee] IS NULL OR [BikeExtraFee] >= 0");
+                });
+
+                // If your Room has UI-only properties, ensure EF skips them (harmless if property absent)
+                // entity.Ignore(r => r.ActiveOccupants);
+
+                // OPTIONAL (commented): If you add Room.EmergencyContactRoomOccupancyId (int?),
+                // map it as a nullable FK pointing to RoomOccupancy
+
+                entity.HasOne<RoomOccupancy>()
+                      .WithMany()
+                      .HasForeignKey(r => r.EmergencyContactRoomOccupancyId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
-            //Các quy định cho Room
-            // Room policy defaults (optional; you can seed values per house/room)
-            modelBuilder.Entity<Room>()
-                .Property(r => r.MaxOccupants)
-                .HasDefaultValue(1);
 
-            modelBuilder.Entity<Room>()
-                .Property(r => r.FreeBikeAllowance)
-                .HasDefaultValue(1);
-
-            modelBuilder.Entity<Room>()
-                .Property(r => r.BikeExtraFee)
-                .HasColumnType("decimal(18,2)")
-                .HasDefaultValue(100000m);
-            // Cấu hình cho RoomOccupancy
+            // ROOM OCCUPANCY
             modelBuilder.Entity<RoomOccupancy>(entity =>
             {
                 entity.HasKey(e => e.IdRoomOccupancy);
+
                 entity.Property(e => e.DepositContribution).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.BikeCount).HasDefaultValue(0);
 
-                //Room 1 - N RoomOccupancy: vì 1 phòng có thể có nhiều người thuê và RoomOccupancy lưu thông tin người thuê trong phòng đó
+                // Room 1 - N RoomOccupancy (keep history)
                 entity.HasOne(e => e.Room)
-                    .WithMany(r => r.RoomOccupancies) //
-                    .HasForeignKey(e => e.RoomId)
-                    .OnDelete(DeleteBehavior.Restrict); // Giữ lại lịch sử thuê khi phòng bị xóa
-                //Tenant 1 - N RoomOccupancy: vì 1 người thuê có thể thuê nhiều phòng qua các thời kỳ khác nhau
-                entity.HasOne(e => e.Tenant)
-                    .WithMany(t => t.RoomOccupancies)
-                    .HasForeignKey(e => e.TenantId)
-                    .OnDelete(DeleteBehavior.Restrict); // Giữ lại lịch sử thuê khi người thuê bị xóa
+                      .WithMany(r => r.RoomOccupancies)
+                      .HasForeignKey(e => e.RoomId)
+                      .OnDelete(DeleteBehavior.Restrict);
 
-                // Tạo index để tối ưu truy vấn theo RoomId và TenantId
+                // Tenant 1 - N RoomOccupancy (keep history)
+                entity.HasOne(e => e.Tenant)
+                      .WithMany(t => t.RoomOccupancies)
+                      .HasForeignKey(e => e.TenantId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Useful indexes for active/ended lookups
                 entity.HasIndex(e => new { e.RoomId, e.MoveOutDate });
                 entity.HasIndex(e => new { e.TenantId, e.MoveOutDate });
             });
 
-            // Seed dữ liệu mẫu cho House
+            // BIKE
+            modelBuilder.Entity<Bike>(entity =>
+            {
+                entity.ToTable("Bikes");
+                entity.HasKey(b => b.Id);
+
+                entity.Property(b => b.RoomId).IsRequired();
+                entity.Property(b => b.Plate).IsRequired().HasMaxLength(32);
+                entity.Property(b => b.OwnerId).IsRequired();
+
+                entity.Property(b => b.IsActive).HasDefaultValue(true);
+                entity.Property(b => b.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Indexes
+                entity.HasIndex(b => b.Plate);
+                entity.HasIndex(b => new { b.RoomId, b.Plate }).IsUnique();
+
+                // FK -> Room
+                entity.HasOne(b => b.Room)
+                      .WithMany()
+                      .HasForeignKey(b => b.RoomId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // FK -> Tenant as Owner
+                entity.HasOne(b => b.OwnerTenant)
+                      .WithMany() // if later you add Tenant.Bikes, change to .WithMany(t => t.Bikes)
+                      .HasForeignKey(b => b.OwnerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // TENANT
+            modelBuilder.Entity<Tenant>(entity =>
+            {
+                entity.HasKey(e => e.IdTenant);
+                entity.Property(e => e.FullName).IsRequired();
+                entity.Property(e => e.IdCardNumber).IsRequired();
+                entity.Property(e => e.ContractUrl).IsRequired(false);
+
+                entity.Property(e => e.MonthlyRent).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.DepositAmount).HasColumnType("decimal(18, 2)");
+
+                // Optional: add quick-search indexes if you often search by name/phone
+                // entity.HasIndex(e => e.FullName);
+                // entity.HasIndex(e => e.PhoneNumber);
+            });
+
+            // SEED HOUSE
             modelBuilder.Entity<House>().HasData(
                 new House
                 {
@@ -113,7 +192,7 @@ namespace AMS.Data
                 }
             );
 
-            // Seed dữ liệu mẫu cho Room
+            // SEED ROOMS
             modelBuilder.Entity<Room>().HasData(
                 new Room
                 {
@@ -122,7 +201,7 @@ namespace AMS.Data
                     RoomCode = "COCONUT",
                     Area = 25,
                     Price = 3000000M,
-                    RoomStatus = Room.Status.Available,  // Đang thuê
+                    RoomStatus = Room.Status.Available,
                     Notes = "Phòng thường",
                     CreatedAt = fixedDate,
                     UpdatedAt = fixedDate
@@ -134,7 +213,7 @@ namespace AMS.Data
                     RoomCode = "APPLE",
                     Area = 25,
                     Price = 3000000M,
-                    RoomStatus = Room.Status.Available,  // Đang thuê
+                    RoomStatus = Room.Status.Available,
                     Notes = "Phòng thường",
                     CreatedAt = fixedDate,
                     UpdatedAt = fixedDate
@@ -146,7 +225,7 @@ namespace AMS.Data
                     RoomCode = "BANANA",
                     Area = 30,
                     Price = 3500000M,
-                    RoomStatus = Room.Status.Available,  // Đang thuê
+                    RoomStatus = Room.Status.Available,
                     Notes = "Phòng thường, có 1 con mèo",
                     CreatedAt = fixedDate,
                     UpdatedAt = fixedDate
@@ -158,7 +237,7 @@ namespace AMS.Data
                     RoomCode = "PAPAYA",
                     Area = 35,
                     Price = 4000000M,
-                    RoomStatus = Room.Status.Available,  // Đang thuê
+                    RoomStatus = Room.Status.Available,
                     Notes = "Phòng có đồ cơ bản, có 2 con chó",
                     CreatedAt = fixedDate,
                     UpdatedAt = fixedDate
@@ -170,23 +249,13 @@ namespace AMS.Data
                     RoomCode = "STRAWBERRY",
                     Area = 35,
                     Price = 4000000M,
-                    RoomStatus = Room.Status.Available,  // Đang thuê
+                    RoomStatus = Room.Status.Available,
                     Notes = "Phòng có đồ cơ bản",
                     CreatedAt = fixedDate,
                     UpdatedAt = fixedDate
                 }
             );
 
-            // Cấu hình cho Người Thuê
-            modelBuilder.Entity<Tenant>(entity =>
-            {
-                entity.HasKey(e => e.IdTenant);
-                entity.Property(e => e.ContractUrl).IsRequired(false);
-                entity.Property(e => e.FullName).IsRequired();
-                entity.Property(e => e.IdCardNumber).IsRequired();
-                entity.Property(e => e.MonthlyRent).HasColumnType("decimal(18, 2)");
-                entity.Property(e => e.DepositAmount).HasColumnType("decimal(18, 2)");
-            });
         }
     }
 }

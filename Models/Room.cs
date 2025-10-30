@@ -27,13 +27,14 @@ namespace AMS.Models
         // Giá thuê phòng
         public decimal Price { get; set; }
         //Ghi chú thêm về phòng (nếu có)
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
         // Số người tối đa được ở trong phòng (Chủ nhà quy định theo loại phòng)
         public int MaxOccupants { get; set; }
         // Số xe máy được giữ miễn phí, mặc định 1 (theo yêu cầu đề bài)
         public int FreeBikeAllowance { get; set; } = 1;
         // Phí giữ xe máy thêm (nếu có)
         public decimal? BikeExtraFee { get; set; }
+        public int? EmergencyContactRoomOccupancyId { get; set; } // FK -> RoomOccupancy.IdRoomOccupancy
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
