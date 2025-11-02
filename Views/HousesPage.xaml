@@ -16,7 +16,7 @@
         <HorizontalStackLayout Spacing="8" Margin="0,0,0,10">
             <Entry Placeholder="Tìm kiếm theo địa chỉ hoặc ghi chú..."
                    Text="{Binding SearchText}" HorizontalOptions="FillAndExpand" />
-            <Button Text="Tìm" BackgroundColor="#6E8CFB" Command="{Binding SearchCommand}" />
+            <Button Text="Tìm" Command="{Binding SearchCommand}" />
         </HorizontalStackLayout>
 
         <!-- Houses list -->
@@ -45,7 +45,7 @@
                             <!-- Actions -->
                             <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
                                 <Button Text="Xem phòng"
-                                        BackgroundColor="ForestGreen" TextColor="White"
+                                        TextColor="White"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRoomsCommand}"
                                         CommandParameter="{Binding .}" />
                                 <Button Text="Sửa"
@@ -53,7 +53,7 @@
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditHouseCommand}"
                                         CommandParameter="{Binding .}" />
                                 <Button Text="Xóa"
-                                        BackgroundColor="#BF092F" TextColor="White"
+                                        BackgroundColor="#E53935" TextColor="White"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteHouseCommand}"
                                         CommandParameter="{Binding .}" />
                             </VerticalStackLayout>

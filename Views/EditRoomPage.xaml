@@ -43,8 +43,15 @@
                     <behaviors:IntegerOnlyBehavior />
                 </Entry.Behaviors>
             </Entry>
-
-            <Label Text="Xe miễn phí" />
+            
+            <Label Text="Số lượng xe tối đa" />
+            <Entry Text="{Binding MaxBikes}" Keyboard="Numeric" Placeholder="= 0 nếu không giới hạn.">
+                <Entry.Behaviors>
+                    <behaviors:IntegerOnlyBehavior />
+                </Entry.Behaviors>
+            </Entry>
+            
+            <Label Text="Số lượng xe được miễn phí" />
             <Entry Text="{Binding FreeBikeAllowance}" Keyboard="Numeric" Placeholder="1">
                 <Entry.Behaviors>
                     <behaviors:IntegerOnlyBehavior />

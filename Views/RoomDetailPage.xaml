@@ -49,10 +49,18 @@
             <!-- 2) Người thuê hiện tại -->
             <Frame HasShadow="True" CornerRadius="16" Padding="16" BorderColor="#E0E0E0">
                 <VerticalStackLayout Spacing="8">
-                    <HorizontalStackLayout>
-                        <Label Text="Người thuê hiện tại" FontAttributes="Bold" FontSize="18" HorizontalOptions="StartAndExpand" />
-                        <Button Text="Thêm người thuê" Command="{Binding AddTenantCommand}" />
-                    </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
+                        <Label Text="Người thuê hiện tại" 
+                                   FontAttributes="Bold" 
+                                   FontSize="18" 
+                                   HorizontalOptions="StartAndExpand"
+                                   Grid.Row="0" Grid.Column="0"/>
+                        
+                        <Button Text="Thêm người thuê" 
+                                    Command="{Binding AddTenantCommand}" 
+                                    Grid.Row="0" Grid.Column="1"/>
+                    </Grid>
+
 
                     <CollectionView ItemsSource="{Binding ActiveOccupancies}" SelectionMode="None">
                         <CollectionView.EmptyView>
@@ -62,16 +70,17 @@
                             <DataTemplate>
                                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
                                     
-                                    <Label Grid.Row="0" Grid.Column="0"
-                                           Text="{Binding Tenant.FullName}" FontAttributes="Bold" />
-                                    
+                                   
+                                    <Label Grid.Row="0" Grid.Column="0"                            
+                                    Text="{Binding Tenant.FullName}" FontAttributes="Bold" />
                                     <Button Grid.Row="0" Grid.Column="1" Text="Gỡ"
                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveTenantCommand}"
                                            CommandParameter="{Binding .}"
                                            BackgroundColor="#E53935" TextColor="White" />
 
-                                    <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="12">
+                                    <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
                                         <Label Text="{Binding Tenant.PhoneNumber, StringFormat='📞 {0}'}" />
+                                        <Label Text="{Binding Tenant.IdTenant, StringFormat='ID Người thuê: {0}'}" />
                                         <Label Text="{Binding MoveInDate, StringFormat='Ngày vào: {0:yyyy-MM-dd}'}" />
                                     </HorizontalStackLayout>
                                     
@@ -85,10 +94,16 @@
             <!-- 3) Liên hệ khẩn cấp -->
             <Frame HasShadow="True" CornerRadius="16" Padding="16" BorderColor="#E0E0E0">
                 <VerticalStackLayout Spacing="8">
-                    <HorizontalStackLayout>
-                        <Label Text="Liên hệ khẩn cấp" FontAttributes="Bold" FontSize="18" HorizontalOptions="StartAndExpand" />
-                        <Button Text="Chọn người liên hệ" Command="{Binding ChooseEmergencyContactCommand}" />
-                    </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
+                        <Label Text="Liên hệ khẩn cấp" 
+                               FontAttributes="Bold" 
+                               FontSize="18" 
+                               HorizontalOptions="StartAndExpand"
+                               Grid.Row="0" Grid.Column="0"/>
+                        <Button Text="Chọn người liên hệ" 
+                                Command="{Binding ChooseEmergencyContactCommand}" 
+                                Grid.Row="0" Grid.Column="1"/>
+                    </Grid>
 
                     <Label Text="{Binding EmergencyContactName, StringFormat='Tên: {0}'}">
                         <Label.Triggers>
@@ -100,7 +115,7 @@
                             </DataTrigger>
                         </Label.Triggers>
                     </Label>
-                    <Label Text="{Binding EmergencyContactPhone, StringFormat='SĐT: {0}'}">
+                    <Label Text="{Binding EmergencyContactPhone, StringFormat='Số điện thoại: {0}'}">
                         <Label.Triggers>
                             <DataTrigger TargetType="Label" Binding="{Binding EmergencyContactPhone}" Value="">
                                 <Setter Property="IsVisible" Value="False" />
@@ -121,14 +136,21 @@
             <!-- 4) Xe của phòng -->
             <Frame HasShadow="True" CornerRadius="16" Padding="16" BorderColor="#E0E0E0">
                 <VerticalStackLayout Spacing="8">
-                    <HorizontalStackLayout>
-                        <Label Text="Xe của phòng" FontAttributes="Bold" FontSize="18" HorizontalOptions="StartAndExpand" />
-                        <Button Text="Thêm xe" Command="{Binding AddBikeCommand}" />
-                    </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
 
+                            <Label Text="Xe của phòng" 
+                                   FontAttributes="Bold" 
+                                   FontSize="18" 
+                                   HorizontalOptions="StartAndExpand" 
+                                   Grid.Row="0" Grid.Column="0"/>
+                            <Button Text="Thêm xe" 
+                                    Command="{Binding AddBikeCommand}" 
+                                    Grid.Row="0" Grid.Column="1"/>
+
+                    </Grid>
                     <Label>
                         <Label.Text>
-                            <MultiBinding StringFormat="Miễn phí: {0} xe • Hiện có: {1} • Phí thêm/xe: {2:N0} đ">
+                            <MultiBinding StringFormat=" Miễn phí: {0} xe • Hiện có: {1} • Phí thêm/xe: {2:N0} đ">
                                 <Binding Path="Room.FreeBikeAllowance" />
                                 <Binding Path="Bikes.Count" />
                                 <Binding Path="Room.BikeExtraFee" />
@@ -146,7 +168,7 @@
                                     
                                         <VerticalStackLayout>
                                             <Label Text="{Binding Plate, StringFormat='Biển số: {0}'}" FontAttributes="Bold" />
-                                            <Label Text="{Binding OwnerName.FullName, StringFormat='Chủ sở hữu: {0}'}" />
+                                            <Label Text="{Binding OwnerId, StringFormat='ID Chủ sở hữu: {0}'}" />
                                         </VerticalStackLayout>
 
                                         <Button Text="Xóa" Grid.Row="0" Grid.Column="1"

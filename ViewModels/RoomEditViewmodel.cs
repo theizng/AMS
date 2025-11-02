@@ -30,6 +30,9 @@ namespace AMS.ViewModels
         private DateTime _updatedAt;
         private Room? _currentRoom;
 
+        // NEW: bind to Entry Text="{Binding MaxBikes}" in XAML
+        private int _maxBikes = 1;
+
         public string PageTitle => _idRoom == 0 ? "Thêm phòng" : "Sửa phòng";
         public string CreatedUpdatedInfo =>
             _idRoom == 0 ? "" : $"Tạo: {_createdAt:yyyy-MM-dd HH:mm} | Cập nhật: {_updatedAt:yyyy-MM-dd HH:mm}";
@@ -77,6 +80,13 @@ namespace AMS.ViewModels
             set { if (RoomStatus != value) RoomStatus = value; }
         }
 
+        // NEW: binds to "Số lượng xe tối đa"
+        public int MaxBikes
+        {
+            get => _maxBikes;
+            set { _maxBikes = value; OnPropertyChanged(); }
+        }
+
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ChangeStatusCommand { get; }
@@ -111,6 +121,14 @@ namespace AMS.ViewModels
                 BikeExtraFeeText = _bikeExtraFee?.ToString(CultureInfo.InvariantCulture);
                 CreatedAt = _currentRoom.CreatedAt;
                 UpdatedAt = _currentRoom.UpdatedAt;
+
+                // NEW
+                MaxBikes = _currentRoom.MaxBikeAllowance;
+            }
+            else
+            {
+                // Defaults for create
+                MaxBikes = 1;
             }
         }
 
@@ -146,13 +164,13 @@ namespace AMS.ViewModels
                         }
                     }
 
-                    await Shell.Current.DisplayAlert("Thành công", $"Đã cập nhật trạng thái: {newStatus}.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Thành công", $"Đã cập nhật trạng thái: {newStatus}.", "OK");
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[EditRoom] Change status error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể đổi trạng thái phòng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể đổi trạng thái phòng.", "OK");
             }
         }
 
@@ -164,12 +182,10 @@ namespace AMS.ViewModels
             if (string.IsNullOrWhiteSpace(RoomCode))
                 return await Fail("Thiếu thông tin", "Vui lòng nhập mã phòng.");
 
-            // Normalize and validate RoomCode: only A-Z, 0-9, _ and -
+            // Normalize RoomCode
             var normalized = RoomCode.Trim().ToUpperInvariant();
             if (!Regex.IsMatch(normalized, @"^[A-Z0-9_-]+$"))
                 return await Fail("Giá trị không hợp lệ", "Mã phòng chỉ được chứa chữ, số, gạch dưới (_) hoặc gạch ngang (-), không dấu cách.");
-
-            // Reflect normalization back to UI
             RoomCode = normalized;
 
             if (Area <= 0)
@@ -184,6 +200,14 @@ namespace AMS.ViewModels
             if (FreeBikeAllowance < 0)
                 return await Fail("Giá trị không hợp lệ", "Số xe miễn phí phải >= 0.");
 
+            // NEW: MaxBikes must be >= 0 (0 => không giới hạn nếu bạn muốn)
+            if (MaxBikes < 0)
+                return await Fail("Giá trị không hợp lệ", "Số lượng xe tối đa phải >= 0.");
+
+            // Optional: clamp FreeBikeAllowance to MaxBikes if MaxBikes > 0
+            if (MaxBikes > 0 && FreeBikeAllowance > MaxBikes)
+                FreeBikeAllowance = MaxBikes;
+
             // Parse optional BikeExtraFeeText
             if (string.IsNullOrWhiteSpace(BikeExtraFeeText))
             {
@@ -193,14 +217,12 @@ namespace AMS.ViewModels
             {
                 if (!decimal.TryParse(BikeExtraFeeText, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee))
                     return await Fail("Giá trị không hợp lệ", "Phí xe thêm không hợp lệ.");
-
                 if (fee < 0)
                     return await Fail("Giá trị không hợp lệ", "Phí xe thêm không được âm.");
-
                 _bikeExtraFee = fee;
             }
 
-            // Uniqueness check per house
+            // Uniqueness per house
             bool exists = await _db.Rooms.AnyAsync(r =>
                 r.HouseID == HouseID &&
                 r.RoomCode == normalized &&
@@ -213,7 +235,7 @@ namespace AMS.ViewModels
         }
 
         private static Task<bool> Fail(string title, string message)
-            => Shell.Current.DisplayAlert(title, message, "OK").ContinueWith(_ => false);
+            => Shell.Current.DisplayAlertAsync(title, message, "OK").ContinueWith(_ => false);
 
         private async Task SaveAsync()
         {
@@ -238,7 +260,10 @@ namespace AMS.ViewModels
                         FreeBikeAllowance = FreeBikeAllowance,
                         BikeExtraFee = _bikeExtraFee,
                         CreatedAt = now,
-                        UpdatedAt = now
+                        UpdatedAt = now,
+
+                        // NEW
+                        MaxBikeAllowance = MaxBikes
                     };
                     _db.Rooms.Add(entity);
                     await _db.SaveChangesAsync();
@@ -248,7 +273,7 @@ namespace AMS.ViewModels
                     var tracked = await _db.Rooms.FindAsync(IdRoom);
                     if (tracked == null)
                     {
-                        await Shell.Current.DisplayAlert("Lỗi", "Không tìm thấy phòng.", "OK");
+                        await Shell.Current.DisplayAlertAsync("Lỗi", "Không tìm thấy phòng.", "OK");
                         return;
                     }
 
@@ -262,6 +287,9 @@ namespace AMS.ViewModels
                     tracked.BikeExtraFee = _bikeExtraFee;
                     tracked.UpdatedAt = now;
 
+                    // NEW
+                    tracked.MaxBikeAllowance = MaxBikes;
+
                     await _db.SaveChangesAsync();
                 }
 
@@ -270,7 +298,7 @@ namespace AMS.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[EditRoom] Save error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể lưu phòng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể lưu phòng.", "OK");
             }
         }
 

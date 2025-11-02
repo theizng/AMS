@@ -3,6 +3,7 @@ using System;
 using AMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AMS.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    partial class AMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251102063008_initialize4")]
+    partial class initialize4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -88,7 +91,8 @@ namespace AMS.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<int>("OwnerId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("OwnerId");
 
                     b.Property<string>("Plate")
                         .IsRequired()
@@ -101,8 +105,6 @@ namespace AMS.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
-
-                    b.HasIndex("Plate");
 
                     b.HasIndex("RoomId", "Plate")
                         .IsUnique();
@@ -354,8 +356,9 @@ namespace AMS.Migrations
                     b.HasOne("AMS.Models.Tenant", "OwnerTenant")
                         .WithMany("Bikes")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Bikes_Tenants_OwnerId");
 
                     b.HasOne("AMS.Models.Room", "Room")
                         .WithMany()

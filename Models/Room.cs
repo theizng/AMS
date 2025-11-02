@@ -31,6 +31,7 @@ namespace AMS.Models
         // Số người tối đa được ở trong phòng (Chủ nhà quy định theo loại phòng)
         public int MaxOccupants { get; set; }
         // Số xe máy được giữ miễn phí, mặc định 1 (theo yêu cầu đề bài)
+        public int MaxBikeAllowance { get; set; }
         public int FreeBikeAllowance { get; set; } = 1;
         // Phí giữ xe máy thêm (nếu có)
         public decimal? BikeExtraFee { get; set; }

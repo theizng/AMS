@@ -61,6 +61,15 @@
                                     <Label Text="{Binding IdCardNumber, StringFormat='CCCD/CMND: {0}'}" />
                                     <Label Text="{Binding Email, StringFormat='Email: {0}'}" />
                                     <Label Text="{Binding PermanentAddress, StringFormat='Địa chỉ: {0}'}" />
+
+                                    <!-- Người liên hệ khẩn cấp -->
+                                    <Label Text="{Binding EmergencyContactsText, StringFormat='Người liên hệ khẩn cấp: {0}'}" />
+
+                                    <!-- Đang thuê phòng -->
+                                    <Label Text="{Binding CurrentRoomDisplay, StringFormat='Đang thuê phòng: {0}'}" />
+
+                                    <!-- Số lượng xe máy: from RoomOccupancy.BikeCount -->
+                                    <Label Text="{Binding ActiveBikeCount, StringFormat='Số lượng xe máy: {0}'}" />
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
@@ -69,13 +78,16 @@
                                             CommandParameter="{Binding .}" />
                                     <Button Text="Hủy kích hoạt"
                                             IsVisible="{Binding IsActive}"
-                                            BackgroundColor="#F44336" TextColor="White"
+                                            BackgroundColor="#E53935" TextColor="White"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeactivateCommand}"
                                             CommandParameter="{Binding .}" />
                                     <Button Text="Kích hoạt"
                                             IsVisible="{Binding IsActive, Converter={StaticResource InvertBoolConverter}}"
                                             BackgroundColor="#4CAF50" TextColor="White"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ActivateCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Xóa"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTenantCommand}"
                                             CommandParameter="{Binding .}" />
                                 </VerticalStackLayout>
                             </Grid>

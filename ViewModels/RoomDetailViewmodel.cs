@@ -177,6 +177,7 @@ namespace AMS.ViewModels
             }
         }
 
+        // Replace your current RemoveTenantAsync with this version
         private async Task RemoveTenantAsync(RoomOccupancy? occ)
         {
             if (occ == null) return;
@@ -187,27 +188,52 @@ namespace AMS.ViewModels
             }
 
             bool confirm = await Shell.Current.DisplayAlertAsync("Xác nhận",
-                $"Gỡ {occ.Tenant?.FullName} khỏi phòng?", "Gỡ", "Hủy");
+                $"Gỡ {occ.Tenant?.FullName} khỏi phòng?\nLưu ý: Tất cả xe máy của người thuê này trong phòng sẽ bị xóa.",
+                "Gỡ", "Hủy");
             if (!confirm) return;
 
             try
             {
-                var tracked = await _db.RoomOccupancies.FirstOrDefaultAsync(ro => ro.IdRoomOccupancy == occ.IdRoomOccupancy);
+                await using var tx = await _db.Database.BeginTransactionAsync();
+
+                var tracked = await _db.RoomOccupancies
+                    .FirstOrDefaultAsync(ro => ro.IdRoomOccupancy == occ.IdRoomOccupancy);
+
                 if (tracked == null)
                 {
                     await Shell.Current.DisplayAlertAsync("Lỗi", "Không tìm thấy bản ghi thuê.", "OK");
                     return;
                 }
 
-                tracked.MoveOutDate = DateTime.Today;
-                await _db.SaveChangesAsync();
+                var tenantId = tracked.TenantId;
+                var roomId = tracked.RoomId;
 
+                // 1) Delete all bikes of this tenant in this room
+                // If you're on EF Core 7+, ExecuteDeleteAsync is available:
+                await _db.Bikes
+                    .Where(b => b.RoomId == roomId && b.OwnerId == tenantId)
+                    .ExecuteDeleteAsync();
+
+                // If your EF version doesn't support ExecuteDeleteAsync, use:
+                // var bikes = await _db.Bikes.Where(b => b.RoomId == roomId && b.OwnerId == tenantId).ToListAsync();
+                // _db.Bikes.RemoveRange(bikes);
+                // await _db.SaveChangesAsync();
+
+                // 2) Set BikeCount to 0 for this (now-ended) occupancy and mark MoveOut
+                tracked.BikeCount = 0;
+                tracked.MoveOutDate = DateTime.Today;
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                // Clear emergency contact preference if it pointed to this occupancy
                 var key = $"room:{_roomId}:emergencyContactOccId";
                 if (Preferences.ContainsKey(key) && Preferences.Get(key, 0) == occ.IdRoomOccupancy)
                     Preferences.Remove(key);
 
+                // Refresh UI
                 await LoadAsync();
-                await Shell.Current.DisplayAlertAsync("Thành công", "Đã gỡ người thuê.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã gỡ người thuê và xóa xe máy liên quan.", "OK");
             }
             catch (Exception ex)
             {
@@ -238,9 +264,27 @@ namespace AMS.ViewModels
             Preferences.Set($"room:{_roomId}:emergencyContactOccId", picked.IdRoomOccupancy);
         }
 
+   
         private async Task AddBikeAsync()
         {
             if (_roomId <= 0) return;
+
+            // Enforce MaxBikeAllowance (0 => no limit)
+            var max = Room?.MaxBikeAllowance ?? 0;
+            if (max > 0)
+            {
+                var current = await _db.Bikes
+                    .AsNoTracking()
+                    .Where(b => b.RoomId == _roomId && b.IsActive)
+                    .CountAsync();
+
+                if (current >= max)
+                {
+                    await Shell.Current.DisplayAlertAsync("Vượt quá số xe tối đa",
+                        $"Phòng này chỉ cho phép tối đa {max} xe.", "OK");
+                    return;
+                }
+            }
 
             if (ActiveOccupancies.Count == 0)
             {
@@ -252,7 +296,6 @@ namespace AMS.ViewModels
             if (string.IsNullOrWhiteSpace(plate)) return;
             var normalizedPlate = plate.Trim().ToUpperInvariant();
 
-            // Choose owner from current occupancies
             var labels = ActiveOccupancies
                 .Select(o => $"{o.Tenant!.FullName} ({o.Tenant!.PhoneNumber})")
                 .ToArray();
@@ -266,7 +309,7 @@ namespace AMS.ViewModels
 
             try
             {
-                var entity = new Bike
+                var bike = new Bike
                 {
                     RoomId = _roomId,
                     Plate = normalizedPlate,
@@ -274,15 +317,26 @@ namespace AMS.ViewModels
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
-                _db.Add(entity);
+                _db.Add(bike);
                 await _db.SaveChangesAsync();
 
-                // Reload to include OwnerTenant for binding
+                // Recalc BikeCount on the active occupancy for that owner
+                var occ = await _db.RoomOccupancies
+                    .FirstOrDefaultAsync(ro => ro.RoomId == _roomId
+                                            && ro.TenantId == ownerTenantId
+                                            && ro.MoveOutDate == null);
+                if (occ != null)
+                {
+                    occ.BikeCount = await _db.Bikes
+                        .Where(b => b.RoomId == _roomId && b.OwnerId == ownerTenantId && b.IsActive)
+                        .CountAsync();
+                    await _db.SaveChangesAsync();
+                }
+
                 await LoadAsync();
             }
-            catch (DbUpdateException dbex)
+            catch (DbUpdateException)
             {
-                System.Diagnostics.Debug.WriteLine($"[RoomDetail] AddBike DB error: {dbex.Message}");
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Biển số đã tồn tại trong phòng này.", "OK");
             }
             catch (Exception ex)
@@ -291,7 +345,6 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể thêm xe.", "OK");
             }
         }
-
         private async Task RemoveBikeAsync(Bike? bike)
         {
             if (bike == null) return;
@@ -303,10 +356,30 @@ namespace AMS.ViewModels
                 var tracked = await _db.Bikes.FirstOrDefaultAsync(b => b.Id == bike.Id);
                 if (tracked != null)
                 {
+                    var roomId = tracked.RoomId;
+                    var ownerId = tracked.OwnerId;
+
                     _db.Remove(tracked);
                     await _db.SaveChangesAsync();
+
+                    // Recalc BikeCount for the occupancy if we know owner
+                    if (ownerId.HasValue)
+                    {
+                        var occ = await _db.RoomOccupancies
+                            .FirstOrDefaultAsync(ro => ro.RoomId == roomId
+                                                    && ro.TenantId == ownerId.Value
+                                                    && ro.MoveOutDate == null);
+                        if (occ != null)
+                        {
+                            occ.BikeCount = await _db.Bikes
+                                .Where(b => b.RoomId == roomId && b.OwnerId == ownerId.Value && b.IsActive)
+                                .CountAsync();
+                            await _db.SaveChangesAsync();
+                        }
+                    }
                 }
-                Bikes.Remove(bike);
+
+                await LoadAsync();
             }
             catch (Exception ex)
             {
@@ -314,7 +387,6 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể xóa xe.", "OK");
             }
         }
-
         public event PropertyChangedEventHandler? PropertyChanged;
         protected virtual void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

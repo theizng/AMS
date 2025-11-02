@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Linq;
 
 namespace AMS.ViewModels
 {
@@ -51,7 +52,6 @@ namespace AMS.ViewModels
             set { _isRefreshing = value; OnPropertyChanged(); }
         }
 
-        // Commands
         public ICommand RefreshCommand { get; }
         public ICommand SearchCommand { get; }
         public ICommand ClearFilterCommand { get; }
@@ -60,6 +60,7 @@ namespace AMS.ViewModels
         public ICommand DeactivateCommand { get; }
         public ICommand ActivateCommand { get; }
         public ICommand SoftDeleteCommand { get; }
+        public ICommand DeleteTenantCommand { get; } // NEW
 
         public TenantsViewModel(AMSDbContext db)
         {
@@ -83,11 +84,10 @@ namespace AMS.ViewModels
 
             DeactivateCommand = new Command<Tenant>(async (tenant) => await SetActiveAsync(tenant, false));
             ActivateCommand = new Command<Tenant>(async (tenant) => await SetActiveAsync(tenant, true));
-            SoftDeleteCommand = new Command<Tenant>(async (tenant) =>
-            {
-                // Soft delete = set Inactive; we keep history
-                await SetActiveAsync(tenant, false, askConfirm: true);
-            });
+            SoftDeleteCommand = new Command<Tenant>(async (tenant) => await SetActiveAsync(tenant, false, askConfirm: true));
+
+            // NEW: hard-delete flow (blocked if renting)
+            DeleteTenantCommand = new Command<Tenant>(async (tenant) => await DeleteTenantAsync(tenant));
 
             _ = LoadTenantsAsync();
         }
@@ -98,10 +98,13 @@ namespace AMS.ViewModels
             {
                 IsRefreshing = true;
 
-                // IMPORTANT: prevent stale tracked entities
                 _db.ChangeTracker.Clear();
 
-                IQueryable<Tenant> query = _db.Tenants.AsNoTracking();
+                IQueryable<Tenant> query = _db.Tenants
+                    .AsNoTracking()
+                    .Include(t => t.Room) // fallback only
+                    .Include(t => t.RoomOccupancies!)
+                        .ThenInclude(ro => ro.Room);
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
@@ -124,7 +127,6 @@ namespace AMS.ViewModels
                     .ThenByDescending(t => t.IdTenant)
                     .ToListAsync();
 
-                // Force ItemsSource rebind so CollectionView updates immediately
                 Tenants = new ObservableCollection<Tenant>(items);
             }
             catch (Exception ex)
@@ -144,7 +146,6 @@ namespace AMS.ViewModels
 
             if (!active)
             {
-                // Prevent deactivating if tenant is currently assigned to any room (active occupancy)
                 bool inAnyActiveRoom = await _db.RoomOccupancies
                     .AsNoTracking()
                     .AnyAsync(o => o.TenantId == tenant.IdTenant && o.MoveOutDate == null);
@@ -182,11 +183,9 @@ namespace AMS.ViewModels
                 entity.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
 
-                // Update current item for instant UI feedback
                 tenant.IsActive = active;
                 tenant.UpdatedAt = entity.UpdatedAt;
 
-                // Optional: fully reload list to reflect sorting by UpdatedAt
                 await LoadTenantsAsync();
 
                 await Application.Current.MainPage.DisplayAlertAsync("Thành công",
@@ -196,6 +195,68 @@ namespace AMS.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[Tenants] SetActive error: {ex.Message}");
                 await Application.Current.MainPage.DisplayAlertAsync("Lỗi", "Không thể cập nhật trạng thái.", "OK");
+            }
+        }
+
+        // Replace your DeleteTenantAsync in TenantsViewModel with this version
+        private async Task DeleteTenantAsync(Tenant? tenant)
+        {
+            if (tenant == null) return;
+
+            try
+            {
+                // Hard block if any active occupancy exists
+                bool isRenting = await _db.RoomOccupancies
+                    .AsNoTracking()
+                    .AnyAsync(ro => ro.TenantId == tenant.IdTenant && ro.MoveOutDate == null);
+
+                if (isRenting)
+                {
+                    await Application.Current.MainPage.DisplayAlertAsync(
+                        "Không thể xóa",
+                        "Người thuê đang thuê phòng. Hãy kết thúc hợp đồng/trả phòng trước khi xóa.",
+                        "OK");
+                    return;
+                }
+
+                bool confirm = await Application.Current.MainPage.DisplayAlertAsync(
+                    "Xác nhận xóa",
+                    $"Xóa người thuê \"{tenant.FullName}\"?\n" +
+                    "- Xóa toàn bộ lịch sử thuê (RoomOccupancy)\n" +
+                    "- Xóa toàn bộ xe máy của người thuê này",
+                    "Xóa", "Hủy");
+                if (!confirm) return;
+
+                _db.ChangeTracker.Clear();
+
+                await using var tx = await _db.Database.BeginTransactionAsync();
+
+                // 1) Delete all RoomOccupancies (history) first to satisfy FK Restrict from RoomOccupancy -> Tenant
+                await _db.RoomOccupancies
+                    .Where(ro => ro.TenantId == tenant.IdTenant)
+                    .ExecuteDeleteAsync();
+
+                // 2) Delete tenant. Bikes will be deleted automatically via FK ON DELETE CASCADE.
+                var tracked = await _db.Tenants.FirstOrDefaultAsync(t => t.IdTenant == tenant.IdTenant);
+                if (tracked != null)
+                {
+                    _db.Tenants.Remove(tracked);
+                    await _db.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+
+                // Update UI
+                var idx = Tenants.IndexOf(tenant);
+                if (idx >= 0) Tenants.RemoveAt(idx);
+
+                await Application.Current.MainPage.DisplayAlertAsync("Thành công", "Đã xóa người thuê.", "OK");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Tenants] Delete error: {ex.Message}");
+                await Application.Current.MainPage.DisplayAlertAsync(
+                    "Lỗi", "Không thể xóa người thuê. Vui lòng thử lại.", "OK");
             }
         }
 

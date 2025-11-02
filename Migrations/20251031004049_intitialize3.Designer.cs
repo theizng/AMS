@@ -3,6 +3,7 @@ using System;
 using AMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AMS.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    partial class AMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251031004049_intitialize3")]
+    partial class intitialize3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -88,7 +91,8 @@ namespace AMS.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<int>("OwnerId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("OwnerId");
 
                     b.Property<string>("Plate")
                         .IsRequired()
@@ -101,8 +105,6 @@ namespace AMS.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
-
-                    b.HasIndex("Plate");
 
                     b.HasIndex("RoomId", "Plate")
                         .IsUnique();
@@ -174,11 +176,6 @@ namespace AMS.Migrations
                     b.Property<int?>("HouseIdHouse")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("MaxBikeAllowance")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(1);
-
                     b.Property<int>("MaxOccupants")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -221,10 +218,6 @@ namespace AMS.Migrations
                             t.HasCheckConstraint("CK_Room_BikeExtraFee_NonNegative", "[BikeExtraFee] IS NULL OR [BikeExtraFee] >= 0");
 
                             t.HasCheckConstraint("CK_Room_FreeBikeAllowance_NonNegative", "[FreeBikeAllowance] >= 0");
-
-                            t.HasCheckConstraint("CK_Room_FreeBikeAllowance_Within_Max", "([MaxBikeAllowance] = 0 OR [FreeBikeAllowance] <= [MaxBikeAllowance])");
-
-                            t.HasCheckConstraint("CK_Room_MaxBikeAllowance_NonNegative", "[MaxBikeAllowance] >= 0");
 
                             t.HasCheckConstraint("CK_Room_MaxOccupants_Positive", "[MaxOccupants] >= 1");
 
@@ -354,8 +347,9 @@ namespace AMS.Migrations
                     b.HasOne("AMS.Models.Tenant", "OwnerTenant")
                         .WithMany("Bikes")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Bikes_Tenants_OwnerId");
 
                     b.HasOne("AMS.Models.Room", "Room")
                         .WithMany()

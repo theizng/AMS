@@ -65,7 +65,7 @@ namespace AMS.Data
                 // Defaults
                 entity.Property(e => e.MaxOccupants).HasDefaultValue(1);
                 entity.Property(e => e.FreeBikeAllowance).HasDefaultValue(1);
-
+                entity.Property(e => e.MaxBikeAllowance).HasDefaultValue(1);
                 // Status as int, default Available (optional)
                 entity.Property(e => e.RoomStatus)
                       .HasConversion<int>()
@@ -89,11 +89,13 @@ namespace AMS.Data
                 // CHECK constraints (SQLite supports)
                 entity.ToTable(t =>
                 {
-                    t.HasCheckConstraint("CK_Room_Area_Positive", "[Area] > 0");
+                    t.HasCheckConstraint("CK_Room_MaxBikeAllowance_NonNegative", "[MaxBikeAllowance] >= 0");
+                    t.HasCheckConstraint("CK_Room_Area_Positive", "[Area] > 0"); 
                     t.HasCheckConstraint("CK_Room_Price_NonNegative", "[Price] >= 0");
                     t.HasCheckConstraint("CK_Room_MaxOccupants_Positive", "[MaxOccupants] >= 1");
                     t.HasCheckConstraint("CK_Room_FreeBikeAllowance_NonNegative", "[FreeBikeAllowance] >= 0");
                     t.HasCheckConstraint("CK_Room_BikeExtraFee_NonNegative", "[BikeExtraFee] IS NULL OR [BikeExtraFee] >= 0");
+                    t.HasCheckConstraint("CK_Room_FreeBikeAllowance_Within_Max","([MaxBikeAllowance] = 0 OR [FreeBikeAllowance] <= [MaxBikeAllowance])");
                 });
 
                 // If your Room has UI-only properties, ensure EF skips them (harmless if property absent)
@@ -141,28 +143,28 @@ namespace AMS.Data
 
                 entity.Property(b => b.RoomId).IsRequired();
                 entity.Property(b => b.Plate).IsRequired().HasMaxLength(32);
+
+                // REQUIRED FK
                 entity.Property(b => b.OwnerId).IsRequired();
 
                 entity.Property(b => b.IsActive).HasDefaultValue(true);
                 entity.Property(b => b.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Indexes
                 entity.HasIndex(b => b.Plate);
                 entity.HasIndex(b => new { b.RoomId, b.Plate }).IsUnique();
 
-                // FK -> Room
                 entity.HasOne(b => b.Room)
                       .WithMany()
                       .HasForeignKey(b => b.RoomId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                // FK -> Tenant as Owner
+                // Critical: cascade delete bikes when tenant is deleted
                 entity.HasOne(b => b.OwnerTenant)
-                      .WithMany() // if later you add Tenant.Bikes, change to .WithMany(t => t.Bikes)
+                      .WithMany(t => t.Bikes!)
                       .HasForeignKey(b => b.OwnerId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .HasPrincipalKey(t => t.IdTenant)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
-
             // TENANT
             modelBuilder.Entity<Tenant>(entity =>
             {
