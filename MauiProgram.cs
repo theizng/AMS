@@ -75,6 +75,8 @@ namespace AMS
             builder.Services.AddTransient<MaintenancesViewModel>();
             //Đăng ký Viewmodels cho Settings:
             builder.Services.AddTransient<SettingsViewModel>();
+            //Đăng ký Viewmodels cho Payments:
+            builder.Services.AddTransient<PaymentsViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)
@@ -97,6 +99,7 @@ namespace AMS
             builder.Services.AddTransient<TenantsPage>();
             builder.Services.AddTransient<MaintenancesPage>();
             builder.Services.AddTransient<EditMaintenancePage>();
+            builder.Services.AddTransient<PaymentsPage>();
             return builder;
         }
         public static MauiAppBuilder RegisterShells(this MauiAppBuilder builder)

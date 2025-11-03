@@ -12,6 +12,7 @@ namespace AMS.Data
         public DbSet<House> Houses { get; set; }
         public DbSet<RoomOccupancy> RoomOccupancies { get; set; } = null!;
         public DbSet<Bike> Bikes { get; set; } = null!;
+        public DbSet<Invoice> Invoices { get; set; } = null!;
 
         public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
         {
@@ -179,6 +180,39 @@ namespace AMS.Data
                 // Optional: add quick-search indexes if you often search by name/phone
                 // entity.HasIndex(e => e.FullName);
                 // entity.HasIndex(e => e.PhoneNumber);
+            });
+            //PAYMENTS
+            modelBuilder.Entity<Invoice>(e =>
+            {
+                e.ToTable("Invoices");
+                e.HasKey(i => i.Id);
+
+                e.Property(i => i.RoomId).IsRequired();
+                e.Property(i => i.BillingMonth).IsRequired();
+
+                e.Property(i => i.Status).HasConversion<int>().HasDefaultValue(InvoiceStatus.Unpaid);
+
+                e.Property(i => i.BaseRent).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+                e.Property(i => i.Utilities).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+                e.Property(i => i.Extras).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+                e.Property(i => i.TotalAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+                e.Property(i => i.PaidAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+
+                e.HasOne(i => i.Room)
+                    .WithMany()
+                    .HasForeignKey(i => i.RoomId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Một phòng chỉ có 1 hóa đơn mỗi tháng
+                e.HasIndex(i => new { i.RoomId, i.BillingMonth }).IsUnique();
+
+                // CHECK
+                e.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Invoice_Total_NonNegative", "[TotalAmount] >= 0");
+                    t.HasCheckConstraint("CK_Invoice_Paid_NonNegative", "[PaidAmount] >= 0");
+                    t.HasCheckConstraint("CK_Invoice_Paid_Le_Total", "[PaidAmount] <= [TotalAmount]");
+                });
             });
         }
     }

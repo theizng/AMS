@@ -23,6 +23,7 @@ namespace AMS
             SetDiTemplate(ReportsShell, typeof(ReportsPage));
             SetDiTemplate(SettingsShell, typeof(SettingsPage));
             SetDiTemplate(MaintenancesShell, typeof(MaintenancesPage));
+            SetDiTemplate(PaymentsShell, typeof(PaymentsPage));
             // Register routes for pages not in Shell tree (or for parameterized navigation)
             //Trang quản lý nhà
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
