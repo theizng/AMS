@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>
+		<!--<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>-->
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<AndroidLinkMode>None</AndroidLinkMode>
 		
@@ -68,7 +68,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
 		  <PrivateAssets>all</PrivateAssets>

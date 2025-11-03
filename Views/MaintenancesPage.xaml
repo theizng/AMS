@@ -2,80 +2,80 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="AMS.Views.MaintenancesPage"
-             Title="Quản lý bảo trì và sự cố"
-             Shell.NavBarIsVisible="False">
+             Title="Bảo trì">
 
-    <Grid RowDefinitions="Auto, *">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Nhập URL" Priority="0" Order="Primary" Command="{Binding ImportUrlCommand}" />
+        <ToolbarItem Text="Nhập Excel" Priority="1" Order="Primary" Command="{Binding ImportSheetCommand}" />
+        <ToolbarItem Text="Làm mới" Priority="2" Order="Primary" Command="{Binding RefreshCommand}" />
+    </ContentPage.ToolbarItems>
 
-        <!-- Header -->
-        <VerticalStackLayout Grid.Row="0"
-                             Padding="0,10,0,10"
-                             BackgroundColor="#50589C">
-            <Image Source="maintenance_icon.png"
-                   HeightRequest="100"
-                   WidthRequest="100"
-                   HorizontalOptions="Center" />
-            <Label Text="QUẢN LÝ BẢO TRÌ VÀ SỰ CỐ"
-                   FontSize="24"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   Margin="0,40,0,0"
-                   HorizontalOptions="Center" />
-        </VerticalStackLayout>
+    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="10">
+        <!-- Search -->
+        <HorizontalStackLayout Spacing="8">
+            <Entry Placeholder="Tìm theo nhà, phòng, mô tả, người thuê..."
+                   Text="{Binding SearchText}" HorizontalOptions="FillAndExpand" />
+            <Button Text="Tìm" Command="{Binding SearchCommand}" />
+        </HorizontalStackLayout>
 
-        <!-- Nội dung -->
-        <Border Grid.Row="1"
-                Margin="20,70,20,0"
-                StrokeShape="RoundRectangle 10"
-                Stroke="LightGray"
-                BackgroundColor="White"
-                StrokeThickness="1"
-                VerticalOptions="Start">
+        <!-- Status filter -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="8">
+            <Label Text="Trạng thái:" VerticalOptions="Center" />
+            <Picker ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding SelectedStatus}" />
+            <Button Text="Xóa lọc" Command="{Binding ClearFilterCommand}" />
+        </HorizontalStackLayout>
 
-            <VerticalStackLayout Padding="20" Spacing="15">
-                <Label Text="Danh sách yêu cầu bảo trì"
-                       FontSize="22"
-                       FontAttributes="Bold"
-                       HorizontalOptions="Center"
-                       Margin="0,0,0,20" />
+        <RefreshView Grid.Row="2"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     Command="{Binding RefreshCommand}">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Grid Padding="20">
+                        <Label Text="Chưa có dữ liệu bảo trì. Nhấn 'Nhập URL' hoặc 'Nhập Excel' để tải."
+                               HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
+                    </Grid>
+                </CollectionView.EmptyView>
 
-                <Button Text="Thêm yêu cầu mới"
-                        TextColor="White"
-                        BackgroundColor="#636CCB"
-                        CornerRadius="25"
-                        HeightRequest="50"
-                        Command="{Binding AddNewCommand}" />
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,6" Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label Text="{Binding RoomCode}" FontSize="18" FontAttributes="Bold" />
+                                        <Label Text="{Binding HouseAddress}" TextColor="#666" />
+                                    </HorizontalStackLayout>
+                                    <Label Text="{Binding Category}" FontAttributes="Bold" />
+                                    <Label Text="{Binding Description}" LineBreakMode="WordWrap" />
+                                    <HorizontalStackLayout Spacing="12">
+                                        <Label Text="{Binding Priority, StringFormat='Ưu tiên: {0}'}" />
+                                        <Label Text="{Binding CreatedDate, StringFormat='{0:yyyy-MM-dd}'}" />
+                                        <Label Text="{Binding DueDate, StringFormat='Hạn: {0:yyyy-MM-dd}'}" />
+                                    </HorizontalStackLayout>
+                                    <HorizontalStackLayout Spacing="12">
+                                        <Label Text="{Binding TenantName}" />
+                                        <Label Text="{Binding TenantPhone}" />
+                                    </HorizontalStackLayout>
+                                    <Label Text="{Binding EstimatedCost, StringFormat='Chi phí ước tính: {0:N0} đ'}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding EstimatedCost}" Value="{x:Null}">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </VerticalStackLayout>
 
-                <!-- Danh sách sự cố -->
-                <CollectionView ItemsSource="{Binding Items}"
-                                Margin="0,10,0,0"
-                                HeightRequest="400">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Frame BackgroundColor="#F5F6FA"
-                                   CornerRadius="10"
-                                   HasShadow="False"
-                                   Margin="0,5">
-                                <Grid Padding="10"
-                                      RowDefinitions="Auto,Auto"
-                                      ColumnDefinitions="*,Auto">
-                                    <Label Text="{Binding Code}"
-                                           FontAttributes="Bold"
-                                           TextColor="#3C467B"/>
-                                    <Label Grid.Column="1"
-                                           Text="{Binding Status}"
-                                           TextColor="#6E8CFB"
-                                           HorizontalOptions="End"/>
-                                    <Label Grid.Row="1"
-                                           Grid.ColumnSpan="2"
-                                           Text="{Binding Description}"
-                                           TextColor="#50589C"/>
-                                </Grid>
-                            </Frame>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
-        </Border>
+                                <Border Grid.Column="1" Padding="8,4" BackgroundColor="#F4F4F4" VerticalOptions="Start">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="6" />
+                                    </Border.StrokeShape>
+                                    <Label Text="{Binding Status}" />
+                                </Border>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
     </Grid>
 </ContentPage>

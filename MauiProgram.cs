@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using Microsoft.Maui;
+using AMS.Services.Interfaces;
 namespace AMS
 {
     public static class MauiProgram
@@ -46,6 +47,8 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddSingleton<IOnlineMaintenanceReader, GoogleSheetXlsxMaintenanceReader>();
+            builder.Services.AddSingleton<IMaintenanceSheetReader, ClosedXMLMaintenanceSheetReader>();
             builder.Services.AddSingleton<IDatabaseSyncService, DatabaseSyncService>();
             builder.Services.AddSingleton<ISecureStorage>(SecureStorage.Default);
             builder.Services.AddSingleton<IAuthService, AuthService>();
@@ -69,7 +72,7 @@ namespace AMS
             builder.Services.AddTransient<TenantsViewModel>();
             builder.Services.AddTransient<TenantEditViewModel>();
             //Đăng ký Viewmodels CRUD cho Maintenance:
-
+            builder.Services.AddTransient<MaintenancesViewModel>();
             //Đăng ký Viewmodels cho Settings:
             builder.Services.AddTransient<SettingsViewModel>();
             return builder;
