@@ -1,76 +1,169 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.MaintenancesPage"
-             Title="Bảo trì">
+<ContentPage
+    x:Class="AMS.Views.MaintenancesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Bảo trì">
 
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Nhập URL" Priority="0" Order="Primary" Command="{Binding ImportUrlCommand}" />
-        <ToolbarItem Text="Nhập Excel" Priority="1" Order="Primary" Command="{Binding ImportSheetCommand}" />
-        <ToolbarItem Text="Làm mới" Priority="2" Order="Primary" Command="{Binding RefreshCommand}" />
+        <ToolbarItem Text="Làm mới" Priority="1" Order="Primary" Command="{Binding RefreshCommand}" />
+        <ToolbarItem Text="Nhập Excel" Priority="2" Order="Secondary" Command="{Binding ImportSheetCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="10">
+    <Grid Padding="12" RowSpacing="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
         <!-- Search -->
-        <HorizontalStackLayout Spacing="8">
-            <Entry Placeholder="Tìm theo nhà, phòng, mô tả, người thuê..."
-                   Text="{Binding SearchText}" HorizontalOptions="FillAndExpand" />
+        <HorizontalStackLayout Grid.Row="0" Spacing="8">
+            <Entry
+                Placeholder="Tìm theo nhà, phòng, mô tả, người thuê..."
+                HorizontalOptions="FillAndExpand"
+                Text="{Binding SearchText}" />
             <Button Text="Tìm" Command="{Binding SearchCommand}" />
         </HorizontalStackLayout>
 
         <!-- Status filter -->
         <HorizontalStackLayout Grid.Row="1" Spacing="8">
             <Label Text="Trạng thái:" VerticalOptions="Center" />
-            <Picker ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding SelectedStatus}" />
+            <Picker
+                WidthRequest="180"
+                ItemsSource="{Binding StatusOptions}"
+                SelectedItem="{Binding SelectedStatus}" />
             <Button Text="Xóa lọc" Command="{Binding ClearFilterCommand}" />
         </HorizontalStackLayout>
 
-        <RefreshView Grid.Row="2"
-                     IsRefreshing="{Binding IsRefreshing}"
-                     Command="{Binding RefreshCommand}">
-            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None">
+        <!-- List -->
+        <RefreshView
+            Grid.Row="2"
+            IsRefreshing="{Binding IsRefreshing}"
+            Command="{Binding RefreshCommand}">
+            <CollectionView
+                ItemsSource="{Binding Items}"
+                SelectionMode="None">
+
                 <CollectionView.EmptyView>
                     <Grid Padding="20">
-                        <Label Text="Chưa có dữ liệu bảo trì. Nhấn 'Nhập URL' hoặc 'Nhập Excel' để tải."
-                               HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
+                        <Label
+                            Text="Chưa có dữ liệu bảo trì. Nhấn 'Nhập URL' để liên kết Google Sheet."
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            TextColor="#666" />
                     </Grid>
                 </CollectionView.EmptyView>
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,6" Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                    <HorizontalStackLayout Spacing="10">
-                                        <Label Text="{Binding RoomCode}" FontSize="18" FontAttributes="Bold" />
-                                        <Label Text="{Binding HouseAddress}" TextColor="#666" />
-                                    </HorizontalStackLayout>
-                                    <Label Text="{Binding Category}" FontAttributes="Bold" />
-                                    <Label Text="{Binding Description}" LineBreakMode="WordWrap" />
-                                    <HorizontalStackLayout Spacing="12">
-                                        <Label Text="{Binding Priority, StringFormat='Ưu tiên: {0}'}" />
-                                        <Label Text="{Binding CreatedDate, StringFormat='{0:yyyy-MM-dd}'}" />
-                                        <Label Text="{Binding DueDate, StringFormat='Hạn: {0:yyyy-MM-dd}'}" />
-                                    </HorizontalStackLayout>
-                                    <HorizontalStackLayout Spacing="12">
-                                        <Label Text="{Binding TenantName}" />
-                                        <Label Text="{Binding TenantPhone}" />
-                                    </HorizontalStackLayout>
-                                    <Label Text="{Binding EstimatedCost, StringFormat='Chi phí ước tính: {0:N0} đ'}">
-                                        <Label.Triggers>
-                                            <DataTrigger TargetType="Label" Binding="{Binding EstimatedCost}" Value="{x:Null}">
-                                                <Setter Property="IsVisible" Value="False" />
-                                            </DataTrigger>
-                                        </Label.Triggers>
-                                    </Label>
-                                </VerticalStackLayout>
+                        <Frame
+                            Margin="0,6"
+                            Padding="12"
+                            HasShadow="True"
+                            BorderColor="#E0E0E0"
+                            CornerRadius="10">
+                            <Grid ColumnSpacing="12" RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="1" Padding="8,4" BackgroundColor="#F4F4F4" VerticalOptions="Start">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="6" />
-                                    </Border.StrokeShape>
-                                    <Label Text="{Binding Status}" />
-                                </Border>
+                                <!-- Row 1: ID + Category + Priority badge -->
+                                <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="10">
+                                    <Label Text="{Binding RequestId, StringFormat='ID: {0}'}"
+                                           FontAttributes="Bold" />
+                                    <Label Text="•" TextColor="#CCC"/>
+                                    <Label Text="{Binding Category}" FontAttributes="Bold" />
+                                    <Border Padding="8,2" StrokeThickness="0" Background="#EEE">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding PriorityVi, StringFormat='Ưu tiên: {0}'}" />
+                                        
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding PriorityVi}" Value="Thấp">
+                                                <Setter Property="Background" Value="#C8E6C9" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding PriorityVi}" Value="Trung bình">
+                                                <Setter Property="Background" Value="#FFE0B2" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding PriorityVi}" Value="Cao">
+                                                <Setter Property="Background" Value="#FFCDD2" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                    </Border>
+                                </HorizontalStackLayout>
+
+                                <!-- Row 2: Description -->
+                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                       Text="{Binding Description}"
+                                       LineBreakMode="WordWrap" />
+
+                                <!-- Row 3: Created date + Tenant name + phone -->
+                                <HorizontalStackLayout Grid.Row="2" Spacing="14">
+                                    <Label Text="{Binding CreatedDate, StringFormat='Ngày khởi tạo: {0:yyyy-MM-dd}'}" />
+                                    <Label Text="|" TextColor="#CCC"/>
+                                    <Label Text="{Binding TenantName, StringFormat='Người thuê: {0}'}" />
+                                    <Label Text="|" TextColor="#CCC"/>
+                                    <HorizontalStackLayout Spacing="6">
+                                        <Label Text="SĐT:" />
+                                        <Label Text="{Binding TenantPhone}" TextColor="#1976D2">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PhoneTapCommand}"
+                                                    CommandParameter="{Binding TenantPhone}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                    </HorizontalStackLayout>
+                                </HorizontalStackLayout>
+
+                                <!-- Row 4: Estimated cost (hide when null) -->
+                                <Label Grid.Row="3" Grid.Column="0"
+                                       Text="{Binding EstimatedCost, StringFormat='Chi phí ước tính: {0:N0} đ'}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EstimatedCost}" Value="{x:Null}">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+
+                                <!-- Right column: Status badge + Update button -->
+                                <VerticalStackLayout Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
+                                                     Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
+                                    <Border Padding="8,4" Background="#EEE" StrokeThickness="0">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding StatusVi}" />
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Chưa xử lý">
+                                                <Setter Property="Background" Value="#FFF3CD" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Đang xử lý">
+                                                <Setter Property="Background" Value="#B3E5FC" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Đã xử lý">
+                                                <Setter Property="Background" Value="#C8E6C9" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Đã hủy">
+                                                <Setter Property="Background" Value="#E0E0E0" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                    </Border>
+
+                                    <Button
+                                        Text="Cập nhật"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.UpdateRequestCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </VerticalStackLayout>
                             </Grid>
                         </Frame>
                     </DataTemplate>

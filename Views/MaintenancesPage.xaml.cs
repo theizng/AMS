@@ -13,7 +13,8 @@ namespace AMS.Views
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            if (BindingContext is MaintenancesViewModel vm)
+            // Optionally trigger a refresh when page appears
+            if (BindingContext is MaintenancesViewModel vm && !vm.IsRefreshing)
             {
                 vm.RefreshCommand.Execute(null);
             }

@@ -12,6 +12,7 @@ namespace AMS.ViewModels
     {
         private readonly IMaintenanceSheetReader _fileReader;
         private readonly IOnlineMaintenanceReader _onlineReader;
+        private readonly IMaintenanceSheetWriter _writer;
 
         private ObservableCollection<MaintenanceRequest> _items = new();
         private string _searchText = "";
@@ -26,8 +27,16 @@ namespace AMS.ViewModels
             set { _items = value; OnPropertyChanged(); }
         }
 
-        public string SearchText { get => _searchText; set { _searchText = value; OnPropertyChanged(); } }
-        public IReadOnlyList<string> StatusOptions { get; } = new[] { "Tất cả", "New", "InProgress", "Done", "Cancelled" };
+        public string SearchText
+        {
+            get => _searchText;
+            set { _searchText = value; OnPropertyChanged(); }
+        }
+
+        // Vietnamese status options
+        public IReadOnlyList<string> StatusOptions { get; } =
+            new[] { "Tất cả", "Chưa xử lý", "Đang xử lý", "Đã xử lý", "Đã hủy" };
+
         public string SelectedStatus
         {
             get => _selectedStatus;
@@ -42,13 +51,19 @@ namespace AMS.ViewModels
             }
         }
 
-        public bool IsRefreshing { get => _isRefreshing; set { _isRefreshing = value; OnPropertyChanged(); } }
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set { _isRefreshing = value; OnPropertyChanged(); }
+        }
 
         public ICommand RefreshCommand { get; }
         public ICommand SearchCommand { get; }
         public ICommand ClearFilterCommand { get; }
         public ICommand ImportSheetCommand { get; }
-        public ICommand ImportUrlCommand { get; } // NEW
+        public ICommand ImportUrlCommand { get; }
+        public ICommand UpdateRequestCommand { get; }
+        public ICommand PhoneTapCommand { get; }
 
         public string? SheetUrl
         {
@@ -56,10 +71,14 @@ namespace AMS.ViewModels
             set { _sheetUrl = value; OnPropertyChanged(); }
         }
 
-        public MaintenancesViewModel(IMaintenanceSheetReader fileReader, IOnlineMaintenanceReader onlineReader)
+        public MaintenancesViewModel(
+            IMaintenanceSheetReader fileReader,
+            IOnlineMaintenanceReader onlineReader,
+            IMaintenanceSheetWriter writer)
         {
             _fileReader = fileReader;
             _onlineReader = onlineReader;
+            _writer = writer;
 
             RefreshCommand = new Command(async () => await LoadAsync());
             SearchCommand = new Command(async () => await LoadAsync());
@@ -70,7 +89,13 @@ namespace AMS.ViewModels
                 await LoadAsync();
             });
             ImportSheetCommand = new Command(async () => await PickAndLoadAsync());
-            ImportUrlCommand = new Command(async () => await PromptAndSaveUrlAsync()); // NEW
+            ImportUrlCommand = new Command(async () => await PromptAndSaveUrlAsync());
+            UpdateRequestCommand = new Command<MaintenanceRequest>(async item => await UpdateAsync(item));
+            PhoneTapCommand = new Command<string?>(phone =>
+            {
+                try { if (!string.IsNullOrWhiteSpace(phone)) PhoneDialer.Open(phone); }
+                catch { }
+            });
 
             _sheetPath = Preferences.Get("maintenance:sheet:path", null);
             _sheetUrl = Preferences.Get("maintenance:sheet:url", null);
@@ -82,10 +107,11 @@ namespace AMS.ViewModels
         {
             var input = await Shell.Current.DisplayPromptAsync(
                 "Nhập URL Google Sheet",
-                "Dán liên kết Google Sheet (đặt chia sẻ 'Anyone with the link' hoặc 'Publish to web')",
+                "Dán liên kết Google Sheet (chia sẻ 'Bất kỳ ai có liên kết')",
                 "Lưu", "Hủy",
                 placeholder: "https://docs.google.com/spreadsheets/d/....",
                 maxLength: 500);
+
             if (string.IsNullOrWhiteSpace(input)) return;
 
             if (!GoogleSheetUrlHelper.TryBuildExportXlsxUrl(input, out var normalized))
@@ -94,10 +120,8 @@ namespace AMS.ViewModels
                 return;
             }
 
-            SheetUrl = normalized; // save normalized export xlsx URL
+            SheetUrl = normalized;
             Preferences.Set("maintenance:sheet:url", SheetUrl);
-
-            // Prefer URL over local file if both exist
             await LoadAsync();
         }
 
@@ -121,7 +145,6 @@ namespace AMS.ViewModels
                 _sheetPath = result.FullPath;
                 Preferences.Set("maintenance:sheet:path", _sheetPath);
 
-                // If you pick a file, we can clear URL to avoid confusion
                 SheetUrl = null;
                 Preferences.Remove("maintenance:sheet:url");
 
@@ -142,14 +165,10 @@ namespace AMS.ViewModels
 
                 IReadOnlyList<MaintenanceRequest> all;
 
-                // Prefer URL if set
                 var url = Preferences.Get("maintenance:sheet:url", _sheetUrl ?? "");
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    try
-                    {
-                        all = await _onlineReader.ReadFromUrlAsync(url);
-                    }
+                    try { all = await _onlineReader.ReadFromUrlAsync(url); }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"[Maintenance] URL load failed: {ex.Message}");
@@ -161,9 +180,7 @@ namespace AMS.ViewModels
                 {
                     var path = Preferences.Get("maintenance:sheet:path", _sheetPath ?? "");
                     if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                    {
                         all = await _fileReader.ReadAsync(path);
-                    }
                     else
                     {
                         Items = new ObservableCollection<MaintenanceRequest>();
@@ -171,7 +188,6 @@ namespace AMS.ViewModels
                     }
                 }
 
-                // Filter by search and status
                 IEnumerable<MaintenanceRequest> filtered = all;
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
@@ -186,26 +202,80 @@ namespace AMS.ViewModels
                         (m.TenantPhone?.ToLowerInvariant().Contains(k) ?? false));
                 }
 
-                if (SelectedStatus != "Tất cả" && Enum.TryParse<MaintenanceStatus>(SelectedStatus, out var st))
-                    filtered = filtered.Where(m => m.Status == st);
+                if (SelectedStatus != "Tất cả")
+                {
+                    if (TryParseStatusVi(SelectedStatus, out var st))
+                        filtered = filtered.Where(m => m.Status == st);
+                }
 
                 var items = filtered
                     .OrderByDescending(m => m.CreatedDate)
-                    .ThenByDescending(m => m.Priority)
+                    .ThenByDescending(m => m.Priority) // High/Medium/Low textual order; OK for now
                     .ThenBy(m => m.HouseAddress)
                     .ThenBy(m => m.RoomCode)
                     .ToList();
 
                 Items = new ObservableCollection<MaintenanceRequest>(items);
-                if (!filtered.Any())
-                {
-                    // Optional toast/alert to help diagnose header mismatches
-                    await Shell.Current.DisplayAlertAsync("Thông báo", "Không đọc được dòng nào từ sheet. Kiểm tra hàng tiêu đề (header).", "OK");
-                }
             }
             finally
             {
                 IsRefreshing = false;
+            }
+        }
+
+        private static bool TryParseStatusVi(string vi, out MaintenanceStatus status)
+        {
+            status = MaintenanceStatus.New;
+            switch (vi.Trim())
+            {
+                case "Chưa xử lý": status = MaintenanceStatus.New; return true;
+                case "Đang xử lý": status = MaintenanceStatus.InProgress; return true;
+                case "Đã xử lý": status = MaintenanceStatus.Done; return true;
+                case "Đã hủy": status = MaintenanceStatus.Cancelled; return true;
+                default: return false;
+            }
+        }
+
+        private async Task UpdateAsync(MaintenanceRequest? item)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(item.RequestId))
+            {
+                await Shell.Current.DisplayAlert("Thiếu RequestId", "Dòng này chưa có RequestId.", "OK");
+                return;
+            }
+
+            var status = await Shell.Current.DisplayActionSheet("Trạng thái", "Hủy", null,
+                "Chưa xử lý", "Đang xử lý", "Đã xử lý");
+            if (string.IsNullOrEmpty(status) || status == "Hủy") return;
+
+            var priorityVi = await Shell.Current.DisplayActionSheet("Ưu tiên", "Bỏ qua", null, "Thấp", "Trung bình", "Cao");
+
+            var costStr = await Shell.Current.DisplayPromptAsync("Chi phí",
+                "Nhập chi phí (để trống nếu không đổi)",
+                "Lưu", "Bỏ qua", keyboard: Keyboard.Numeric);
+
+            // Build values to send to sheet (Vietnamese headers/values)
+            var values = new Dictionary<string, object> { ["Trạng thái"] = status };
+            if (!string.IsNullOrEmpty(priorityVi) && priorityVi != "Bỏ qua")
+                values["Mức độ ưu tiên"] = priorityVi;
+
+            if (!string.IsNullOrWhiteSpace(costStr))
+            {
+                // Normalize thousands/decimal separators to a plain number
+                var digits = new string(costStr.Where(ch => char.IsDigit(ch) || ch == '.' || ch == ',').ToArray());
+                if (decimal.TryParse(digits.Replace(",", ""), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var cost))
+                    values["Chi phí (nếu có)"] = cost;
+            }
+
+            try
+            {
+                await _writer.UpdateAsync(item.RequestId!, values);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex);
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không cập nhật được Google Sheet.", "OK");
             }
         }
 

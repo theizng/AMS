@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System.IO;
 using Microsoft.Maui;
 using AMS.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 namespace AMS
 {
     public static class MauiProgram
@@ -21,6 +22,7 @@ namespace AMS
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
+            
             RegisterDataBase(builder);
             RegisterServices(builder);
             RegisterViewModels(builder);
@@ -47,6 +49,15 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddSingleton<HttpClient>();
+            builder.Services.AddSingleton<IMaintenanceSheetWriter>(sp =>
+            {
+                var http = sp.GetRequiredService<HttpClient>();
+                var scriptUrl = "https://script.google.com/macros/s/AKfycbzbFy-jsNeMGU1w5vnjhKmvMQV3lM-wcWrKQWjfOj0CKpv0TgDGQSR0v9JYOxHS1doa/exec"; // Thay bằng URL thực tế
+                var token = "PbR6tUEJDxdKVvheO7SCLb7IXufOVh1KlQQtGmm4l7294s9d3D6bgHueJ7xZOMqK";
+                return new GoogleAppScriptMaintenanceWriter(http, scriptUrl, token);
+
+            });
             builder.Services.AddSingleton<IOnlineMaintenanceReader, GoogleSheetXlsxMaintenanceReader>();
             builder.Services.AddSingleton<IMaintenanceSheetReader, ClosedXMLMaintenanceSheetReader>();
             builder.Services.AddSingleton<IDatabaseSyncService, DatabaseSyncService>();
