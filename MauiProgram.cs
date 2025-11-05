@@ -40,20 +40,22 @@ namespace AMS
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "ams.db");
             builder.Services.AddDbContext<AMSDbContext>(options =>
                 options.UseSqlite($"Data Source={dbPath}", sqlite =>
-                {
-                    sqlite.MigrationsAssembly("AMS"); // migrations live in the MAUI project
-                }));
+                    sqlite.MigrationsAssembly("AMS")));
+            builder.Services.AddDbContextFactory<AMSDbContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}", sqlite =>
+                    sqlite.MigrationsAssembly("AMS")));
             return builder;
         }
         public static MauiAppBuilder RegisterServices(this MauiAppBuilder builder)
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddSingleton<IRoomsProvider, RoomsEfProvider>();
             builder.Services.AddSingleton<HttpClient>();
             builder.Services.AddSingleton<IMaintenanceSheetWriter>(sp =>
             {
                 var http = sp.GetRequiredService<HttpClient>();
-                var scriptUrl = "https://script.google.com/macros/s/AKfycbzbFy-jsNeMGU1w5vnjhKmvMQV3lM-wcWrKQWjfOj0CKpv0TgDGQSR0v9JYOxHS1doa/exec"; // Thay bằng URL thực tế
+                var scriptUrl = "https://script.google.com/macros/s/AKfycbxyDXjiYhAKT0wAngda_EDM2t15xU-8ZSa0Vn7Atynb1Y86-idMTs1t47pycDzM3y-N/exec"; // Thay bằng URL thực tế
                 var token = "PbR6tUEJDxdKVvheO7SCLb7IXufOVh1KlQQtGmm4l7294s9d3D6bgHueJ7xZOMqK";
                 return new GoogleAppScriptMaintenanceWriter(http, scriptUrl, token);
 

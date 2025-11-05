@@ -6,9 +6,11 @@
     Title="Bảo trì">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Nhập URL" Priority="0" Order="Primary" Command="{Binding ImportUrlCommand}" />
-        <ToolbarItem Text="Làm mới" Priority="1" Order="Primary" Command="{Binding RefreshCommand}" />
-        <ToolbarItem Text="Nhập Excel" Priority="2" Order="Secondary" Command="{Binding ImportSheetCommand}" />
+        <ToolbarItem Text="Đồng bộ phòng" Priority="0" Order="Primary" Command="{Binding SyncRoomsCommand}" />
+        <ToolbarItem Text="Thêm yêu cầu" Priority="1" Order="Primary" Command="{Binding CreateRequestCommand}" />
+        <ToolbarItem Text="Nhập URL" Priority="2" Order="Primary" Command="{Binding ImportUrlCommand}" />
+        <ToolbarItem Text="Làm mới" Priority="3" Order="Primary" Command="{Binding RefreshCommand}" />
+        <ToolbarItem Text="Nhập Excel" Priority="4" Order="Secondary" Command="{Binding ImportSheetCommand}" />
     </ContentPage.ToolbarItems>
 
     <Grid Padding="12" RowSpacing="10">
@@ -162,6 +164,12 @@
                                     <Button
                                         Text="Cập nhật"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.UpdateRequestCommand}"
+                                        CommandParameter="{Binding .}" />
+                                    <Button
+                                        Text="Xóa"
+                                        BackgroundColor="#FFCDD2"
+                                        TextColor="#B71C1C"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteRequestCommand}"
                                         CommandParameter="{Binding .}" />
                                 </VerticalStackLayout>
                             </Grid>

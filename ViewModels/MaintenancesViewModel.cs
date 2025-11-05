@@ -1,9 +1,17 @@
 ﻿using AMS.Models;
 using AMS.Services;
 using AMS.Services.Interfaces;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Storage;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace AMS.ViewModels
@@ -13,6 +21,7 @@ namespace AMS.ViewModels
         private readonly IMaintenanceSheetReader _fileReader;
         private readonly IOnlineMaintenanceReader _onlineReader;
         private readonly IMaintenanceSheetWriter _writer;
+        private readonly IRoomsProvider _roomsProvider;
 
         private ObservableCollection<MaintenanceRequest> _items = new();
         private string _searchText = "";
@@ -33,7 +42,6 @@ namespace AMS.ViewModels
             set { _searchText = value; OnPropertyChanged(); }
         }
 
-        // Vietnamese status options
         public IReadOnlyList<string> StatusOptions { get; } =
             new[] { "Tất cả", "Chưa xử lý", "Đang xử lý", "Đã xử lý", "Đã hủy" };
 
@@ -64,6 +72,9 @@ namespace AMS.ViewModels
         public ICommand ImportUrlCommand { get; }
         public ICommand UpdateRequestCommand { get; }
         public ICommand PhoneTapCommand { get; }
+        public ICommand CreateRequestCommand { get; }
+        public ICommand DeleteRequestCommand { get; }
+        public ICommand SyncRoomsCommand { get; }   // NEW
 
         public string? SheetUrl
         {
@@ -74,12 +85,14 @@ namespace AMS.ViewModels
         public MaintenancesViewModel(
             IMaintenanceSheetReader fileReader,
             IOnlineMaintenanceReader onlineReader,
-            IMaintenanceSheetWriter writer)
+            IMaintenanceSheetWriter writer,
+            IRoomsProvider roomsProvider
+            )
         {
             _fileReader = fileReader;
             _onlineReader = onlineReader;
             _writer = writer;
-
+            _roomsProvider = roomsProvider;
             RefreshCommand = new Command(async () => await LoadAsync());
             SearchCommand = new Command(async () => await LoadAsync());
             ClearFilterCommand = new Command(async () =>
@@ -96,6 +109,12 @@ namespace AMS.ViewModels
                 try { if (!string.IsNullOrWhiteSpace(phone)) PhoneDialer.Open(phone); }
                 catch { }
             });
+
+            CreateRequestCommand = new Command(async () => await CreateAsync());
+            DeleteRequestCommand = new Command<MaintenanceRequest>(async item => await DeleteAsync(item));
+
+            // NEW: sync rooms button
+            SyncRoomsCommand = new Command(async () => await SyncRoomsAsync());
 
             _sheetPath = Preferences.Get("maintenance:sheet:path", null);
             _sheetUrl = Preferences.Get("maintenance:sheet:url", null);
@@ -116,7 +135,7 @@ namespace AMS.ViewModels
 
             if (!GoogleSheetUrlHelper.TryBuildExportXlsxUrl(input, out var normalized))
             {
-                await Shell.Current.DisplayAlert("URL không hợp lệ", "Hãy dán liên kết chuẩn của Google Sheets.", "OK");
+                await Shell.Current.DisplayAlertAsync("URL không hợp lệ", "Hãy dán liên kết chuẩn của Google Sheets.", "OK");
                 return;
             }
 
@@ -152,8 +171,8 @@ namespace AMS.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Maintenance] Pick error: {ex.Message}");
-                await Shell.Current.DisplayAlert("Lỗi", "Không thể chọn file.", "OK");
+                Debug.WriteLine($"[Maintenance] Pick error: {ex.Message}");
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể chọn file.", "OK");
             }
         }
 
@@ -171,8 +190,8 @@ namespace AMS.ViewModels
                     try { all = await _onlineReader.ReadFromUrlAsync(url); }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[Maintenance] URL load failed: {ex.Message}");
-                        await Shell.Current.DisplayAlert("Lỗi tải từ URL", $"{ex.Message}", "OK");
+                        Debug.WriteLine($"[Maintenance] URL load failed: {ex.Message}");
+                        await Shell.Current.DisplayAlertAsync("Lỗi tải từ URL", $"{ex.Message}", "OK");
                         all = Array.Empty<MaintenanceRequest>();
                     }
                 }
@@ -202,15 +221,12 @@ namespace AMS.ViewModels
                         (m.TenantPhone?.ToLowerInvariant().Contains(k) ?? false));
                 }
 
-                if (SelectedStatus != "Tất cả")
-                {
-                    if (TryParseStatusVi(SelectedStatus, out var st))
-                        filtered = filtered.Where(m => m.Status == st);
-                }
+                if (SelectedStatus != "Tất cả" && TryParseStatusVi(SelectedStatus, out var st))
+                    filtered = filtered.Where(m => m.Status == st);
 
                 var items = filtered
                     .OrderByDescending(m => m.CreatedDate)
-                    .ThenByDescending(m => m.Priority) // High/Medium/Low textual order; OK for now
+                    .ThenByDescending(m => GetPriorityScore(m.Priority))
                     .ThenBy(m => m.HouseAddress)
                     .ThenBy(m => m.RoomCode)
                     .ToList();
@@ -236,11 +252,23 @@ namespace AMS.ViewModels
             }
         }
 
+        private static int GetPriorityScore(string priority)
+        {
+            var p = (priority ?? "").Trim().ToLowerInvariant();
+            return p switch
+            {
+                "high" or "cao" => 3,
+                "medium" or "trung bình" or "trung binh" => 2,
+                "low" or "thấp" or "thap" => 1,
+                _ => 0
+            };
+        }
+
         private async Task UpdateAsync(MaintenanceRequest? item)
         {
             if (item == null || string.IsNullOrWhiteSpace(item.RequestId))
             {
-                await Shell.Current.DisplayAlert("Thiếu RequestId", "Dòng này chưa có RequestId.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thiếu RequestId", "Dòng này chưa có RequestId.", "OK");
                 return;
             }
 
@@ -254,14 +282,12 @@ namespace AMS.ViewModels
                 "Nhập chi phí (để trống nếu không đổi)",
                 "Lưu", "Bỏ qua", keyboard: Keyboard.Numeric);
 
-            // Build values to send to sheet (Vietnamese headers/values)
             var values = new Dictionary<string, object> { ["Trạng thái"] = status };
             if (!string.IsNullOrEmpty(priorityVi) && priorityVi != "Bỏ qua")
                 values["Mức độ ưu tiên"] = priorityVi;
 
             if (!string.IsNullOrWhiteSpace(costStr))
             {
-                // Normalize thousands/decimal separators to a plain number
                 var digits = new string(costStr.Where(ch => char.IsDigit(ch) || ch == '.' || ch == ',').ToArray());
                 if (decimal.TryParse(digits.Replace(",", ""), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var cost))
                     values["Chi phí (nếu có)"] = cost;
@@ -274,9 +300,94 @@ namespace AMS.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex);
+                Debug.WriteLine(ex);
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Không cập nhật được Google Sheet.", "OK");
             }
+        }
+
+        private async Task CreateAsync()
+        {
+            var room = await Shell.Current.DisplayPromptAsync("Mã phòng", "Nhập Mã phòng (chọn từ Rooms)", "Tiếp", "Hủy");
+            if (string.IsNullOrWhiteSpace(room)) return;
+
+            var category = await Shell.Current.DisplayPromptAsync("Phân loại", "Nhập phân loại (hoặc để trống)", "Tiếp", "Bỏ qua");
+            var desc = await Shell.Current.DisplayPromptAsync("Miêu tả", "Nhập mô tả sự cố", "Tạo", "Hủy");
+            if (string.IsNullOrWhiteSpace(desc)) return;
+
+            var priority = await Shell.Current.DisplayActionSheet("Ưu tiên", "Bỏ qua", null, "Thấp", "Trung bình", "Cao");
+
+            var values = new Dictionary<string, object>
+            {
+                ["Mã phòng"] = room.Trim(),
+                ["Phân loại"] = category ?? "",
+                ["Miêu tả"] = desc.Trim()
+            };
+            if (!string.IsNullOrEmpty(priority) && priority != "Bỏ qua") values["Mức độ ưu tiên"] = priority;
+
+            try
+            {
+                var id = await _writer.CreateAsync(values);
+                await LoadAsync();
+                await Shell.Current.DisplayAlertAsync("Thành công", $"Đã tạo yêu cầu: {id}", "OK");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không tạo được yêu cầu.", "OK");
+            }
+        }
+
+        private async Task DeleteAsync(MaintenanceRequest? item)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(item.RequestId)) return;
+            var confirm = await Shell.Current.DisplayAlertAsync("Xóa yêu cầu", $"Xóa ID {item.RequestId}?", "Xóa", "Hủy");
+            if (!confirm) return;
+
+            try
+            {
+                await _writer.DeleteAsync(item.RequestId!);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không xóa được yêu cầu.", "OK");
+            }
+        }
+
+        // ========== Rooms sync ==========
+
+        private async Task SyncRoomsAsync()
+        {
+            try
+            {
+                IsRefreshing = true;
+
+                var rooms = await GetRoomsFromDbAsync();
+                if (rooms == null || rooms.Count == 0)
+                {
+                    await Shell.Current.DisplayAlertAsync("Không có dữ liệu", "Chưa có phòng để đồng bộ.", "OK");
+                    return;
+                }
+
+                await _writer.SyncRoomsAsync(rooms);
+                await Shell.Current.DisplayAlertAsync("Thành công", $"Đã đồng bộ {rooms.Count} phòng.", "OK");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Đồng bộ phòng thất bại.", "OK");
+            }
+            finally
+            {
+                IsRefreshing = false;
+            }
+        }
+
+        private async Task<IReadOnlyList<RoomInfo>> GetRoomsFromDbAsync()
+        {
+            // Include inactive so the sheet knows ALL RoomCodes; the script hides inactive via Active=false.
+            return await _roomsProvider.GetRoomsAsync(includeInactive: true);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
