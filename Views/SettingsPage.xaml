@@ -5,49 +5,119 @@
              x:Class="AMS.Views.SettingsPage"
              Title="Cài đặt"
              BackgroundColor="{DynamicResource PageBackgroundColor}">
+
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:InvertBoolConverter x:Key="InverseBoolConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
+
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="16">
-            <Label Text="Giao diện" FontAttributes="Bold" FontSize="18"
-             TextColor="{DynamicResource PrimaryTextColor}" />
 
-            <VerticalStackLayout Spacing="8">
-                <RadioButton Content="Theo hệ thống"
-                     GroupName="ThemeOptions"
-                     IsChecked="{Binding IsSystemTheme}" />
-                <RadioButton Content="Chế độ sáng"
-                     GroupName="ThemeOptions"
-                     IsChecked="{Binding IsLightTheme}" />
-                <RadioButton Content="Chế độ tối"
-                     GroupName="ThemeOptions"
-                     IsChecked="{Binding IsDarkTheme}" />
-            </VerticalStackLayout>
+            <!-- GIAO DIỆN -->
+            <Frame Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Giao diện" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
 
-            <Button Text="Chuyển đổi Sáng/Tối"
-              Command="{Binding ToggleThemeCommand}"
-              BackgroundColor="{DynamicResource PrimaryColor}"
-              TextColor="{DynamicResource SecondaryColor}" />
+                    <VerticalStackLayout Spacing="6">
+                        <RadioButton Style="{DynamicResource TextPrimary}" Content="Theo hệ thống" GroupName="ThemeOptions" IsChecked="{Binding IsSystemTheme}" />
+                        <RadioButton Style="{DynamicResource TextPrimary}" Content="Chế độ sáng" GroupName="ThemeOptions" IsChecked="{Binding IsLightTheme}" />
+                        <RadioButton Style="{DynamicResource TextPrimary}" Content="Chế độ tối" GroupName="ThemeOptions" IsChecked="{Binding IsDarkTheme}" />
+                    </VerticalStackLayout>
 
-            <Label Text="Đồng bộ cơ sở dữ liệu" FontAttributes="Bold" FontSize="18"
-             TextColor="{DynamicResource PrimaryTextColor}" />
+                    <Button Text="Chuyển đổi Sáng/Tối"
+                  Style="{DynamicResource PrimaryButton}"
+                  Command="{Binding ToggleThemeCommand}" />
+                </VerticalStackLayout>
+            </Frame>
 
-            <HorizontalStackLayout Spacing="12">
-                <Button Text="Sao lưu lên đám mây"
-                Command="{Binding BackupCommand}"
-                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
-                <Button Text="Khôi phục từ đám mây"
-                Command="{Binding RestoreCommand}"
-                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
-            </HorizontalStackLayout>
+            <!-- TÀI KHOẢN & BẢO MẬT -->
+            <!-- CHANGE PASSWORD -->
+            <Frame Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Đổi mật khẩu quản trị" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                        <Label Grid.Row="0" Grid.Column="0" Text="Mật khẩu hiện tại" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="0" Style="{DynamicResource TextPrimary}" Grid.Column="1" IsPassword="True" Text="{Binding CurrentPassword}" />
 
-            <ActivityIndicator IsRunning="{Binding IsBusy}"
-                         IsVisible="{Binding IsBusy}" />
-            <Label Text="Thay đổi áp dụng ngay lập tức."
-             TextColor="{DynamicResource SecondaryTextColor}" FontSize="12" />
+                        <Label Grid.Row="1" Grid.Column="0" Text="Mật khẩu mới" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="1" Style="{DynamicResource TextPrimary}" Grid.Column="1" IsPassword="True" Text="{Binding NewPassword}" />
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Xác nhận mật khẩu" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="2" Style="{DynamicResource TextPrimary}" Grid.Column="1" IsPassword="True" Text="{Binding ConfirmPassword}" />
+                    </Grid>
+
+                    <Button Text="Đổi mật khẩu" Style="{DynamicResource PrimaryButton}" Command="{Binding ChangePasswordCommand}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ĐỒNG BỘ CƠ SỞ DỮ LIỆU -->
+            <Frame Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Đồng bộ cơ sở dữ liệu" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Button Text="Sao lưu lên đám mây"
+                    Style="{DynamicResource PrimaryButton}"
+                    Command="{Binding BackupCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
+                        <Button Text="Khôi phục từ đám mây"
+                    Style="{DynamicResource WarningButton}"
+                    Command="{Binding RestoreCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
+                    </HorizontalStackLayout>
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+                    <Label Text="{Binding LastBackupInfo}" FontSize="12" Style="{DynamicResource TextSecondary}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- EMAIL & THÔNG BÁO -->
+            <!-- EMAIL SETTINGS -->
+            <Frame Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Email (SMTP)" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
+
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                        <Label Grid.Row="0" Grid.Column="0" Text="SMTP Host" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="0" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SmtpHost}" />
+
+                        <Label Grid.Row="1" Grid.Column="0" Text="Port" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="1" Grid.Column="1" Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding SmtpPort}" />
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Use SSL/TLS" Style="{DynamicResource TextSecondary}" />
+                        <Switch Grid.Row="2" Grid.Column="1" IsToggled="{Binding SmtpUseSsl}" />
+
+                        <Label Grid.Row="3" Grid.Column="0" Text="User" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="3" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SmtpUser}" />
+
+                        <Label Grid.Row="4" Grid.Column="0" Text="Password" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="4" Grid.Column="1" Style="{DynamicResource TextPrimary}" IsPassword="True" Text="{Binding SmtpPassword}" />
+
+                        <Label Grid.Row="5" Grid.Column="0" Text="Sender name" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="5" Grid.Column="1" Style="{DynamicResource TextPrimary}"  Text="{Binding SenderName}" />
+
+                        <Label Grid.Row="6" Grid.Column="0" Text="Sender email" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="6" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SenderAddress}" />
+                    </Grid>
+
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Text="Lưu cấu hình" Style="{DynamicResource PrimaryButton}" Command="{Binding SaveEmailSettingsCommand}" />
+                        <Entry WidthRequest="220" Placeholder="Gửi thử tới..." Style="{DynamicResource TextPrimary}" Text="{Binding TestEmailTo}" />
+                        <Button Text="Gửi email thử" Style="{DynamicResource NeutralButton}" Command="{Binding TestEmailCommand}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- THÔNG TIN -->
+            <Frame Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Thông tin" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
+                    <Label Text="{Binding AppVersion}" Style="{DynamicResource TextPrimary}" />
+                    <Label Text="{Binding DeviceInfo}" Style="{DynamicResource TextSecondary}" />
+                    <Label Text="Thay đổi áp dụng ngay lập tức." FontSize="12" Style="{DynamicResource TextSecondary}" />
+                </VerticalStackLayout>
+            </Frame>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

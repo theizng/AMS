@@ -72,27 +72,27 @@
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,0,0,10" Padding="25" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="30">
+                        <Frame Style="{DynamicResource Card}">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
                                 <!-- Info -->
                                 <VerticalStackLayout Grid.RowSpan="4" Grid.Column="0" Spacing="0">
                                     <HorizontalStackLayout Spacing="5" Margin="0,0,0,10">
-                                        <Label Text="{Binding RoomCode}" FontSize="19" FontAttributes="Bold" />
-                                        <!-- Badge -->
-                                        <Border BackgroundColor="#F4F4F4" Padding="10,4">
-                                            <Border.StrokeShape>
-                                                <RoundRectangle CornerRadius="20" />
-                                            </Border.StrokeShape>
+                                        <Label Text="{Binding RoomCode}" FontSize="19" FontAttributes="Bold" Style="{DynamicResource TextPrimary}" />
+
+                                        <!-- Badge (theme-aware) -->
+                                        <Border Style="{DynamicResource Chip}">
                                             <Label Text="{Binding RoomStatus}"
-                                                   TextColor="{Binding RoomStatus, Converter={StaticResource StatusColorConverter}}"
-                                                   FontAttributes="Bold" />
+                   TextColor="{Binding RoomStatus, Converter={StaticResource StatusColorConverter}}"
+                   FontAttributes="Bold" />
                                         </Border>
                                     </HorizontalStackLayout>
+
                                     <Label Text="{Binding House.Address, StringFormat='Nhà: {0}'}"
-                                           IsVisible="{Binding House}" />
-                                    <Label Text="{Binding Area, StringFormat='Diện tích: {0:N0} m²'}" />
-                                    <Label Text="{Binding Price, StringFormat='Giá: {0:N0} đ'}" />
-                                    <Label>
+               IsVisible="{Binding House}" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding Area, StringFormat='Diện tích: {0:N0} m²'}" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding Price, StringFormat='Giá: {0:N0} đ'}" Style="{DynamicResource TextPrimary}" />
+
+                                    <Label Style="{DynamicResource TextPrimary}">
                                         <Label.Text>
                                             <MultiBinding StringFormat="Có {0}/{1} người ở hiện tại">
                                                 <Binding Path="ActiveOccupants" />
@@ -100,23 +100,26 @@
                                             </MultiBinding>
                                         </Label.Text>
                                     </Label>
-                                    <Label Text="{Binding Notes}" TextColor="#777" FontSize="12" />
+
+                                    <Label Text="{Binding Notes}" Style="{DynamicResource TextSecondary}" />
                                 </VerticalStackLayout>
 
                                 <!-- Actions -->
                                 <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
                                     <Button Text="Xem chi tiết"
-                                            TextColor="White"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewDetailCommand}"
-                                            CommandParameter="{Binding .}" />
+                Style="{DynamicResource PrimaryButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewDetailCommand}"
+                CommandParameter="{Binding .}" />
+
                                     <Button Text="Sửa"
-                                            BackgroundColor="DarkOrange" TextColor="White"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditRoomCommand}"
-                                            CommandParameter="{Binding .}" />
+                Style="{DynamicResource WarningButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditRoomCommand}"
+                CommandParameter="{Binding .}" />
+
                                     <Button Text="Xóa"
-                                            BackgroundColor="#E53935" TextColor="White"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteRoomCommand}"
-                                            CommandParameter="{Binding .}" />
+                Style="{DynamicResource DangerButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteRoomCommand}"
+                CommandParameter="{Binding .}" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Frame>

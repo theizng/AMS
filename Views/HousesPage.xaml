@@ -33,29 +33,27 @@
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame Margin="0,6" Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
+                    <Frame Style="{DynamicResource Card}">
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
-                            <!-- Info -->
                             <VerticalStackLayout Grid.RowSpan="3" Grid.Column="0" Spacing="6">
-                                <Label Text="{Binding Address}" FontSize="16" FontAttributes="Bold" />
-                                <Label Text="{Binding TotalRooms, StringFormat='Tổng số phòng: {0}'}" />
-                                <Label Text="{Binding Notes}" TextColor="#777" FontSize="12" />
+                                <Label Text="{Binding Address}" FontSize="16" FontAttributes="Bold" Style="{DynamicResource TextPrimary}" />
+                                <Label Text="{Binding TotalRooms, StringFormat='Tổng số phòng: {0}'}" Style="{DynamicResource TextPrimary}" />
+                                <Label Text="{Binding Notes}" Style="{DynamicResource TextSecondary}" />
                             </VerticalStackLayout>
 
-                            <!-- Actions -->
                             <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
                                 <Button Text="Xem phòng"
-                                        TextColor="White"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRoomsCommand}"
-                                        CommandParameter="{Binding .}" />
+                Style="{DynamicResource PrimaryButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRoomsCommand}"
+                CommandParameter="{Binding .}" />
                                 <Button Text="Sửa"
-                                        BackgroundColor="DarkOrange" TextColor="White"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditHouseCommand}"
-                                        CommandParameter="{Binding .}" />
+                Style="{DynamicResource WarningButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditHouseCommand}"
+                CommandParameter="{Binding .}" />
                                 <Button Text="Xóa"
-                                        BackgroundColor="#E53935" TextColor="White"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteHouseCommand}"
-                                        CommandParameter="{Binding .}" />
+                Style="{DynamicResource DangerButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteHouseCommand}"
+                CommandParameter="{Binding .}" />
                             </VerticalStackLayout>
                         </Grid>
                     </Frame>

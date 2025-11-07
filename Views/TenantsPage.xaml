@@ -44,51 +44,45 @@
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,6" Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
+                        <Frame Style="{DynamicResource Card}">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
                                 <VerticalStackLayout Grid.Column="0" Spacing="4">
                                     <HorizontalStackLayout Spacing="8">
-                                        <Label Text="{Binding FullName}" FontSize="18" FontAttributes="Bold" />
-                                        <Border Padding="6,2" BackgroundColor="#F4F4F4">
-                                            <Border.StrokeShape>
-                                                <RoundRectangle CornerRadius="6" />
-                                            </Border.StrokeShape>
+                                        <Label Text="{Binding FullName}" FontSize="18" FontAttributes="Bold" Style="{DynamicResource TextPrimary}" />
+                                        <Border Style="{DynamicResource Chip}">
                                             <Label Text="{Binding IsActive, StringFormat='{0:Hoạt động;Ngừng}'}"
-                                                   TextColor="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}" />
+                   TextColor="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}" />
                                         </Border>
                                     </HorizontalStackLayout>
-                                    <Label Text="{Binding PhoneNumber, StringFormat='SĐT: {0}'}" />
-                                    <Label Text="{Binding IdCardNumber, StringFormat='CCCD/CMND: {0}'}" />
-                                    <Label Text="{Binding Email, StringFormat='Email: {0}'}" />
-                                    <Label Text="{Binding PermanentAddress, StringFormat='Địa chỉ: {0}'}" />
 
-                                    <!-- Người liên hệ khẩn cấp -->
-                                    <Label Text="{Binding EmergencyContactsText, StringFormat='Người liên hệ khẩn cấp: {0}'}" />
-
-                                    <!-- Đang thuê phòng -->
-                                    <Label Text="{Binding CurrentRoomDisplay, StringFormat='Đang thuê phòng: {0}'}" />
-
-                                    <!-- Số lượng xe máy: from RoomOccupancy.BikeCount -->
-                                    <Label Text="{Binding ActiveBikeCount, StringFormat='Số lượng xe máy: {0}'}" />
+                                    <Label Text="{Binding PhoneNumber, StringFormat='SĐT: {0}'}" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding IdCardNumber, StringFormat='CCCD/CMND: {0}'}" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding Email, StringFormat='Email: {0}'}" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding PermanentAddress, StringFormat='Địa chỉ: {0}'}" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding EmergencyContactsText, StringFormat='Người liên hệ khẩn cấp: {0}'}" Style="{DynamicResource TextSecondary}" />
+                                    <Label Text="{Binding CurrentRoomDisplay, StringFormat='Đang thuê phòng: {0}'}" Style="{DynamicResource TextSecondary}" />
+                                    <Label Text="{Binding ActiveBikeCount, StringFormat='Số lượng xe máy: {0}'}" Style="{DynamicResource TextSecondary}" />
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
                                     <Button Text="Sửa"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditTenantCommand}"
-                                            CommandParameter="{Binding .}" />
+                
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditTenantCommand}"
+                CommandParameter="{Binding .}" />
                                     <Button Text="Hủy kích hoạt"
-                                            IsVisible="{Binding IsActive}"
-                                            BackgroundColor="#E53935" TextColor="White"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeactivateCommand}"
-                                            CommandParameter="{Binding .}" />
+                IsVisible="{Binding IsActive}"
+                Style="{DynamicResource DangerButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeactivateCommand}"
+                CommandParameter="{Binding .}" />
                                     <Button Text="Kích hoạt"
-                                            IsVisible="{Binding IsActive, Converter={StaticResource InvertBoolConverter}}"
-                                            BackgroundColor="#4CAF50" TextColor="White"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ActivateCommand}"
-                                            CommandParameter="{Binding .}" />
+                IsVisible="{Binding IsActive, Converter={StaticResource InvertBoolConverter}}"
+                Style="{DynamicResource SuccessButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ActivateCommand}"
+                CommandParameter="{Binding .}" />
                                     <Button Text="Xóa"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTenantCommand}"
-                                            CommandParameter="{Binding .}" />
+                Style="{DynamicResource DangerButton}"
+                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTenantCommand}"
+                CommandParameter="{Binding .}" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Frame>

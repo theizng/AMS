@@ -80,18 +80,18 @@
 
                                 <!-- Row 1: ID + Category + Priority badge -->
                                 <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="10">
-                                    <Label Text="{Binding RequestId, StringFormat='ID: {0}'}"
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RequestId, StringFormat='ID: {0}'}"
                                            FontAttributes="Bold" />
-                                    <Label Text="•" TextColor="#CCC"/>
-                                    <Label Text="{Binding Category}" FontAttributes="Bold" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="•" TextColor="#CCC"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Category}" FontAttributes="Bold" />
                                     <Border Padding="8,2" StrokeThickness="0" Background="#EEE">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="8" />
                                         </Border.StrokeShape>
-                                        <Label Text="{Binding PriorityVi, StringFormat='Ưu tiên: {0}'}" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding PriorityVi, StringFormat='Ưu tiên: {0}'}" />
                                         
                                         <Border.Triggers>
-                                            <DataTrigger TargetType="Border" Binding="{Binding PriorityVi}" Value="Thấp">
+                                            <DataTrigger  TargetType="Border" Binding="{Binding PriorityVi}" Value="Thấp">
                                                 <Setter Property="Background" Value="#C8E6C9" />
                                             </DataTrigger>
                                             <DataTrigger TargetType="Border" Binding="{Binding PriorityVi}" Value="Trung bình">
@@ -105,19 +105,19 @@
                                 </HorizontalStackLayout>
 
                                 <!-- Row 2: Description -->
-                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Style="{DynamicResource TextPrimary}"
                                        Text="{Binding Description}"
                                        LineBreakMode="WordWrap" />
 
                                 <!-- Row 3: Created date + Tenant name + phone -->
                                 <HorizontalStackLayout Grid.Row="2" Spacing="14">
-                                    <Label Text="{Binding CreatedDate, StringFormat='Ngày khởi tạo: {0:yyyy-MM-dd}'}" />
-                                    <Label Text="|" TextColor="#CCC"/>
-                                    <Label Text="{Binding TenantName, StringFormat='Người thuê: {0}'}" />
-                                    <Label Text="|" TextColor="#CCC"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding CreatedDate, StringFormat='Ngày khởi tạo: {0:yyyy-MM-dd}'}" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="|" TextColor="#CCC"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding TenantName, StringFormat='Người thuê: {0}'}" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="|" TextColor="#CCC"/>
                                     <HorizontalStackLayout Spacing="6">
-                                        <Label Text="SĐT:" />
-                                        <Label Text="{Binding TenantPhone}" TextColor="#1976D2">
+                                        <Label Style="{DynamicResource TextPrimary}" Text="SĐT:" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TenantPhone}" TextColor="#1976D2">
                                             <Label.GestureRecognizers>
                                                 <TapGestureRecognizer
                                                     Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PhoneTapCommand}"
@@ -129,7 +129,7 @@
 
                                 <!-- Row 4: Estimated cost (hide when null) -->
                                 <Label Grid.Row="3" Grid.Column="0"
-                                       Text="{Binding EstimatedCost, StringFormat='Chi phí ước tính: {0:N0} đ'}">
+                                       Style="{DynamicResource TextPrimary}" Text="{Binding EstimatedCost, StringFormat='Chi phí ước tính: {0:N0} đ'}">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding EstimatedCost}" Value="{x:Null}">
                                             <Setter Property="IsVisible" Value="False" />
@@ -144,7 +144,7 @@
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="8" />
                                         </Border.StrokeShape>
-                                        <Label Text="{Binding StatusVi}" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusVi}" />
                                         <Border.Triggers>
                                             <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Chưa xử lý">
                                                 <Setter Property="Background" Value="#FFF3CD" />
@@ -155,20 +155,16 @@
                                             <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Đã xử lý">
                                                 <Setter Property="Background" Value="#C8E6C9" />
                                             </DataTrigger>
-                                            <DataTrigger TargetType="Border" Binding="{Binding StatusVi}" Value="Đã hủy">
-                                                <Setter Property="Background" Value="#E0E0E0" />
-                                            </DataTrigger>
                                         </Border.Triggers>
                                     </Border>
 
                                     <Button
-                                        Text="Cập nhật"
+                                        Style="{DynamicResource TextPrimary}" Text="Cập nhật"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.UpdateRequestCommand}"
                                         CommandParameter="{Binding .}" />
                                     <Button
-                                        Text="Xóa"
+                                        Style="{DynamicResource TextPrimary}" Text="Xóa"
                                         BackgroundColor="#FFCDD2"
-                                        TextColor="#B71C1C"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteRequestCommand}"
                                         CommandParameter="{Binding .}" />
                                 </VerticalStackLayout>

@@ -19,7 +19,23 @@ namespace AMS.Services
             // Kiểm tra đăng nhập từ lưu trữ
             LoadAdminFromStorage();
         }
-
+        public async Task ChangePasswordAsync(string currentPassword, string newPassword)
+        {
+            if (_currentAdmin == null)
+            {
+                throw new InvalidOperationException("Không có quản trị viên nào đang đăng nhập.");
+            }
+            bool passwordValid = BCrypt.Net.BCrypt.Verify(currentPassword, _currentAdmin.PasswordHash);
+            if (!passwordValid)
+            {
+                throw new InvalidOperationException("Mật khẩu hiện tại không chính xác.");
+            }
+            // Mã hóa mật khẩu mới
+            string newHashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            // Cập nhật mật khẩu trong cơ sở dữ liệu
+            _currentAdmin.PasswordHash = newHashedPassword;
+            await _dbContext.SaveChangesAsync();
+        }
         public async Task<AuthResult> LoginAsync(string username, string password)
         {
             try

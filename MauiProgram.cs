@@ -50,6 +50,8 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddSingleton<IEmailService, EmailService>();
+            builder.Services.AddSingleton<IEmailNotificationService, EmailNotificationService>();
             builder.Services.AddSingleton<IRoomsProvider, RoomsEfProvider>();
             builder.Services.AddSingleton<HttpClient>();
             builder.Services.AddSingleton<IMaintenanceSheetWriter>(sp =>

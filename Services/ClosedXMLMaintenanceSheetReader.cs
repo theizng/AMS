@@ -9,7 +9,9 @@ namespace AMS.Services
         public Task<IReadOnlyList<MaintenanceRequest>> ReadAsync(string filePath, string? sheetName = null)
         {
             using var wb = new XLWorkbook(filePath);
+
             var ws = string.IsNullOrWhiteSpace(sheetName) ? wb.Worksheet(1) : wb.Worksheet(sheetName);
+
             var used = ws.RangeUsed();
             if (used == null) return Task.FromResult<IReadOnlyList<MaintenanceRequest>>(Array.Empty<MaintenanceRequest>());
 
@@ -17,6 +19,7 @@ namespace AMS.Services
             var header = used.FirstRow();
             var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             int colCount = used.ColumnCount();
+
             for (int c = 1; c <= colCount; c++)
             {
                 var name = header.Cell(c).GetString().Trim();
@@ -100,7 +103,7 @@ namespace AMS.Services
                     "new" or "mới" or "moi" or "chưa xử lý" or "chua xu ly" => MaintenanceStatus.New,
                     "inprogress" or "in progress" or "đang xử lý" or "dang xu ly" => MaintenanceStatus.InProgress,
                     "done" or "hoàn tất" or "hoan tat" or "đã xử lý" or "da xu ly" => MaintenanceStatus.Done,
-                    "cancelled" or "canceled" or "hủy" or "huy" => MaintenanceStatus.Cancelled,
+                    "cancelled" or "canceled" or "đã hủy" or "da huy" => MaintenanceStatus.Cancelled,
                     _ => MaintenanceStatus.New
                 };
 

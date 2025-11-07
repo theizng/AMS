@@ -7,7 +7,9 @@ namespace AMS.Services
         bool IsLoggedIn();
         Task LogoutAsync();
         Task<DateTime> UpdateLastLoginAsync();
+        Task ChangePasswordAsync(string currentPassword, string newPassword);
         Admin CurrentAdmin { get; }
+
     }
 
     public class AuthResult

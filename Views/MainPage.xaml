@@ -7,24 +7,17 @@
 
     <ScrollView>
         <Grid RowDefinitions="Auto, Auto, *">
-            <!-- Header với thông tin thời gian và người dùng -->
+            <!-- Header -->
             <Grid Grid.Row="0" ColumnDefinitions="*, Auto" 
                   BackgroundColor="#f5f5f5" Padding="15,10">
-
-                <!-- Thời gian hiện tại -->
                 <VerticalStackLayout Grid.Column="0">
-                    <Label Text="Ngày giờ hiện tại" 
-                           FontSize="12" TextColor="#666666" />
-                    <Label Text="{Binding CurrentDateTime, StringFormat='{0:yyyy-MM-dd HH:mm:ss}'}" 
+                    <Label Text="Ngày giờ hiện tại" FontSize="12" TextColor="#666666" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding CurrentDateTime, StringFormat='{0:yyyy-MM-dd HH:mm:ss}'}" 
                            FontSize="16" FontAttributes="Bold" />
                 </VerticalStackLayout>
-
-                <!-- Thông tin người dùng -->
                 <VerticalStackLayout Grid.Column="1" HorizontalOptions="End">
-                    <Label Text="Đăng nhập với" 
-                           FontSize="12" TextColor="#666666" />
-                    <Label Text="{Binding CurrentUser}" 
-                           FontSize="16" FontAttributes="Bold" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="Đăng nhập với" FontSize="12" TextColor="#666666" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding CurrentUser}" FontSize="16" FontAttributes="Bold" />
                 </VerticalStackLayout>
             </Grid>
 
@@ -39,20 +32,26 @@
                             <Label Text="{Binding OccupiedRooms}" TextColor="#e74c3c" />
                             <Label Text=" phòng đang thuê" TextColor="#666666" />
                         </HorizontalStackLayout>
+                        <!-- NEW: inactive rooms -->
+                        <HorizontalStackLayout>
+                            <Label Text="{Binding InactiveRooms}" TextColor="#B71C1C" />
+                            <Label Text=" phòng không hoạt động" TextColor="#666666" />
+                        </HorizontalStackLayout>
                     </VerticalStackLayout>
                 </Frame>
 
-                <!-- Doanh thu tháng -->
+                <!-- Doanh thu tháng (last month) -->
                 <Frame Grid.Row="0" Grid.Column="1" Margin="5" BorderColor="#E0E0E0" CornerRadius="10">
                     <VerticalStackLayout>
                         <Label Text="Doanh thu tháng" FontSize="14" TextColor="#666666" />
                         <Label Text="{Binding MonthlyRevenue, StringFormat='{0:N0} VNĐ'}" 
                                FontSize="24" FontAttributes="Bold" TextColor="#2ecc71" />
-                        <Label Text="{Binding CurrentMonth, StringFormat='Tháng {0:MM/yyyy}'}" TextColor="#666666" />
+                        <!-- show previous month -->
+                        <Label Text="{Binding LastMonthDate, StringFormat='Tháng {0:MM/yyyy}'}" TextColor="#666666" />
                     </VerticalStackLayout>
                 </Frame>
 
-                <!-- Công nợ hiện tại -->
+                <!-- Công nợ hiện tại (unchanged) -->
                 <Frame Grid.Row="1" Grid.Column="0" Margin="5" BorderColor="#E0E0E0" CornerRadius="10">
                     <VerticalStackLayout>
                         <Label Text="Công nợ hiện tại" FontSize="14" TextColor="#666666" />
@@ -83,28 +82,28 @@
                 <Button Grid.Row="1" Grid.Column="0" Margin="5"
                         Text="Quản lý phòng" 
                         Command="{Binding NavigateToCommand}" 
-                        CommandParameter="RoomsPage"
+                        CommandParameter="rooms"
                         BackgroundColor="#3498db" />
 
                 <!-- Quản lý người thuê -->
                 <Button Grid.Row="1" Grid.Column="1" Margin="5"
                         Text="Quản lý người thuê" 
                         Command="{Binding NavigateToCommand}" 
-                        CommandParameter="TenantsPage"
+                        CommandParameter="tenants"
                         BackgroundColor="#2ecc71" />
 
                 <!-- Thanh toán -->
                 <Button Grid.Row="2" Grid.Column="0" Margin="5"
                         Text="Thanh toán" 
                         Command="{Binding NavigateToCommand}" 
-                        CommandParameter="PaymentsPage"
+                        CommandParameter="payments"
                         BackgroundColor="#e67e22" />
 
                 <!-- Báo cáo -->
                 <Button Grid.Row="2" Grid.Column="1" Margin="5"
                         Text="Báo cáo" 
                         Command="{Binding NavigateToCommand}" 
-                        CommandParameter="ReportsPage"
+                        CommandParameter="reports"
                         BackgroundColor="#9b59b6" />
             </Grid>
         </Grid>

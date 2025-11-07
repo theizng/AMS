@@ -6,9 +6,13 @@ using System.Windows.Input;
 using AMS.Data;
 using AMS.Models;
 using AMS.Services;
+using AMS.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace AMS.ViewModels
 {
@@ -16,144 +20,109 @@ namespace AMS.ViewModels
     {
         private readonly IAuthService _authService;
         private readonly AMSDbContext _dbContext;
+        private readonly IOnlineMaintenanceReader _onlineReader;
+
         private DateTime _currentDateTime;
-        private string _currentUser;
+        private string _currentUser = "Chưa đăng nhập";
         private int _totalRooms;
         private int _occupiedRooms;
+        private int _inactiveRooms;
         private decimal _monthlyRevenue;
         private decimal _currentDebt;
         private int _debtRooms;
         private int _pendingMaintenance;
-        private DateTime _currentMonth;
+        private DateTime _lastMonthDate;
         private System.Timers.Timer _timer;
 
         public string CurrentUser
         {
             get => _currentUser;
-            set
-            {
-                _currentUser = value;
-                OnPropertyChanged();
-            }
+            set { _currentUser = value; OnPropertyChanged(); }
         }
-
-        public string FormattedDateTime => _currentDateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
         public DateTime CurrentDateTime
         {
             get => _currentDateTime;
-            set
-            {
-                _currentDateTime = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(FormattedDateTime));
-            }
+            set { _currentDateTime = value; OnPropertyChanged(); }
         }
 
         public int TotalRooms
         {
             get => _totalRooms;
-            set
-            {
-                _totalRooms = value;
-                OnPropertyChanged();
-            }
+            set { _totalRooms = value; OnPropertyChanged(); }
         }
 
         public int OccupiedRooms
         {
             get => _occupiedRooms;
-            set
-            {
-                _occupiedRooms = value;
-                OnPropertyChanged();
-            }
+            set { _occupiedRooms = value; OnPropertyChanged(); }
         }
 
-        public int DebtRooms
+        public int InactiveRooms
         {
-            get => _debtRooms;
-            set
-            {
-                _debtRooms = value;
-                OnPropertyChanged();
-            }
+            get => _inactiveRooms;
+            set { _inactiveRooms = value; OnPropertyChanged(); }
         }
 
         public decimal MonthlyRevenue
         {
             get => _monthlyRevenue;
-            set
-            {
-                _monthlyRevenue = value;
-                OnPropertyChanged();
-            }
+            set { _monthlyRevenue = value; OnPropertyChanged(); }
         }
 
         public decimal CurrentDebt
         {
             get => _currentDebt;
-            set
-            {
-                _currentDebt = value;
-                OnPropertyChanged();
-            }
+            set { _currentDebt = value; OnPropertyChanged(); }
+        }
+
+        public int DebtRooms
+        {
+            get => _debtRooms;
+            set { _debtRooms = value; OnPropertyChanged(); }
         }
 
         public int PendingMaintenance
         {
             get => _pendingMaintenance;
-            set
-            {
-                _pendingMaintenance = value;
-                OnPropertyChanged();
-            }
+            set { _pendingMaintenance = value; OnPropertyChanged(); }
         }
 
-        public int CurrentMonth
+        // For label "Tháng {0:MM/yyyy}" (previous month)
+        public DateTime LastMonthDate
         {
-            get => _currentMonth.Month;
-            set
-            {
-                _currentMonth = DateTime.Now;
-                OnPropertyChanged();
-            }
+            get => _lastMonthDate;
+            set { _lastMonthDate = value; OnPropertyChanged(); }
         }
 
         // Commands
         public ICommand NavigateToCommand { get; }
         public ICommand RefreshCommand { get; }
 
-        // Removed BindableObject dependency; use MainThread for UI dispatch
-        public MainPageViewModel(IAuthService authService, AMSDbContext dbContext)
+        public MainPageViewModel(IAuthService authService, AMSDbContext dbContext, IOnlineMaintenanceReader onlineReader)
         {
             _authService = authService;
             _dbContext = dbContext;
+            _onlineReader = onlineReader;
 
-            // Initialize commands
             NavigateToCommand = new Command<string>(OnNavigateTo);
             RefreshCommand = new Command(async () => await LoadDashboardData());
 
-            // Initial values (use local time)
             _currentDateTime = DateTime.Now;
-            _currentMonth = DateTime.Now;
+            LastMonthDate = new DateTime(_currentDateTime.Year, _currentDateTime.Month, 1).AddMonths(-1);
 
-            // Check if user is logged in
             if (_authService.CurrentAdmin != null)
             {
                 CurrentUser = _authService.CurrentAdmin.FullName;
             }
             else
             {
-                CurrentUser = "Chưa đăng nhập";
                 Application.Current.MainPage = new LoginShell();
                 return;
             }
 
-            // Load initial data
-            LoadDashboardData();
+            _ = LoadDashboardData();
 
-            // Timer to update current time every second (use local time)
             _timer = new System.Timers.Timer(1000);
             _timer.Elapsed += (s, e) =>
             {
@@ -166,15 +135,21 @@ namespace AMS.ViewModels
         {
             try
             {
-                // Load room statistics
+                // Rooms (DB)
                 TotalRooms = await _dbContext.Rooms.CountAsync();
                 OccupiedRooms = await _dbContext.Rooms.CountAsync(r => r.RoomStatus == Room.Status.Occupied);
+                InactiveRooms = await _dbContext.Rooms.CountAsync(r => r.RoomStatus == Room.Status.Inactive);
 
-                // TODO: Calculate actual values when payment/invoice models are ready
-                MonthlyRevenue = 15000000M;
-                CurrentDebt = 2500000M;
-                DebtRooms = 2;
-                PendingMaintenance = 3;
+                // Maintenance (Sheet): only "Chưa xử lý" (New)
+                PendingMaintenance = await GetNewMaintenanceCountAsync();
+
+                // Leave these placeholders until finance deploys, but show last month label
+                if (MonthlyRevenue == 0) MonthlyRevenue = 15000000M;
+                if (CurrentDebt == 0) CurrentDebt = 2500000M;
+                if (DebtRooms == 0) DebtRooms = 2;
+
+                // Ensure LastMonthDate reflects current clock
+                LastMonthDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1);
             }
             catch (Exception ex)
             {
@@ -182,11 +157,53 @@ namespace AMS.ViewModels
             }
         }
 
-        private async void OnNavigateTo(string route)
+        private async Task<int> GetNewMaintenanceCountAsync()
         {
             try
             {
-                await Shell.Current.GoToAsync($"//{route}");
+                var url = Preferences.Get("maintenance:sheet:url", null);
+                if (string.IsNullOrWhiteSpace(url)) return 0;
+
+                var items = await _onlineReader.ReadFromUrlAsync(url);
+                return items.Count(m => m.Status == MaintenanceStatus.New);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Dashboard] Maintenance load failed: {ex.Message}");
+                return 0;
+            }
+        }
+
+        private async void OnNavigateTo(string? input)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(input)) return;
+
+                // Map button parameters to actual routes
+                var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["RoomsPage"] = "rooms",
+                    ["rooms"] = "rooms",
+                    ["TenantsPage"] = "tenants",
+                    ["tenants"] = "tenants",
+                    ["PaymentsPage"] = "payments",
+                    ["payments"] = "payments",
+                    ["ReportsPage"] = "reports",
+                    ["reports"] = "reports"
+                };
+
+                if (!map.TryGetValue(input, out var route))
+                    route = input;
+
+                // Shell tree routes (use absolute //navigation)
+                var shellTree = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "MainPage", "houses", "tenants", "maintenances", "payments", "reports", "settings" };
+
+                if (shellTree.Contains(route))
+                    await Shell.Current.GoToAsync($"//{route}");
+                else
+                    await Shell.Current.GoToAsync(route); // registered route like "rooms"
             }
             catch (Exception ex)
             {
@@ -194,13 +211,10 @@ namespace AMS.ViewModels
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        // Cleanup when viewmodel is disposed by GC
         ~MainPageViewModel()
         {
             _timer?.Stop();

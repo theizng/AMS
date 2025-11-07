@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!--<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>-->
+		<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<AndroidLinkMode>None</AndroidLinkMode>
 		
@@ -71,6 +71,7 @@
 		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
+		<PackageReference Include="MailKit" Version="4.14.1" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
 		  <PrivateAssets>all</PrivateAssets>
@@ -85,6 +86,7 @@
 		<PackageReference Include="Microsoft.Identity.Client" Version="4.78.0" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0-rc.1.25451.107" />
+		<PackageReference Include="MimeKit" Version="4.14.0" />
 		<PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.11" />
 	</ItemGroup>
 

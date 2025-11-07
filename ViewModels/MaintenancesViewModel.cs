@@ -8,9 +8,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -18,6 +20,7 @@ namespace AMS.ViewModels
 {
     public class MaintenancesViewModel : INotifyPropertyChanged
     {
+        private const bool LogMaintenanceDebug = true;
         private readonly IMaintenanceSheetReader _fileReader;
         private readonly IOnlineMaintenanceReader _onlineReader;
         private readonly IMaintenanceSheetWriter _writer;
@@ -42,17 +45,19 @@ namespace AMS.ViewModels
             set { _searchText = value; OnPropertyChanged(); }
         }
 
+        // UI labels kept in Vietnamese for display, but filtering will not depend on parsing VN text.
         public IReadOnlyList<string> StatusOptions { get; } =
-            new[] { "Tất cả", "Chưa xử lý", "Đang xử lý", "Đã xử lý", "Đã hủy" };
+            new[] { "Tất cả", "Chưa xử lý", "Đang xử lý", "Đã xử lý" };
 
         public string SelectedStatus
         {
             get => _selectedStatus;
             set
             {
-                if (_selectedStatus != value)
+                var newVal = string.IsNullOrWhiteSpace(value) ? "Tất cả" : value;
+                if (_selectedStatus != newVal)
                 {
-                    _selectedStatus = value;
+                    _selectedStatus = newVal;
                     OnPropertyChanged();
                     _ = LoadAsync();
                 }
@@ -187,7 +192,9 @@ namespace AMS.ViewModels
                 var url = Preferences.Get("maintenance:sheet:url", _sheetUrl ?? "");
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    try { all = await _onlineReader.ReadFromUrlAsync(url); }
+                    // Cache buster to avoid stale exports after updates
+                    var urlWithCb = AppendCacheBuster(url);
+                    try { all = await _onlineReader.ReadFromUrlAsync(urlWithCb); }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"[Maintenance] URL load failed: {ex.Message}");
@@ -207,6 +214,13 @@ namespace AMS.ViewModels
                     }
                 }
 
+                // Harmonize enum Status from the sheet's string (robust parse)
+                foreach (var m in all)
+                {
+                    if (!string.IsNullOrWhiteSpace(m.StatusVi) && TryParseStatusCell(m.StatusVi, out var parsed))
+                        m.Status = parsed;
+                }
+
                 IEnumerable<MaintenanceRequest> filtered = all;
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
@@ -221,7 +235,8 @@ namespace AMS.ViewModels
                         (m.TenantPhone?.ToLowerInvariant().Contains(k) ?? false));
                 }
 
-                if (SelectedStatus != "Tất cả" && TryParseStatusVi(SelectedStatus, out var st))
+                // IMPORTANT: Map UI label exactly to enum; do NOT normalize VN here.
+                if (SelectedStatus != "Tất cả" && TryParseStatusFilterLabel(SelectedStatus, out var st))
                     filtered = filtered.Where(m => m.Status == st);
 
                 var items = filtered
@@ -239,17 +254,65 @@ namespace AMS.ViewModels
             }
         }
 
-        private static bool TryParseStatusVi(string vi, out MaintenanceStatus status)
+        private static string AppendCacheBuster(string url)
+        {
+            var cb = $"cb={DateTime.UtcNow.Ticks}";
+            return url.Contains("?") ? $"{url}&{cb}" : $"{url}?{cb}";
+        }
+
+        // Exact mapping for UI labels -> enum (these strings come from our own StatusOptions).
+        private static bool TryParseStatusFilterLabel(string label, out MaintenanceStatus status)
         {
             status = MaintenanceStatus.New;
-            switch (vi.Trim())
+            switch (label)
             {
                 case "Chưa xử lý": status = MaintenanceStatus.New; return true;
                 case "Đang xử lý": status = MaintenanceStatus.InProgress; return true;
                 case "Đã xử lý": status = MaintenanceStatus.Done; return true;
-                case "Đã hủy": status = MaintenanceStatus.Cancelled; return true;
+                case "Hủy": status = MaintenanceStatus.Cancelled; return true; 
+                default: return false; // includes "Tất cả" and any unknown
+            }
+        }
+
+        // Robust parser for sheet cell text -> enum (handles diacritics and 'đ'/'Đ').
+        private static bool TryParseStatusCell(string? vi, out MaintenanceStatus status)
+        {
+            status = MaintenanceStatus.New;
+            if (string.IsNullOrWhiteSpace(vi)) return false;
+
+            var key = NormalizeKey(vi); // remove diacritics, lowercase, normalize spaces, map đ->d
+            switch (key)
+            {
+                case "chua xu ly": status = MaintenanceStatus.New; return true;
+                case "dang xu ly": status = MaintenanceStatus.InProgress; return true;
+                case "da xu ly": status = MaintenanceStatus.Done; return true;
+                case "huy": status = MaintenanceStatus.Cancelled; return true; // keep supported if appears
                 default: return false;
             }
+        }
+
+        // Remove diacritics, normalize spaces/case AND convert 'đ'/'Đ' to 'd'
+        private static string NormalizeKey(string input)
+        {
+            input ??= string.Empty;
+            var s = input.Replace('\u00A0', ' ').Trim().ToLowerInvariant();
+
+            var formD = s.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(formD.Length);
+            foreach (var c in formD)
+            {
+                var cat = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (cat != UnicodeCategory.NonSpacingMark)
+                    sb.Append(c);
+            }
+            var noDia = sb.ToString().Normalize(NormalizationForm.FormC);
+
+            // Crucial for Vietnamese: đ/Đ are base letters, map them to 'd'
+            noDia = noDia.Replace('đ', 'd').Replace('Đ', 'd');
+
+            // Collapse multiple spaces
+            while (noDia.Contains("  ")) noDia = noDia.Replace("  ", " ");
+            return noDia;
         }
 
         private static int GetPriorityScore(string priority)
@@ -272,8 +335,9 @@ namespace AMS.ViewModels
                 return;
             }
 
+            // Since you removed "Đã hủy" from UI, don't include it here.
             var status = await Shell.Current.DisplayActionSheet("Trạng thái", "Hủy", null,
-                "Chưa xử lý", "Đang xử lý", "Đã xử lý");
+                "Chưa xử lý", "Đang xử lý", "Đã xử lý", "Đã hủy");
             if (string.IsNullOrEmpty(status) || status == "Hủy") return;
 
             var priorityVi = await Shell.Current.DisplayActionSheet("Ưu tiên", "Bỏ qua", null, "Thấp", "Trung bình", "Cao");
@@ -289,14 +353,14 @@ namespace AMS.ViewModels
             if (!string.IsNullOrWhiteSpace(costStr))
             {
                 var digits = new string(costStr.Where(ch => char.IsDigit(ch) || ch == '.' || ch == ',').ToArray());
-                if (decimal.TryParse(digits.Replace(",", ""), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var cost))
+                if (decimal.TryParse(digits.Replace(",", ""), NumberStyles.Number, CultureInfo.InvariantCulture, out var cost))
                     values["Chi phí (nếu có)"] = cost;
             }
 
             try
             {
                 await _writer.UpdateAsync(item.RequestId!, values);
-                await LoadAsync();
+                await LoadAsync(); // refresh
             }
             catch (Exception ex)
             {
@@ -307,22 +371,53 @@ namespace AMS.ViewModels
 
         private async Task CreateAsync()
         {
-            var room = await Shell.Current.DisplayPromptAsync("Mã phòng", "Nhập Mã phòng (chọn từ Rooms)", "Tiếp", "Hủy");
-            if (string.IsNullOrWhiteSpace(room)) return;
+            // Kept for now (no-op if you stop calling it from UI).
+            var rooms = await _roomsProvider.GetRoomsAsync(includeInactive: false);
+            var selectable = rooms.Where(r => r.Active).ToList();
+            if (selectable.Count == 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Không có phòng", "Chưa có phòng khả dụng để chọn.", "OK");
+                return;
+            }
 
-            var category = await Shell.Current.DisplayPromptAsync("Phân loại", "Nhập phân loại (hoặc để trống)", "Tiếp", "Bỏ qua");
-            var desc = await Shell.Current.DisplayPromptAsync("Miêu tả", "Nhập mô tả sự cố", "Tạo", "Hủy");
+            var map = new Dictionary<string, string>();
+            foreach (var r in selectable)
+            {
+                var display = string.IsNullOrWhiteSpace(r.HouseAddress)
+                    ? r.RoomCode
+                    : $"{r.RoomCode} — {r.HouseAddress}";
+                var key = display;
+                int dup = 1;
+                while (map.ContainsKey(key))
+                {
+                    dup++;
+                    key = $"{display} ({dup})";
+                }
+                map[key] = r.RoomCode;
+            }
+            var roomChoices = map.Keys.ToArray();
+            var pickedDisplay = await Shell.Current.DisplayActionSheet("Chọn Mã phòng", "Hủy", null, roomChoices);
+            if (string.IsNullOrEmpty(pickedDisplay) || pickedDisplay == "Hủy") return;
+
+            var roomCode = map[pickedDisplay];
+
+            var categoryOptions = new[] { "Điện", "Nước", "Thiết bị", "Kết cấu", "Vệ sinh", "Khác" };
+            var category = await Shell.Current.DisplayActionSheet("Phân loại", "Bỏ qua", null, categoryOptions);
+            if (string.IsNullOrEmpty(category)) category = "Bỏ qua";
+
+            var desc = await Shell.Current.DisplayPromptAsync("Miêu tả sự cố", "Nhập mô tả sự cố", "Tiếp", "Hủy");
             if (string.IsNullOrWhiteSpace(desc)) return;
 
             var priority = await Shell.Current.DisplayActionSheet("Ưu tiên", "Bỏ qua", null, "Thấp", "Trung bình", "Cao");
 
             var values = new Dictionary<string, object>
             {
-                ["Mã phòng"] = room.Trim(),
-                ["Phân loại"] = category ?? "",
-                ["Miêu tả"] = desc.Trim()
+                ["Mã phòng"] = roomCode,
+                ["Phân loại"] = string.IsNullOrWhiteSpace(category) || category == "Bỏ qua" ? "" : category,
+                ["Miêu tả sự cố"] = desc.Trim()
             };
-            if (!string.IsNullOrEmpty(priority) && priority != "Bỏ qua") values["Mức độ ưu tiên"] = priority;
+            if (!string.IsNullOrEmpty(priority) && priority != "Bỏ qua")
+                values["Mức độ ưu tiên"] = priority;
 
             try
             {

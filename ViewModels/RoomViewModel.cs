@@ -38,9 +38,10 @@ namespace AMS.ViewModels
             get => _selectedStatusText;
             set
             {
-                if (_selectedStatusText != value)
+                var newVal = string.IsNullOrWhiteSpace(value) ? "Tất cả" : value;
+                if (_selectedStatusText != newVal)
                 {
-                    _selectedStatusText = value;
+                    _selectedStatusText = newVal;
                     OnPropertyChanged();
                     _ = LoadRoomsAsync();  // Live filter
                 }
