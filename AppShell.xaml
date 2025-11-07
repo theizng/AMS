@@ -25,16 +25,29 @@
         <ShellContent x:Name="MaintenancesShell"
                       Title="Danh sách bảo trì"
                       Route="maintenances" />
+        <!-- Contracts via DI-->
+        <ShellContent x:Name="ContractsShell"
+                      Title="Quản lý hợp đồng"
+                      Route="contracts" />
     </FlyoutItem>
 
     <!-- FINANCIAL SECTION -->
     <FlyoutItem Title="Tài chính" FlyoutIcon="finance_icon.png">
         <ShellContent x:Name="PaymentsShell"
-                      Title="Thanh toán"
+                      Title="Tiền thuê"
                       Route="payments" />
         <ShellContent x:Name="ReportsShell"
-                      Title="Báo cáo"
+                      Title="Chi phí"
                       Route="reports" />
+    </FlyoutItem>
+    <!--REPORT SECTION-->
+    <FlyoutItem Title="Báo cáo và thống kê" FlyoutIcon="report_icon.png">
+        <ShellContent x:Name="OverviewShell"
+                  Title="Tổng quan"
+                  Route="overview" />
+        <ShellContent x:Name="RevenueShell"
+                  Title="Báo cáo doanh thu"
+                  Route="revenue" />
     </FlyoutItem>
 
     <!-- SETTINGS SECTION -->
