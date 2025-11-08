@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AMS.Views.ContractsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:conv="clr-namespace:AMS.Converters"
+    Title="Hợp đồng">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Tạo hợp đồng" Priority="0" Order="Primary" Command="{Binding CreateCommand}" />
+        <ToolbarItem Text="Làm mới" Priority="1" Order="Primary" Command="{Binding RefreshCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <conv:ContractStatusColorConverter x:Key="ContractStatusColorConverter" />
+        <conv:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </ContentPage.Resources>
+
+    <Grid Padding="12" RowSpacing="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Search -->
+        <HorizontalStackLayout Grid.Row="0" Spacing="8">
+            <Entry
+                Placeholder="Tìm hợp đồng theo phòng, số hợp đồng, người thuê..."
+                HorizontalOptions="FillAndExpand"
+                Text="{Binding SearchText}" />
+            <Button Text="Tìm" Command="{Binding RefreshCommand}" />
+        </HorizontalStackLayout>
+
+        <!-- Status filter (optional future – placeholder only) -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="8">
+            <Label Text="(Chưa có bộ lọc trạng thái – sẽ thêm sau)" TextColor="#888" />
+        </HorizontalStackLayout>
+
+        <!-- List -->
+        <RefreshView
+            Grid.Row="2"
+            IsRefreshing="{Binding IsBusy}"
+            Command="{Binding RefreshCommand}">
+            <CollectionView
+                ItemsSource="{Binding Items}"
+                SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Grid Padding="20">
+                        <Label
+                            Text="Chưa có hợp đồng."
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            TextColor="#666" />
+                    </Grid>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame
+                            Margin="0,6"
+                            Padding="12"
+                            HasShadow="True"
+                            BorderColor="#E0E0E0"
+                            CornerRadius="10">
+                            <Grid ColumnSpacing="12" RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Row 1: Contract number + Room + Status badge -->
+                                <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="10">
+                                    <Label Text="{Binding ContractNumber, StringFormat='Số: {0}'}"
+                                           Style="{DynamicResource TextPrimary}" FontAttributes="Bold" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="•" TextColor="#CCC"/>
+                                    <Label Text="{Binding RoomCode, StringFormat='Phòng: {0}'}" Style="{DynamicResource TextPrimary}" FontAttributes="Bold" />
+                                    <Border Padding="8,4" StrokeThickness="0" Background="#EEE">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding StatusVi}" Style="{DynamicResource TextPrimary}" FontAttributes="Bold" />
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Draft">
+                                                <Setter Property="Background" Value="#FFF3CD" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Active">
+                                                <Setter Property="Background" Value="#C8E6C9" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Expired">
+                                                <Setter Property="Background" Value="#FFE0B2" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Terminated">
+                                                <Setter Property="Background" Value="#FFCDD2" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                    </Border>
+                                    <Border Padding="8,4" StrokeThickness="0" Background="#FFD54F"
+                                            IsVisible="{Binding NeedsAddendum}">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        <Label Text="Cần phụ lục" Style="{DynamicResource TextPrimary}" FontAttributes="Bold" />
+                                    </Border>
+                                    <Border Padding="8,4" StrokeThickness="0" Background="#B3E5FC"
+                                            IsVisible="{Binding IsExpiringSoon}">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding DaysToEnd, StringFormat='Sắp hết hạn: {0} ngày'}"
+                                               Style="{DynamicResource TextPrimary}" />
+                                    </Border>
+                                </HorizontalStackLayout>
+
+                                <!-- Row 2: Property description -->
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Style="{DynamicResource TextPrimary}"
+                                       Text="{Binding PropertyDescription}" LineBreakMode="WordWrap" />
+
+                                <!-- Row 3: Dates + Rent -->
+                                <HorizontalStackLayout Grid.Row="2" Spacing="14">
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding StartDate, StringFormat='Từ: {0:yyyy-MM-dd}'}" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding EndDate, StringFormat='Đến: {0:yyyy-MM-dd}'}" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RentAmount, StringFormat='Giá: {0:N0} đ'}" />
+                                </HorizontalStackLayout>
+
+                                <!-- Row 4: Tenants -->
+                                <HorizontalStackLayout Grid.Row="3" Spacing="6">
+                                    <Label Text="Người thuê:" Style="{DynamicResource TextPrimary}" />
+                                    <Label Text="{Binding Tenants.Count}" Style="{DynamicResource TextPrimary}" />
+                                </HorizontalStackLayout>
+
+                                <!-- Right column: Actions -->
+                                <VerticalStackLayout Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
+                                                     Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
+                                    <Button Text="Sửa"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="PDF"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GeneratePdfCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Email"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendEmailCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Xóa"
+                                            BackgroundColor="#FFCDD2"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

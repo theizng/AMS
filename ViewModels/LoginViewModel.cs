@@ -1,4 +1,4 @@
-﻿using AMS.Services;
+﻿using AMS.Services.Interfaces;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;

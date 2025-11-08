@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AMS.Views.EditContractPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Hợp đồng">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Lưu" Order="Primary" Priority="0" Command="{Binding SaveCommand}" />
+        <ToolbarItem Text="Kích hoạt" Order="Primary" Priority="1" Command="{Binding ActivateCommand}" />
+        <ToolbarItem Text="Chấm dứt" Order="Secondary" Priority="2" Command="{Binding TerminateCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="16">
+            <Label Text="{Binding IsNew, StringFormat='Trạng thái: {0:Contract mới}'}" IsVisible="{Binding IsNew}" />
+
+            <!-- Basic Summary -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Thông tin phòng" FontAttributes="Bold" />
+                    <Label Text="{Binding Editable.RoomCode, StringFormat='Phòng: {0}'}" />
+                    <Label Text="{Binding Editable.HouseAddress, StringFormat='Nhà: {0}'}" />
+                    <Label Text="{Binding Editable.Tenants.Count, StringFormat='Số người thuê: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Dates -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Thời hạn" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="10">
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="Ngày bắt đầu" />
+                            <DatePicker Date="{Binding StartDate}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="Ngày kết thúc" />
+                            <DatePicker Date="{Binding EndDate}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout WidthRequest="100">
+                            <Label Text="Ngày thu tiền (1..28)" />
+                            <Entry Keyboard="Numeric" Text="{Binding DueDay}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Rent & Deposit -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Giá và Đặt cọc" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="10">
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="Giá phòng / tháng" />
+                            <Entry Keyboard="Numeric" Text="{Binding RentAmount}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="Đặt cọc (tổng)" />
+                            <Entry Keyboard="Numeric" Text="{Binding SecurityDeposit}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="Trả cọc sau (ngày)" />
+                            <Entry Keyboard="Numeric" Text="{Binding DepositReturnDays}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Allowances -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Giới hạn" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="10">
+                        <VerticalStackLayout WidthRequest="140">
+                            <Label Text="Số người tối đa" />
+                            <Entry Keyboard="Numeric" Text="{Binding MaxOccupants}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout WidthRequest="140">
+                            <Label Text="Xe máy tối đa" />
+                            <Entry Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Payment policies -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Chính sách thanh toán" FontAttributes="Bold" />
+                    <Label Text="Phương thức" />
+                    <Editor HeightRequest="60" Text="{Binding PaymentMethods}" />
+                    <Label Text="Chính sách trễ hạn" />
+                    <Editor HeightRequest="60" Text="{Binding LateFeePolicy}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Property Description -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Mô tả tài sản" FontAttributes="Bold" />
+                    <Editor HeightRequest="80" Text="{Binding PropertyDescription}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Tenants snapshot -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Người thuê (snapshot)" FontAttributes="Bold" />
+                    <CollectionView ItemsSource="{Binding Editable.Tenants}" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding Name}" />
+                                    <Label Text="|" TextColor="#999" />
+                                    <Label Text="{Binding Phone}" />
+                                    <Label Text="|" TextColor="#999" />
+                                    <Label Text="{Binding Email}" TextColor="#1976D2" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Label Text="(Danh sách này được chụp tại thời điểm tạo. Thay đổi sau sẽ đánh dấu 'Cần phụ lục'.)"
+                           FontSize="12" TextColor="#666"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- PDF link -->
+            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Tài liệu hợp đồng (PDF)" FontAttributes="Bold" />
+                    <Entry Placeholder="Link PDF (nếu đã tạo)" Text="{Binding PdfUrl}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Action buttons (duplicate of toolbar for convenience) -->
+            <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                <Button Text="Lưu" Command="{Binding SaveCommand}" />
+                <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" />
+                <Button Text="Chấm dứt" BackgroundColor="#FFCDD2" Command="{Binding TerminateCommand}" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,5 +1,6 @@
 ﻿using AMS.Data;
 using AMS.Models;
+using AMS.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 namespace AMS.Services
 {

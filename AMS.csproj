@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>
+		<!--<Targetframeworks>net10.0-ios;net10.0-maccatalyst;net10.0-android36.0</Targetframeworks>-->
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<AndroidLinkMode>None</AndroidLinkMode>
 		
@@ -94,6 +94,9 @@
 	  <Compile Update="LoginShell.xaml.cs">
 	    <DependentUpon>LoginShell.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Views\EditContractPage.xaml.cs">
+	    <DependentUpon>EditContractPage.xaml</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -104,6 +107,12 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Resources\Styles\DarkTheme.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\EditContractPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\ContractsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\EditHousePage.xaml">

@@ -1,5 +1,5 @@
 ﻿using AMS.Models;
-namespace AMS.Services
+namespace AMS.Services.Interfaces
 {
     public interface IAuthService
     {

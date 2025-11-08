@@ -1,4 +1,4 @@
-﻿namespace AMS.Services
+﻿namespace AMS.Services.Interfaces
 {
     public enum ThemeOption
     {

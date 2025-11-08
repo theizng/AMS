@@ -1,4 +1,5 @@
 ﻿using AMS.Resources.Styles;
+using AMS.Services.Interfaces;
 
 namespace AMS.Services
 {

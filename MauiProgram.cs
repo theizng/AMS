@@ -50,6 +50,9 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddSingleton<IContractsRepository, ContractsRepository>();
+            builder.Services.AddSingleton<IRoomOccupancyProvider, RoomOccupancyEfProvider>();
+            builder.Services.AddSingleton<IRoomsRepository, RoomsEfRepository>();
             builder.Services.AddSingleton<IEmailService, EmailService>();
             builder.Services.AddSingleton<IEmailNotificationService, EmailNotificationService>();
             builder.Services.AddSingleton<IRoomsProvider, RoomsEfProvider>();
@@ -92,29 +95,44 @@ namespace AMS
             builder.Services.AddTransient<SettingsViewModel>();
             //Đăng ký Viewmodels cho Payments:
             builder.Services.AddTransient<PaymentsViewModel>();
+            //Đăng ký Viewmodels cho Contracts:
+            builder.Services.AddTransient<ContractsViewModel>();
+            builder.Services.AddTransient<ContractEditViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)
         {
             // Đăng ký các Page khác tại đây nếu cần
-            //Đăng ký Pages
+            //Đăng ký Pages cho Auth:
             builder.Services.AddTransient<LoginPage>();
+            //Đăng ký Pages cho Main:
             builder.Services.AddTransient<MainPage>();
-            //Đăng ký Pages CRUD cho các Entity
+            //Đăng ký Pages cho House:
             builder.Services.AddTransient<HousesPage>();
             builder.Services.AddTransient<EditHousePage>();
+            //Đăng ký Pages cho Tenants:
             builder.Services.AddTransient<TenantsPage>();
+            //Đăng ký Pages cho Payments:
             builder.Services.AddTransient<PaymentsPage>();
+            //Đăng ký Pages cho Reports:
             builder.Services.AddTransient<ReportsPage>();
-            builder.Services.AddTransient<SettingsPage>();
+            //Đăng ký Pages cho Room:
             builder.Services.AddTransient<RoomsPage>();
             builder.Services.AddTransient<EditRoomPage>();
             builder.Services.AddTransient<RoomDetailPage>();
-            builder.Services.AddTransient<EditTenantPage>();
+            //Đăng ký Pages cho Tenants:
             builder.Services.AddTransient<TenantsPage>();
+            builder.Services.AddTransient<EditTenantPage>();
+            //Đăng ký Pages cho Maintenances:
             builder.Services.AddTransient<MaintenancesPage>();
             builder.Services.AddTransient<EditMaintenancePage>();
+            //Đăng ký Pages cho Payments:
             builder.Services.AddTransient<PaymentsPage>();
+            //Đăng ký Pages cho Contracts:
+            builder.Services.AddTransient<ContractsPage>();
+            builder.Services.AddTransient<EditContractPage>();
+            //Đăng ký Pages cho Settings:
+            builder.Services.AddTransient<SettingsPage>();
             return builder;
         }
         public static MauiAppBuilder RegisterShells(this MauiAppBuilder builder)

@@ -13,7 +13,7 @@ namespace AMS.Data
         public DbSet<RoomOccupancy> RoomOccupancies { get; set; } = null!;
         public DbSet<Bike> Bikes { get; set; } = null!;
         public DbSet<Invoice> Invoices { get; set; } = null!;
-
+        public DbSet<Contract> Contracts { get; set; } = null!;
         public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
         {
         }
@@ -166,6 +166,7 @@ namespace AMS.Data
                       .HasPrincipalKey(t => t.IdTenant)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+            
             // TENANT
             modelBuilder.Entity<Tenant>(entity =>
             {
@@ -181,6 +182,7 @@ namespace AMS.Data
                 // entity.HasIndex(e => e.FullName);
                 // entity.HasIndex(e => e.PhoneNumber);
             });
+            
             //PAYMENTS
             modelBuilder.Entity<Invoice>(e =>
             {
@@ -213,6 +215,39 @@ namespace AMS.Data
                     t.HasCheckConstraint("CK_Invoice_Paid_NonNegative", "[PaidAmount] >= 0");
                     t.HasCheckConstraint("CK_Invoice_Paid_Le_Total", "[PaidAmount] <= [TotalAmount]");
                 });
+            });
+
+            // CONTRACT
+            modelBuilder.Entity<Contract>(entity =>
+            {
+                entity.HasKey(e => e.ContractId);
+                entity.Property(e => e.ContractId).IsRequired().HasMaxLength(64);
+
+                entity.Property(e => e.ContractNumber).HasMaxLength(64).IsRequired(false);
+
+                entity.Property(e => e.RoomCode).IsRequired().HasMaxLength(64);
+                entity.Property(e => e.HouseAddress).HasMaxLength(256).IsRequired(false);
+
+                entity.Property(e => e.TenantsJson).HasColumnType("TEXT").IsRequired();
+
+                entity.Property(e => e.RentAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                entity.Property(e => e.SecurityDeposit).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+                entity.Property(e => e.PropertyDescription).HasColumnType("TEXT");
+                entity.Property(e => e.PdfUrl).HasMaxLength(1024).IsRequired(false);
+
+                // FIX: default value uses enum, not int
+                entity.Property(e => e.Status)
+                      .HasConversion<int>()
+                      .HasDefaultValue(ContractStatus.Draft);
+
+                entity.Property(e => e.NeedsAddendum).HasDefaultValue(false);
+
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasIndex(e => e.RoomCode);
+                entity.HasIndex(e => e.ContractNumber).IsUnique(false);
             });
         }
     }

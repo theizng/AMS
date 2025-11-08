@@ -1,4 +1,4 @@
-﻿using AMS.Services;
+﻿using AMS.Services.Interfaces;
 using AMS.ViewModels;
 using AMS.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +24,7 @@ namespace AMS
             SetDiTemplate(SettingsShell, typeof(SettingsPage));
             SetDiTemplate(MaintenancesShell, typeof(MaintenancesPage));
             SetDiTemplate(OverviewShell, typeof(OverviewPage));
+            SetDiTemplate(ContractsShell, typeof(ContractsPage));
             // Register routes for pages not in Shell tree (or for parameterized navigation)
             //Trang quản lý nhà
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));
@@ -37,6 +38,9 @@ namespace AMS
             //Trang quản lý bảo trì
             Routing.RegisterRoute("maintenances", typeof(MaintenancesPage));
             Routing.RegisterRoute("editmaintenance", typeof(EditMaintenancePage));
+            //Trang quản lý hợp đồng
+            Routing.RegisterRoute("contracts", typeof(ContractsPage));
+            Routing.RegisterRoute("editcontract", typeof(EditContractPage));
             Navigated += OnShellNavigated;
 
 
