@@ -5,139 +5,186 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Hợp đồng">
 
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Lưu" Order="Primary" Priority="0" Command="{Binding SaveCommand}" />
-        <ToolbarItem Text="Kích hoạt" Order="Primary" Priority="1" Command="{Binding ActivateCommand}" />
-        <ToolbarItem Text="Chấm dứt" Order="Secondary" Priority="2" Command="{Binding TerminateCommand}" />
-    </ContentPage.ToolbarItems>
+    <ContentPage.Resources>
+        <!-- Add converters or styles here if you have them globally -->
+    </ContentPage.Resources>
 
+    <!-- Single Content root -->
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="16">
-            <Label Text="{Binding IsNew, StringFormat='Trạng thái: {0:Contract mới}'}" IsVisible="{Binding IsNew}" />
+        <VerticalStackLayout Padding="18" Spacing="16">
 
-            <!-- Basic Summary -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+            <!-- Header -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{Binding Editable.ContractNumber, StringFormat='Số: {0}'}"
+                           FontAttributes="Bold" FontSize="18"/>
+                    <Label Text="{Binding Editable.RoomCode, StringFormat='Phòng: {0}'}" FontSize="14"/>
+                    <Label Text="{Binding Editable.StatusVi}" TextColor="#455A64" FontAttributes="Bold"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Dates & Rent -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="0">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label Text="Ngày bắt đầu"/>
+                            <DatePicker Date="{Binding StartDate}"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1">
+                            <Label Text="Ngày kết thúc"/>
+                            <DatePicker Date="{Binding EndDate}"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2">
+                            <Label Text="Ngày thu tiền (1..28)"/>
+                            <Entry Keyboard="Numeric" Text="{Binding DueDay}" Placeholder="5"/>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid ColumnSpacing="12" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label Text="Giá thuê / tháng"/>
+                            <Entry Keyboard="Numeric" Text="{Binding RentAmount}" Placeholder="0"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1">
+                            <Label Text="Đặt cọc"/>
+                            <Entry Keyboard="Numeric" Text="{Binding SecurityDeposit}" Placeholder="0"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2">
+                            <Label Text="Trả cọc sau (ngày)"/>
+                            <Entry Keyboard="Numeric" Text="{Binding DepositReturnDays}" Placeholder="7"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Limits -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <VerticalStackLayout Grid.Column="0">
+                        <Label Text="Số người tối đa"/>
+                        <Entry Keyboard="Numeric" Text="{Binding MaxOccupants}" Placeholder="1"/>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Xe máy tối đa"/>
+                        <Entry Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" Placeholder="1"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Payment & Late -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Thông tin phòng" FontAttributes="Bold" />
-                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Editable.RoomCode, StringFormat='Phòng: {0}'}" />
-                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Editable.HouseAddress, StringFormat='Nhà: {0}'}" />
-                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Editable.Tenants.Count, StringFormat='Số người thuê: {0}'}" />
-                </VerticalStackLayout>
-            </Frame>
-
-            <!-- Dates -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
-                <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Thời hạn hợp đồng" FontAttributes="Bold" />
-                    <HorizontalStackLayout Spacing="10">
-                        <VerticalStackLayout WidthRequest="150">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Ngày bắt đầu" />
-                            <DatePicker Style="{DynamicResource TextPrimary}" Date="{Binding StartDate}" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout WidthRequest="150">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Ngày kết thúc" />
-                            <DatePicker Style="{DynamicResource TextPrimary}" Date="{Binding EndDate}" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout WidthRequest="100">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Ngày thu tiền" />
-                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding DueDay}"  Placeholder="Nhập ngày"/>
-                        </VerticalStackLayout>
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Frame>
-
-            <!-- Rent & Deposit -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
-                <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Giá phòng và đặt cọc" FontAttributes="Bold" />
-                    <HorizontalStackLayout Spacing="10">
-                        <VerticalStackLayout WidthRequest="150">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Giá phòng / tháng" />
-                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding RentAmount}" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout WidthRequest="150">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Số tiền đặt cọc (tổng)" />
-                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding SecurityDeposit}" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout WidthRequest="150">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Trả cọc sau (ngày)" />
-                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding DepositReturnDays}" />
-                        </VerticalStackLayout>
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Frame>
-
-            <!-- Allowances -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
-                <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Giới hạn đặt ra" FontAttributes="Bold" />
-                    <HorizontalStackLayout Spacing="10">
-                        <VerticalStackLayout WidthRequest="140">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Số người tối đa" />
-                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding MaxOccupants}" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout WidthRequest="140">
-                            <Label Style="{DynamicResource TextPrimary}" Text="Xe máy tối đa" />
-                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" />
-                        </VerticalStackLayout>
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Frame>
-
-            <!-- Payment policies -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
-                <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Chính sách thanh toán" FontAttributes="Bold" />
-                    <Label Style="{DynamicResource TextPrimary}" Text="Phương thức thanh toán" />
-                    <Editor Style="{DynamicResource TextPrimary}" HeightRequest="60" Text="{Binding PaymentMethods}" Placeholder="Ví dụ: Tiền mặt" />
-                    <Label Style="{DynamicResource TextPrimary}" Text="Chính sách trễ hạn"/>
-                    <Editor Style="{DynamicResource TextPrimary}" HeightRequest="60" Text="{Binding LateFeePolicy}" Placeholder="Ví dụ: Được phép đóng trễ nhất vào ngày 5 hằng tháng"/>
+                    <Label Text="Phương thức thanh toán"/>
+                    <Editor HeightRequest="60" Text="{Binding PaymentMethods}" Placeholder="Chuyển khoản, tiền mặt..."/>
+                    <Label Text="Chính sách trễ hạn"/>
+                    <Editor HeightRequest="60" Text="{Binding LateFeePolicy}" Placeholder="Phí trễ hạn, số ngày ân hạn..."/>
                 </VerticalStackLayout>
             </Frame>
 
             <!-- Property Description -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
-                <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Mô tả tài sản" FontAttributes="Bold" />
-                    <Editor Style="{DynamicResource TextPrimary}" HeightRequest="80" Text="{Binding PropertyDescription}" />
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Mô tả tài sản"/>
+                    <Editor HeightRequest="80" Text="{Binding PropertyDescription}" Placeholder="Địa chỉ, tiện ích, chi tiết phòng..."/>
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- Tenants snapshot -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+            <!-- Tenants Snapshot -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Người thuê (snapshot)" FontAttributes="Bold" />
+                    <Label Text="Người thuê (snapshot)" FontAttributes="Bold"/>
                     <CollectionView ItemsSource="{Binding Editable.Tenants}" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <HorizontalStackLayout Spacing="8">
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Name}" />
-                                    <Label Style="{DynamicResource TextPrimary}" Text="|" TextColor="#999" />
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Phone}" />
-                                    <Label Style="{DynamicResource TextPrimary}" Text="|" TextColor="#999" />
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Email}" TextColor="#1976D2" />
+                                <HorizontalStackLayout Spacing="6">
+                                    <Label Text="{Binding Name}" FontAttributes="Bold"/>
+                                    <Label Text="{Binding Phone}" TextColor="#607D8B"/>
+                                    <Label Text="{Binding Email}" TextColor="#1976D2"/>
                                 </HorizontalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <Label Style="{DynamicResource TextPrimary}" Text="(Danh sách này được ghi tại thời điểm tạo hợp đồng. Thay đổi sau sẽ đánh dấu 'Cần phụ lục'.)"
-                           FontSize="12" TextColor="#666"/>
+                    <Label Text="Sau khi kích hoạt, thay đổi người thuê sẽ đánh dấu 'Phụ lục'."
+                           FontSize="12" TextColor="#78909C"/>
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- PDF link -->
-            <Frame Padding="12" CornerRadius="8" BorderColor="#DDD">
+            <!-- PDF -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Tài liệu hợp đồng (PDF)" FontAttributes="Bold" />
-                    <Entry Style="{DynamicResource TextPrimary}" Placeholder="Link PDF (nếu đã tạo)" Text="{Binding PdfUrl}" />
+                    <Label Text="Link PDF hợp đồng"/>
+                    <Entry Placeholder="https://..." Text="{Binding PdfUrl}"/>
+                    <Label Text="(Khuyến nghị tạo và đính kèm PDF trước khi kích hoạt)"
+                           FontSize="12" TextColor="#9E9E9E"/>
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- Action buttons (duplicate of toolbar for convenience) -->
+            <!-- Actions -->
             <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
-                <Button Text="Lưu" Command="{Binding SaveCommand}" />
-                <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" />
-                <Button Text="Chấm dứt" BackgroundColor="#FFCDD2" Command="{Binding TerminateCommand}" />
+                <Button Text="Lưu" Command="{Binding SaveCommand}" WidthRequest="110">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Tạo PDF" Command="{Binding GeneratePdfCommand}" WidthRequest="110"
+                        IsVisible="{Binding CanGeneratePdf}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Gửi PDF" Command="{Binding SendContractEmailCommand}" WidthRequest="110"
+                        IsVisible="{Binding CanSendEmail}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" WidthRequest="110"
+                        IsVisible="{Binding CanActivate}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Chấm dứt" Command="{Binding TerminateCommand}" WidthRequest="110"
+                        IsVisible="{Binding CanTerminate}" BackgroundColor="#FFECB3">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <!-- Delete removed here to avoid accidental delete; keep deletion in list page -->
+                <!-- If you later add a DeleteCommand + CanDelete, you can re-enable it:
+                <Button Text="Xóa" Command="{Binding DeleteCommand}" WidthRequest="110"
+                        IsVisible="{Binding CanDelete}" BackgroundColor="#FFCDD2"/>
+                -->
             </HorizontalStackLayout>
         </VerticalStackLayout>
     </ScrollView>

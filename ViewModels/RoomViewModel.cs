@@ -85,7 +85,7 @@ namespace AMS.ViewModels
             {
                 if (_houseId <= 0)
                 {
-                    await Shell.Current.DisplayAlert("Thiếu thông tin", "Thiếu HouseId.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Thiếu thông tin", "Thiếu HouseId.", "OK");
                     return;
                 }
                 await Shell.Current.GoToAsync($"editroom?houseId={_houseId}");
@@ -99,7 +99,7 @@ namespace AMS.ViewModels
                 var editable = await _contractRoomGuard.CanEditRoomAsync(room.RoomCode);
                 if (!editable)
                 {
-                    await Shell.Current.DisplayAlert("Không thể sửa", "Phòng đang thuộc hợp đồng có hiệu lực. Sửa thông qua phụ lục hợp đồng.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Không thể sửa", "Phòng đang thuộc hợp đồng có hiệu lực. Sửa thông qua phụ lục hợp đồng.", "OK");
                     return;
                 }
 
@@ -183,7 +183,7 @@ namespace AMS.ViewModels
         {
             if (room == null) return;
 
-            bool confirm = await Shell.Current.DisplayAlert(
+            bool confirm = await Shell.Current.DisplayAlertAsync(
                 "Xóa phòng",
                 $"Bạn chắc chắn muốn xóa phòng:\n\"{room.RoomCode}\"?",
                 "Xóa",
@@ -201,7 +201,7 @@ namespace AMS.ViewModels
                 var idx = Rooms.IndexOf(room);
                 if (idx >= 0) Rooms.RemoveAt(idx);
 
-                await Shell.Current.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã xóa phòng.", "OK");
             }
             catch (InvalidOperationException)
             {
@@ -213,7 +213,7 @@ namespace AMS.ViewModels
                 var idx = Rooms.IndexOf(room);
                 if (idx >= 0) Rooms.RemoveAt(idx);
 
-                await Shell.Current.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã xóa phòng.", "OK");
             }
             catch (Exception ex)
             {

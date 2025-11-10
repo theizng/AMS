@@ -1,15 +1,13 @@
 ﻿using AMS.Models;
-using AMS.Services;
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DocumentFormat.OpenXml.Spreadsheet;
-using MailKit.Search;
+using Microsoft.Maui.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Input;
+using System.Collections.Generic;
 
 namespace AMS.ViewModels
 {
@@ -22,6 +20,10 @@ namespace AMS.ViewModels
         [ObservableProperty] private ObservableCollection<Contract> items = new();
         [ObservableProperty] private bool isBusy;
         [ObservableProperty] private string searchText = "";
+        [ObservableProperty] private string selectedStatusFilter = "Tất cả";
+
+        public IReadOnlyList<string> StatusFilterOptions { get; } =
+            new[] { "Tất cả", "Draft", "Active", "Expired", "Terminated" };
 
         public IAsyncRelayCommand RefreshCommand { get; }
         public IAsyncRelayCommand CreateCommand { get; }
@@ -29,6 +31,7 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand<Contract> DeleteCommand { get; }
         public IAsyncRelayCommand<Contract> GeneratePdfCommand { get; }
         public IAsyncRelayCommand<Contract> SendEmailCommand { get; }
+        public IRelayCommand ClearFilterCommand { get; }
 
         public ContractsViewModel(IContractsRepository repo, IRoomsRepository roomsRepository, IRoomOccupancyProvider occupancyProvider)
         {
@@ -42,6 +45,22 @@ namespace AMS.ViewModels
             DeleteCommand = new AsyncRelayCommand<Contract>(DeleteAsync);
             GeneratePdfCommand = new AsyncRelayCommand<Contract>(GeneratePdfAsync);
             SendEmailCommand = new AsyncRelayCommand<Contract>(SendEmailAsync);
+            ClearFilterCommand = new RelayCommand(() =>
+            {
+                SearchText = "";
+                SelectedStatusFilter = "Tất cả";
+                _ = LoadAsync();
+            });
+        }
+
+        partial void OnSelectedStatusFilterChanged(string value)
+        {
+            _ = LoadAsync();
+        }
+
+        partial void OnSearchTextChanged(string value)
+        {
+            // optional live search: throttle in production
         }
 
         public async Task LoadAsync()
@@ -51,8 +70,16 @@ namespace AMS.ViewModels
             {
                 IsBusy = true;
                 var all = await _repo.GetAllAsync();
-                var filtered = all.AsEnumerable();
+                IEnumerable<Contract> filtered = all;
 
+                // Status filter
+                if (SelectedStatusFilter != "Tất cả")
+                {
+                    if (Enum.TryParse<ContractStatus>(SelectedStatusFilter, out var st))
+                        filtered = filtered.Where(c => c.Status == st);
+                }
+
+                // Search filter
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
                     var k = SearchText.Trim().ToLowerInvariant();
@@ -61,12 +88,17 @@ namespace AMS.ViewModels
                         (c.RoomCode?.ToLowerInvariant().Contains(k) ?? false) ||
                         (c.HouseAddress?.ToLowerInvariant().Contains(k) ?? false) ||
                         (c.PropertyDescription?.ToLowerInvariant().Contains(k) ?? false) ||
-                        c.Tenants.Any(t => (t.Name?.ToLowerInvariant().Contains(k) ?? false) ||
-                                           (t.Email?.ToLowerInvariant().Contains(k) ?? false) ||
-                                           (t.Phone?.ToLowerInvariant().Contains(k) ?? false)));
+                        c.Tenants.Any(t =>
+                            (t.Name?.ToLowerInvariant().Contains(k) ?? false) ||
+                            (t.Email?.ToLowerInvariant().Contains(k) ?? false) ||
+                            (t.Phone?.ToLowerInvariant().Contains(k) ?? false))
+                    );
                 }
 
-                Items = new ObservableCollection<Contract>(filtered.OrderByDescending(c => c.Status == ContractStatus.Active).ThenBy(c => c.DaysToEnd));
+                Items = new ObservableCollection<Contract>(filtered
+                    .OrderByDescending(c => c.Status == ContractStatus.Active)
+                    .ThenBy(c => c.EndDate)
+                    .ToList());
             }
             finally
             {
@@ -76,19 +108,10 @@ namespace AMS.ViewModels
 
         private async Task CreateFromRoomAsync()
         {
-            //
             var availableRooms = await _roomsRepository.GetAvailableRoomsForContractAsync(DateTime.Today);
-            var resultRooms = new List<Room>();
-            foreach (var room in availableRooms)
-            {
-                bool hasActiveTenants = (room.RoomOccupancies != null)
-                    && room.RoomOccupancies.Any(occ => occ.MoveOutDate == null);
-                if (hasActiveTenants)
-                    resultRooms.Add(room);
-            }
-            
-            var candidates = resultRooms;
-
+            var candidates = availableRooms
+                .Where(r => r.RoomOccupancies != null && r.RoomOccupancies.Any(o => o.MoveOutDate == null))
+                .ToList();
 
             if (candidates.Count == 0)
             {
@@ -96,7 +119,11 @@ namespace AMS.ViewModels
                 return;
             }
 
-            var labels = candidates.Select(r => string.IsNullOrWhiteSpace(r.House?.Address) ? r.RoomCode : $"{r.RoomCode} — {r.House?.Address}").ToArray();
+            var labels = candidates.Select(r =>
+                string.IsNullOrWhiteSpace(r.House?.Address)
+                    ? r.RoomCode
+                    : $"{r.RoomCode} — {r.House?.Address}").ToArray();
+
             var chosen = await Shell.Current.DisplayActionSheet("Chọn phòng", "Hủy", null, labels);
             if (string.IsNullOrEmpty(chosen) || chosen == "Hủy") return;
 
@@ -119,7 +146,6 @@ namespace AMS.ViewModels
                 DueDay = 5
             };
 
-            // Navigate to edit page (you'll implement ContractEditPage); pass the draft in navigation parameters
             await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object> { ["Contract"] = draft });
         }
 
@@ -132,7 +158,13 @@ namespace AMS.ViewModels
         private async Task DeleteAsync(Contract? c)
         {
             if (c == null) return;
-            var ok = await Shell.Current.DisplayAlertAsync($"Xóa hợp đồng", $"Xóa hợp đồng {c.ContractNumber ?? c.ContractId}?", "Xóa", "Hủy");
+            if (c.Status != ContractStatus.Terminated)
+            {
+                await Shell.Current.DisplayAlertAsync("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
+                return;
+            }
+            var ok = await Shell.Current.DisplayAlertAsync("Xóa hợp đồng",
+                $"Xóa hợp đồng {c.ContractNumber ?? c.ContractId}?", "Xóa", "Hủy");
             if (!ok) return;
             await _repo.DeleteAsync(c.ContractId);
             await LoadAsync();
@@ -141,18 +173,13 @@ namespace AMS.ViewModels
         private async Task GeneratePdfAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlertAsync("PDF", "Tạo PDF hợp đồng sẽ được triển khai sau.", "OK");
-            // TODO: render template -> PDF -> upload -> set c.PdfUrl and _repo.UpdateAsync(c)
+            await Shell.Current.DisplayAlertAsync("PDF", "Tạo PDF (chưa triển khai).", "OK");
         }
 
         private async Task SendEmailAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlertAsync("Email", "Gửi hợp đồng qua email sẽ triển khai sau.", "OK");
+            await Shell.Current.DisplayAlertAsync("Email", "Gửi email (chưa triển khai).", "OK");
         }
     }
-
-    // Small helper interface for occupancy provider; adapt to your code
-
-
 }

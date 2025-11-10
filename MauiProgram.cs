@@ -8,6 +8,7 @@ using System.IO;
 using Microsoft.Maui;
 using AMS.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using AMS.Converters;
 namespace AMS
 {
     public static class MauiProgram
@@ -50,6 +51,8 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddScoped<TenantsNamesConverter>();
+            builder.Services.AddScoped<IRoomOccupancyAdminService, RoomOccupancyAdminService>();
             builder.Services.AddSingleton<IContractRoomGuard, ContractRoomGuard>();
             builder.Services.AddSingleton<IRoomStatusService, RoomStatusService>();
             builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();

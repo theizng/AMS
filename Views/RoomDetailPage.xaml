@@ -100,7 +100,7 @@
                                FontSize="18" 
                                HorizontalOptions="StartAndExpand"
                                Grid.Row="0" Grid.Column="0"/>
-                        <Button Style="{DynamicResource TextPrimary}" Text="Chọn người liên hệ" 
+                        <Button Text="Chọn người liên hệ" 
                                 Command="{Binding ChooseEmergencyContactCommand}" 
                                 Grid.Row="0" Grid.Column="1"/>
                     </Grid>
@@ -127,7 +127,7 @@
                     </Label>
 
                     <HorizontalStackLayout Spacing="12">
-                        <Button Style="{DynamicResource TextPrimary}" Text="Gọi" Command="{Binding CallPhoneCommand}" CommandParameter="{Binding EmergencyContactPhone}" />
+                        <Button Text="Gọi" Command="{Binding CallPhoneCommand}" CommandParameter="{Binding EmergencyContactPhone}" />
                     </HorizontalStackLayout>
                     <Label Text="Chọn 1 người thuê hiện tại làm người liên hệ." FontSize="12" TextColor="#777" />
                 </VerticalStackLayout>
@@ -143,7 +143,7 @@
                                    FontSize="18" 
                                    HorizontalOptions="StartAndExpand" 
                                    Grid.Row="0" Grid.Column="0"/>
-                        <Button Style="{DynamicResource TextPrimary}" Text="Thêm xe" 
+                        <Button Text="Thêm xe" 
                                     Command="{Binding AddBikeCommand}" 
                                     Grid.Row="0" Grid.Column="1"/>
 
