@@ -1,5 +1,6 @@
 ﻿using AMS.Data;
 using AMS.Models;
+using AMS.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -11,6 +12,7 @@ namespace AMS.ViewModels
     public class RoomsViewModel : INotifyPropertyChanged
     {
         private readonly AMSDbContext _db;
+        private readonly IContractRoomGuard _contractRoomGuard; // injected
 
         private int _houseId;
         private ObservableCollection<Room> _rooms = new();
@@ -43,7 +45,7 @@ namespace AMS.ViewModels
                 {
                     _selectedStatusText = newVal;
                     OnPropertyChanged();
-                    _ = LoadRoomsAsync();  // Live filter
+                    _ = LoadRoomsAsync();
                 }
             }
         }
@@ -63,9 +65,11 @@ namespace AMS.ViewModels
         public ICommand DeleteRoomCommand { get; }
         public ICommand ViewDetailCommand { get; }
 
-        public RoomsViewModel(AMSDbContext db)
+        // Constructor now injects guard
+        public RoomsViewModel(AMSDbContext db, IContractRoomGuard contractRoomGuard)
         {
             _db = db;
+            _contractRoomGuard = contractRoomGuard;
 
             RefreshCommand = new Command(async () => await LoadRoomsAsync());
             SearchCommand = new Command(async () => await LoadRoomsAsync());
@@ -81,15 +85,24 @@ namespace AMS.ViewModels
             {
                 if (_houseId <= 0)
                 {
-                    await Shell.Current.DisplayAlertAsync("Thiếu thông tin", "Thiếu HouseId.", "OK");
+                    await Shell.Current.DisplayAlert("Thiếu thông tin", "Thiếu HouseId.", "OK");
                     return;
                 }
                 await Shell.Current.GoToAsync($"editroom?houseId={_houseId}");
             });
 
-            EditRoomCommand = new Command<Room>(async (room) =>
+            EditRoomCommand = new Command<Room>(async room =>
             {
                 if (room == null) return;
+
+                // Guard is guaranteed not null now
+                var editable = await _contractRoomGuard.CanEditRoomAsync(room.RoomCode);
+                if (!editable)
+                {
+                    await Shell.Current.DisplayAlert("Không thể sửa", "Phòng đang thuộc hợp đồng có hiệu lực. Sửa thông qua phụ lục hợp đồng.", "OK");
+                    return;
+                }
+
                 await Shell.Current.GoToAsync($"editroom?roomId={room.IdRoom}&houseId={_houseId}");
             });
 
@@ -116,11 +129,8 @@ namespace AMS.ViewModels
             try
             {
                 IsRefreshing = true;
-
-                // Clear tracker to avoid stale entities when using a long-lived DbContext
                 _db.ChangeTracker.Clear();
 
-                // Always include House because UI shows House.Address
                 IQueryable<Room> query = _db.Rooms.AsNoTracking().Include(r => r.House);
 
                 if (_houseId > 0)
@@ -144,7 +154,6 @@ namespace AMS.ViewModels
                     .ThenBy(r => r.RoomCode)
                     .ToListAsync();
 
-                // Fetch active occupant counts for these rooms in one query
                 var ids = items.Select(r => r.IdRoom).ToList();
                 var counts = await _db.RoomOccupancies
                     .AsNoTracking()
@@ -157,13 +166,12 @@ namespace AMS.ViewModels
                 foreach (var r in items)
                     r.ActiveOccupants = map.TryGetValue(r.IdRoom, out var c) ? c : 0;
 
-                // IMPORTANT: force rebind like HousesViewModel does
                 Rooms = new ObservableCollection<Room>(items);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Rooms] Load error: {ex.Message}");
-                await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể tải danh sách phòng.", "OK");
+                await Shell.Current.DisplayAlert("Lỗi", "Không thể tải danh sách phòng.", "OK");
             }
             finally
             {
@@ -175,13 +183,12 @@ namespace AMS.ViewModels
         {
             if (room == null) return;
 
-            bool confirm = await Shell.Current.DisplayAlertAsync(
+            bool confirm = await Shell.Current.DisplayAlert(
                 "Xóa phòng",
                 $"Bạn chắc chắn muốn xóa phòng:\n\"{room.RoomCode}\"?",
                 "Xóa",
                 "Hủy"
             );
-
             if (!confirm) return;
 
             try
@@ -191,11 +198,10 @@ namespace AMS.ViewModels
                 _db.Remove(tracked);
                 await _db.SaveChangesAsync();
 
-                // Remove locally
                 var idx = Rooms.IndexOf(room);
                 if (idx >= 0) Rooms.RemoveAt(idx);
 
-                await Shell.Current.DisplayAlertAsync("Thành công", "Đã xóa phòng.", "OK");
+                await Shell.Current.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
             }
             catch (InvalidOperationException)
             {
@@ -207,12 +213,12 @@ namespace AMS.ViewModels
                 var idx = Rooms.IndexOf(room);
                 if (idx >= 0) Rooms.RemoveAt(idx);
 
-                await Shell.Current.DisplayAlertAsync("Thành công", "Đã xóa phòng.", "OK");
+                await Shell.Current.DisplayAlert("Thành công", "Đã xóa phòng.", "OK");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Rooms] Delete error: {ex.Message}");
-                await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể xóa phòng.", "OK");
+                await Shell.Current.DisplayAlert("Lỗi", "Không thể xóa phòng.", "OK");
             }
         }
 

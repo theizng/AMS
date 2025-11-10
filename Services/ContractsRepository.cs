@@ -10,68 +10,71 @@ using System.Threading.Tasks;
 
 namespace AMS.Services
 {
+    // Use a fresh DbContext per call to avoid tracking conflicts.
     public class ContractsRepository : IContractsRepository
     {
-        private readonly AMSDbContext _db;
+        private readonly IDbContextFactory<AMSDbContext> _factory;
 
-        public ContractsRepository(AMSDbContext db)
+        public ContractsRepository(IDbContextFactory<AMSDbContext> factory)
         {
-            _db = db;
+            _factory = factory;
         }
 
         public async Task<IReadOnlyList<Contract>> GetAllAsync(CancellationToken ct = default)
         {
-            return await _db.Contracts
+            await using var db = await _factory.CreateDbContextAsync(ct);
+            return await db.Contracts
                 .AsNoTracking()
                 .OrderByDescending(c => c.Status == ContractStatus.Active)
-                .ThenBy(c => c.EndDate) // use mapped column; equivalent ordering
+                .ThenBy(c => c.EndDate)
                 .ToListAsync(ct);
         }
 
         public async Task<Contract?> GetByIdAsync(string contractId, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(contractId)) return null;
-            return await _db.Contracts
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.ContractId == contractId, ct);
+            await using var db = await _factory.CreateDbContextAsync(ct);
+            return await db.Contracts.AsNoTracking().FirstOrDefaultAsync(c => c.ContractId == contractId, ct);
         }
 
         public async Task CreateAsync(Contract contract, CancellationToken ct = default)
         {
             if (contract == null) throw new ArgumentNullException(nameof(contract));
+            await using var db = await _factory.CreateDbContextAsync(ct);
 
-            // Ensure no overlapping active contract for the room
             if (await RoomHasActiveContractAsync(contract.RoomCode, DateTime.Today, ct))
                 throw new InvalidOperationException("Room already has an active contract.");
 
             contract.CreatedAt = DateTime.UtcNow;
             contract.UpdatedAt = DateTime.UtcNow;
 
-            _db.Contracts.Add(contract);
-            await _db.SaveChangesAsync(ct);
+            db.Contracts.Add(contract);
+            await db.SaveChangesAsync(ct);
         }
 
         public async Task UpdateAsync(Contract contract, CancellationToken ct = default)
         {
             if (contract == null) throw new ArgumentNullException(nameof(contract));
+            await using var db = await _factory.CreateDbContextAsync(ct);
 
             contract.UpdatedAt = DateTime.UtcNow;
-            _db.Contracts.Update(contract);
-            await _db.SaveChangesAsync(ct);
+            db.Attach(contract);
+            db.Entry(contract).State = EntityState.Modified;
+            await db.SaveChangesAsync(ct);
         }
 
         public async Task DeleteAsync(string contractId, CancellationToken ct = default)
         {
-            var e = await _db.Contracts.FirstOrDefaultAsync(x => x.ContractId == contractId, ct);
+            await using var db = await _factory.CreateDbContextAsync(ct);
+            var e = await db.Contracts.FirstOrDefaultAsync(x => x.ContractId == contractId, ct);
             if (e == null) return;
-            _db.Contracts.Remove(e);
-            await _db.SaveChangesAsync(ct);
+            db.Contracts.Remove(e);
+            await db.SaveChangesAsync(ct);
         }
 
         public async Task<bool> RoomHasActiveContractAsync(string roomCode, DateTime asOf, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(roomCode)) return false;
-            return await _db.Contracts.AnyAsync(c =>
+            await using var db = await _factory.CreateDbContextAsync(ct);
+            return await db.Contracts.AnyAsync(c =>
                 c.RoomCode == roomCode &&
                 c.Status == ContractStatus.Active &&
                 c.StartDate <= asOf &&
@@ -80,8 +83,8 @@ namespace AMS.Services
 
         public async Task<Contract?> GetActiveContractByRoomAsync(string roomCode, DateTime asOf, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(roomCode)) return null;
-            return await _db.Contracts.FirstOrDefaultAsync(c =>
+            await using var db = await _factory.CreateDbContextAsync(ct);
+            return await db.Contracts.FirstOrDefaultAsync(c =>
                 c.RoomCode == roomCode &&
                 c.Status == ContractStatus.Active &&
                 c.StartDate <= asOf &&
@@ -90,21 +93,15 @@ namespace AMS.Services
 
         public async Task MarkNeedsAddendumAsync(string roomCode, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(roomCode)) return;
-
-            var list = await _db.Contracts
-                .Where(c => c.RoomCode == roomCode && c.Status == ContractStatus.Active)
-                .ToListAsync(ct);
-
+            await using var db = await _factory.CreateDbContextAsync(ct);
+            var list = await db.Contracts.Where(c => c.RoomCode == roomCode && c.Status == ContractStatus.Active).ToListAsync(ct);
             if (list.Count == 0) return;
-
             foreach (var c in list)
             {
                 c.NeedsAddendum = true;
                 c.UpdatedAt = DateTime.UtcNow;
-                _db.Contracts.Update(c);
             }
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
         }
     }
 }

@@ -13,12 +13,12 @@
             <!-- 1) Thông tin phòng -->
             <Frame HasShadow="True" CornerRadius="16" Padding="16" BorderColor="#E0E0E0">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Thông tin phòng" FontAttributes="Bold" FontSize="18" />
-                    <Label Text="{Binding Room.RoomCode, StringFormat='Mã phòng: {0}'}" />
-                    <Label Text="{Binding Room.RoomStatus, StringFormat='Trạng thái: {0}'}" />
-                    <Label Text="{Binding Room.Area, StringFormat='Diện tích: {0:N0} m²'}" />
-                    <Label Text="{Binding Room.Price, StringFormat='Giá thuê: {0:N0} đ'}" />
-                    <Label>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Thông tin phòng" FontAttributes="Bold" FontSize="18" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.RoomCode, StringFormat='Mã phòng: {0}'}" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.RoomStatus, StringFormat='Trạng thái: {0}'}" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.Area, StringFormat='Diện tích: {0:N0} m²'}" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.Price, StringFormat='Giá thuê: {0:N0} đ'}" />
+                    <Label Style="{DynamicResource TextPrimary}">
                         <Label.Text>
                             <MultiBinding StringFormat="Có {0}/{1} người ở hiện tại">
                                 <Binding Path="ActiveOccupancies.Count" />
@@ -28,8 +28,8 @@
                     </Label>
 
                     <!-- Hide Notes when empty/null without converter -->
-                    <Label Text="{Binding Room.Notes, StringFormat='Ghi chú: {0}'}">
-                        <Label.Triggers>
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.Notes, StringFormat='Ghi chú: {0}'}">
+                        <Label.Triggers >
                             <DataTrigger TargetType="Label" Binding="{Binding Room.Notes}" Value="">
                                 <Setter Property="IsVisible" Value="False" />
                             </DataTrigger>
@@ -39,10 +39,10 @@
                         </Label.Triggers>
                     </Label>
 
-                    <!-- Uncomment after you add these columns and migrate
-          <Label Text="{Binding Room.LastWaterMeter, StringFormat='Chỉ số nước: {0:N0}'}" />
-          <Label Text="{Binding Room.LastElectricMeter, StringFormat='Chỉ số điện: {0:N0}'}" />
-          -->
+
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.LastWaterMeter, StringFormat='Chỉ số nước: {0:N0}'}" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.LastElectricMeter, StringFormat='Chỉ số điện: {0:N0}'}" />
+          
                 </VerticalStackLayout>
             </Frame>
 
@@ -50,13 +50,13 @@
             <Frame HasShadow="True" CornerRadius="16" Padding="16" BorderColor="#E0E0E0">
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
-                        <Label Text="Người thuê hiện tại" 
+                        <Label Style="{DynamicResource TextPrimary}" Text="Người thuê hiện tại" 
                                    FontAttributes="Bold" 
                                    FontSize="18" 
                                    HorizontalOptions="StartAndExpand"
                                    Grid.Row="0" Grid.Column="0"/>
-                        
-                        <Button Text="Thêm người thuê" 
+
+                        <Button  Text="Thêm người thuê" 
                                     Command="{Binding AddTenantCommand}" 
                                     Grid.Row="0" Grid.Column="1"/>
                     </Grid>
@@ -64,14 +64,14 @@
 
                     <CollectionView ItemsSource="{Binding ActiveOccupancies}" SelectionMode="None">
                         <CollectionView.EmptyView>
-                            <Label Text="Chưa có người thuê." TextColor="#777" />
+                            <Label Style="{DynamicResource TextPrimary}" Text="Chưa có người thuê." TextColor="#777" />
                         </CollectionView.EmptyView>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
-                                    
-                                   
-                                    <Label Grid.Row="0" Grid.Column="0"                            
+
+
+                                    <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0"                            
                                     Text="{Binding Tenant.FullName}" FontAttributes="Bold" />
                                     <Button Grid.Row="0" Grid.Column="1" Text="Gỡ"
                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveTenantCommand}"
@@ -79,9 +79,9 @@
                                            BackgroundColor="#E53935" TextColor="White" />
 
                                     <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
-                                        <Label Text="{Binding Tenant.PhoneNumber, StringFormat='📞 {0}'}" />
-                                        <Label Text="{Binding Tenant.IdTenant, StringFormat='ID Người thuê: {0}'}" />
-                                        <Label Text="{Binding MoveInDate, StringFormat='Ngày vào: {0:yyyy-MM-dd}'}" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding Tenant.PhoneNumber, StringFormat='📞 {0}'}" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding Tenant.IdTenant, StringFormat='ID Người thuê: {0}'}" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding MoveInDate, StringFormat='Ngày vào: {0:yyyy-MM-dd}'}" />
                                     </HorizontalStackLayout>
                                     
                                 </Grid>
@@ -95,18 +95,18 @@
             <Frame HasShadow="True" CornerRadius="16" Padding="16" BorderColor="#E0E0E0">
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
-                        <Label Text="Liên hệ khẩn cấp" 
+                        <Label Style="{DynamicResource TextPrimary}" Text="Liên hệ khẩn cấp" 
                                FontAttributes="Bold" 
                                FontSize="18" 
                                HorizontalOptions="StartAndExpand"
                                Grid.Row="0" Grid.Column="0"/>
-                        <Button Text="Chọn người liên hệ" 
+                        <Button Style="{DynamicResource TextPrimary}" Text="Chọn người liên hệ" 
                                 Command="{Binding ChooseEmergencyContactCommand}" 
                                 Grid.Row="0" Grid.Column="1"/>
                     </Grid>
 
-                    <Label Text="{Binding EmergencyContactName, StringFormat='Tên: {0}'}">
-                        <Label.Triggers>
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding EmergencyContactName, StringFormat='Tên: {0}'}">
+                        <Label.Triggers Style="{DynamicResource TextPrimary}">
                             <DataTrigger TargetType="Label" Binding="{Binding EmergencyContactName}" Value="">
                                 <Setter Property="IsVisible" Value="False" />
                             </DataTrigger>
@@ -115,8 +115,8 @@
                             </DataTrigger>
                         </Label.Triggers>
                     </Label>
-                    <Label Text="{Binding EmergencyContactPhone, StringFormat='Số điện thoại: {0}'}">
-                        <Label.Triggers>
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding EmergencyContactPhone, StringFormat='Số điện thoại: {0}'}">
+                        <Label.Triggers Style="{DynamicResource TextPrimary}">
                             <DataTrigger TargetType="Label" Binding="{Binding EmergencyContactPhone}" Value="">
                                 <Setter Property="IsVisible" Value="False" />
                             </DataTrigger>
@@ -127,7 +127,7 @@
                     </Label>
 
                     <HorizontalStackLayout Spacing="12">
-                        <Button Text="Gọi" Command="{Binding CallPhoneCommand}" CommandParameter="{Binding EmergencyContactPhone}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Gọi" Command="{Binding CallPhoneCommand}" CommandParameter="{Binding EmergencyContactPhone}" />
                     </HorizontalStackLayout>
                     <Label Text="Chọn 1 người thuê hiện tại làm người liên hệ." FontSize="12" TextColor="#777" />
                 </VerticalStackLayout>
@@ -138,18 +138,18 @@
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
 
-                            <Label Text="Xe của phòng" 
+                        <Label Style="{DynamicResource TextPrimary}" Text="Xe của phòng" 
                                    FontAttributes="Bold" 
                                    FontSize="18" 
                                    HorizontalOptions="StartAndExpand" 
                                    Grid.Row="0" Grid.Column="0"/>
-                            <Button Text="Thêm xe" 
+                        <Button Style="{DynamicResource TextPrimary}" Text="Thêm xe" 
                                     Command="{Binding AddBikeCommand}" 
                                     Grid.Row="0" Grid.Column="1"/>
 
                     </Grid>
                     <Label>
-                        <Label.Text>
+                        <Label.Text Style="{DynamicResource TextPrimary}">
                             <MultiBinding StringFormat=" Miễn phí: {0} xe • Hiện có: {1} • Phí thêm/xe: {2:N0} đ">
                                 <Binding Path="Room.FreeBikeAllowance" />
                                 <Binding Path="Bikes.Count" />
@@ -160,18 +160,18 @@
 
                     <CollectionView ItemsSource="{Binding Bikes}" SelectionMode="None">
                         <CollectionView.EmptyView>
-                            <Label Text="Chưa có xe nào." TextColor="#777" />
+                            <Label Style="{DynamicResource TextPrimary}" Text="Chưa có xe nào." TextColor="#777" />
                         </CollectionView.EmptyView>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,6">
                                     
                                         <VerticalStackLayout>
-                                            <Label Text="{Binding Plate, StringFormat='Biển số: {0}'}" FontAttributes="Bold" />
-                                            <Label Text="{Binding OwnerId, StringFormat='ID Chủ sở hữu: {0}'}" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding Plate, StringFormat='Biển số: {0}'}" FontAttributes="Bold" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding OwnerId, StringFormat='ID Chủ sở hữu: {0}'}" />
                                         </VerticalStackLayout>
 
-                                        <Button Text="Xóa" Grid.Row="0" Grid.Column="1"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Xóa" Grid.Row="0" Grid.Column="1"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveBikeCommand}"
                                                 CommandParameter="{Binding .}"
                                                 BackgroundColor="#E53935" TextColor="White" />

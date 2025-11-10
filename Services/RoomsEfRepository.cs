@@ -13,7 +13,7 @@ namespace AMS.Services
     public class RoomsEfRepository : IRoomsRepository
     {
         private readonly IDbContextFactory<AMSDbContext> _factory;
-        private readonly IContractsRepository _contractsRepo; // to check active contract overlap
+        private readonly IContractsRepository _contractsRepo;
 
         public RoomsEfRepository(IDbContextFactory<AMSDbContext> factory, IContractsRepository contractsRepo)
         {
@@ -26,8 +26,7 @@ namespace AMS.Services
             await using var db = await _factory.CreateDbContextAsync(ct);
             return await db.Rooms
                 .Include(r => r.House)
-                .Include(r => r.RoomOccupancies)
-                    .ThenInclude(ro => ro.Tenant)
+                .Include(r => r.RoomOccupancies).ThenInclude(ro => ro.Tenant)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.RoomCode == roomCode, ct);
         }
@@ -36,10 +35,9 @@ namespace AMS.Services
         {
             await using var db = await _factory.CreateDbContextAsync(ct);
             var q = db.Rooms.AsNoTracking()
-                      .Include(r => r.House)
-                      .Include(r => r.RoomOccupancies)
-                        .ThenInclude(ro => ro.Tenant)
-                      .AsQueryable();
+                .Include(r => r.House)
+                .Include(r => r.RoomOccupancies).ThenInclude(ro => ro.Tenant)
+                .AsQueryable();
 
             if (!includeInactive)
                 q = q.Where(r => r.RoomStatus != Room.Status.Inactive);
@@ -49,15 +47,12 @@ namespace AMS.Services
 
         public async Task<IReadOnlyList<Room>> GetAvailableRoomsForContractAsync(DateTime asOf, CancellationToken ct = default)
         {
-            // Approach: load rooms (non-inactive) and filter out ones that have an active contract overlapping asOf.
-            // The ContractsRepository enforces and knows active contracts.
             await using var db = await _factory.CreateDbContextAsync(ct);
 
             var rooms = await db.Rooms
                 .AsNoTracking()
                 .Include(r => r.House)
-                .Include(r => r.RoomOccupancies)
-                    .ThenInclude(ro => ro.Tenant)
+                .Include(r => r.RoomOccupancies).ThenInclude(ro => ro.Tenant)
                 .Where(r => r.RoomStatus != Room.Status.Inactive)
                 .ToListAsync(ct);
 
@@ -65,11 +60,15 @@ namespace AMS.Services
             foreach (var r in rooms)
             {
                 var hasActiveContract = await _contractsRepo.RoomHasActiveContractAsync(r.RoomCode!, asOf, ct);
-                if (!hasActiveContract)
+                var hasActiveTenant = r.RoomOccupancies != null && r.RoomOccupancies.Any(o => o.MoveOutDate == null);
+                if (!hasActiveContract && hasActiveTenant)
                     available.Add(r);
             }
 
-            return available;
+            return available
+                .OrderBy(r => r.House!.Address)
+                .ThenBy(r => r.RoomCode)
+                .ToList();
         }
     }
 }

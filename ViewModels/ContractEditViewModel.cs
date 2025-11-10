@@ -2,12 +2,9 @@
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Maui.Controls;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace AMS.ViewModels
@@ -15,6 +12,7 @@ namespace AMS.ViewModels
     public partial class ContractEditViewModel : ObservableObject, IQueryAttributable
     {
         private readonly IContractsRepository _repo;
+        private readonly IRoomStatusService _roomStatusService; // NEW
 
         [ObservableProperty] private Contract editable = new Contract();
         [ObservableProperty] private bool isNew;
@@ -36,9 +34,12 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand ActivateCommand { get; }
         public IAsyncRelayCommand TerminateCommand { get; }
 
-        public ContractEditViewModel(IContractsRepository repo)
+        public ContractEditViewModel(IContractsRepository repo,
+                                     IRoomStatusService roomStatusService) // NEW
         {
             _repo = repo;
+            _roomStatusService = roomStatusService; // NEW
+
             SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             ActivateCommand = new AsyncRelayCommand(ActivateAsync, () => !IsBusy);
             TerminateCommand = new AsyncRelayCommand(TerminateAsync, () => !IsBusy);
@@ -49,9 +50,6 @@ namespace AMS.ViewModels
             if (query.TryGetValue("Contract", out var obj) && obj is Contract c)
             {
                 Editable = c;
-                IsNew = string.IsNullOrWhiteSpace(c.ContractId) || c.Status == ContractStatus.Draft;
-
-                // Prefill local edit fields
                 StartDate = c.StartDate;
                 EndDate = c.EndDate;
                 DueDay = c.DueDay;
@@ -69,11 +67,8 @@ namespace AMS.ViewModels
 
         public void OnAppearing()
         {
-            // Validate or compute anything on page load if needed
             if (Editable.Status == ContractStatus.Active && Editable.EndDate < DateTime.Today)
-            {
                 Editable.Status = ContractStatus.Expired;
-            }
         }
 
         private void PushFormIntoEditable()
@@ -101,32 +96,31 @@ namespace AMS.ViewModels
             {
                 if (EndDate <= StartDate)
                 {
-                    await Shell.Current.DisplayAlert("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu.", "OK");
                     return;
                 }
 
+                if (string.IsNullOrWhiteSpace(Editable.ContractId))
+                    Editable.ContractId = Guid.NewGuid().ToString("N");
+
+                if (string.IsNullOrWhiteSpace(Editable.ContractNumber))
+                    Editable.ContractNumber = "HD-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+
                 PushFormIntoEditable();
 
-                if (IsNew && Editable.Status == ContractStatus.Draft)
-                {
+                var existing = await _repo.GetByIdAsync(Editable.ContractId);
+                if (existing is null)
                     await _repo.CreateAsync(Editable);
-                    IsNew = false;
-                }
                 else
-                {
                     await _repo.UpdateAsync(Editable);
-                }
 
-                await Shell.Current.DisplayAlert("Thành công", "Đã lưu hợp đồng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã lưu hợp đồng.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
-            finally
-            {
-                IsBusy = false;
-            }
+            finally { IsBusy = false; }
         }
 
         private async Task ActivateAsync()
@@ -135,14 +129,30 @@ namespace AMS.ViewModels
             IsBusy = true;
             try
             {
+                if (Editable.Tenants.Count == 0)
+                {
+                    await Shell.Current.DisplayAlertAsync("Lỗi", "Hợp đồng không có người thuê.", "OK");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(Editable.PdfUrl))
+                {
+                    var cont = await Shell.Current.DisplayAlertAsync("Chưa có PDF",
+                        "Chưa đính kèm file PDF. Kích hoạt tiếp?", "Kích hoạt", "Hủy");
+                    if (!cont) return;
+                }
+
                 PushFormIntoEditable();
                 Editable.Status = ContractStatus.Active;
+
                 await _repo.UpdateAsync(Editable);
-                await Shell.Current.DisplayAlert("Thành công", "Hợp đồng đã kích hoạt.", "OK");
+                await _roomStatusService.SetRoomOccupiedAsync(Editable.RoomCode);
+
+                await Shell.Current.DisplayAlertAsync("Thành công", "Hợp đồng đã kích hoạt.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
             finally { IsBusy = false; }
         }
@@ -150,7 +160,7 @@ namespace AMS.ViewModels
         private async Task TerminateAsync()
         {
             if (IsBusy) return;
-            var confirm = await Shell.Current.DisplayAlert("Xác nhận", "Chấm dứt hợp đồng này?", "Đồng ý", "Hủy");
+            var confirm = await Shell.Current.DisplayAlertAsync("Xác nhận", "Chấm dứt hợp đồng này?", "Đồng ý", "Hủy");
             if (!confirm) return;
 
             IsBusy = true;
@@ -159,11 +169,12 @@ namespace AMS.ViewModels
                 Editable.Status = ContractStatus.Terminated;
                 Editable.EndDate = DateTime.Today;
                 await _repo.UpdateAsync(Editable);
-                await Shell.Current.DisplayAlert("Thành công", "Hợp đồng đã chấm dứt.", "OK");
+                await _roomStatusService.SetRoomAvailableAsync(Editable.RoomCode);
+                await Shell.Current.DisplayAlertAsync("Thành công", "Hợp đồng đã chấm dứt.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
             finally { IsBusy = false; }
         }

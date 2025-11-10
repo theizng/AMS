@@ -50,6 +50,9 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
+            builder.Services.AddSingleton<IContractRoomGuard, ContractRoomGuard>();
+            builder.Services.AddSingleton<IRoomStatusService, RoomStatusService>();
+            builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
             builder.Services.AddSingleton<IContractsRepository, ContractsRepository>();
             builder.Services.AddSingleton<IRoomOccupancyProvider, RoomOccupancyEfProvider>();
             builder.Services.AddSingleton<IRoomsRepository, RoomsEfRepository>();

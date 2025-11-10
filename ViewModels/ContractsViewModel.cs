@@ -76,7 +76,18 @@ namespace AMS.ViewModels
 
         private async Task CreateFromRoomAsync()
         {
-            var candidates = (await _roomsRepository.GetAvailableRoomsForContractAsync(DateTime.Today)).ToList();
+            //
+            var availableRooms = await _roomsRepository.GetAvailableRoomsForContractAsync(DateTime.Today);
+            var resultRooms = new List<Room>();
+            foreach (var room in availableRooms)
+            {
+                bool hasActiveTenants = (room.RoomOccupancies != null)
+                    && room.RoomOccupancies.Any(occ => occ.MoveOutDate == null);
+                if (hasActiveTenants)
+                    resultRooms.Add(room);
+            }
+            
+            var candidates = resultRooms;
 
 
             if (candidates.Count == 0)
@@ -115,7 +126,7 @@ namespace AMS.ViewModels
         private Task EditAsync(Contract? c)
         {
             if (c == null) return Task.CompletedTask;
-            return Shell.Current.GoToAsync("ContractEditPage", new Dictionary<string, object> { ["Contract"] = c });
+            return Shell.Current.GoToAsync("editcontract", new Dictionary<string, object> { ["Contract"] = c });
         }
 
         private async Task DeleteAsync(Contract? c)
