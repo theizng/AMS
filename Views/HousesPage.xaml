@@ -42,18 +42,20 @@
                             </VerticalStackLayout>
 
                             <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                
                                 <Button Text="Xem phòng"
-                Style="{DynamicResource PrimaryButton}"
-                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRoomsCommand}"
-                CommandParameter="{Binding .}" />
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRoomsCommand}"
+                                    CommandParameter="{Binding .}" />
+                                
                                 <Button Text="Sửa"
-                Style="{DynamicResource WarningButton}"
-                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditHouseCommand}"
-                CommandParameter="{Binding .}" />
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditHouseCommand}"
+                                    CommandParameter="{Binding .}" />
+                                
                                 <Button Text="Xóa"
-                Style="{DynamicResource DangerButton}"
-                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteHouseCommand}"
-                CommandParameter="{Binding .}" />
+                                    Style="{DynamicResource DangerButton}"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteHouseCommand}"
+                                    CommandParameter="{Binding .}" />
+                                
                             </VerticalStackLayout>
                         </Grid>
                     </Frame>

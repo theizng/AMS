@@ -13,6 +13,10 @@ namespace AMS.ViewModels
 {
     public partial class ContractsViewModel : ObservableObject
     {
+        private readonly IContractAddendumService _addendumService;
+        private readonly IContractPdfService _pdfService;
+        private readonly IEmailNotificationService _emailNotify;
+
         private readonly IContractsRepository _repo;
         private readonly IRoomsRepository _roomsRepository;
         private readonly IRoomOccupancyProvider _occupancyProvider;
@@ -23,8 +27,10 @@ namespace AMS.ViewModels
         [ObservableProperty] private string selectedStatusFilter = "Tất cả";
 
         public IReadOnlyList<string> StatusFilterOptions { get; } =
-            new[] { "Tất cả", "Draft", "Active", "Expired", "Terminated" };
+            new[] { "Tất cả", "Bản nháp", "Hiệu lực", "Hết hạn", "Chấm dứt", "Cần phụ lục" };
 
+        public IAsyncRelayCommand<Contract> AddendumCommand { get; }
+        public IAsyncRelayCommand<Contract> HistoryCommand { get; }
         public IAsyncRelayCommand RefreshCommand { get; }
         public IAsyncRelayCommand CreateCommand { get; }
         public IAsyncRelayCommand<Contract> EditCommand { get; }
@@ -33,12 +39,22 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand<Contract> SendEmailCommand { get; }
         public IRelayCommand ClearFilterCommand { get; }
 
-        public ContractsViewModel(IContractsRepository repo, IRoomsRepository roomsRepository, IRoomOccupancyProvider occupancyProvider)
+        public ContractsViewModel(IContractsRepository repo,
+            IRoomsRepository roomsRepository,
+            IRoomOccupancyProvider occupancyProvider,
+            IContractAddendumService addendumService,
+            IContractPdfService contractPdfService,
+            IEmailNotificationService email)
         {
+            _addendumService = addendumService;
+            _emailNotify = email;
+            _pdfService = contractPdfService;
             _repo = repo;
             _roomsRepository = roomsRepository;
             _occupancyProvider = occupancyProvider;
 
+            AddendumCommand = new AsyncRelayCommand<Contract>(HandleAddendumAsync);
+            HistoryCommand = new AsyncRelayCommand<Contract>(ShowHistoryAsync);
             RefreshCommand = new AsyncRelayCommand(LoadAsync);
             CreateCommand = new AsyncRelayCommand(CreateFromRoomAsync);
             EditCommand = new AsyncRelayCommand<Contract>(EditAsync);
@@ -53,15 +69,7 @@ namespace AMS.ViewModels
             });
         }
 
-        partial void OnSelectedStatusFilterChanged(string value)
-        {
-            _ = LoadAsync();
-        }
-
-        partial void OnSearchTextChanged(string value)
-        {
-            // optional live search: throttle in production
-        }
+        partial void OnSelectedStatusFilterChanged(string value) => _ = LoadAsync();
 
         public async Task LoadAsync()
         {
@@ -72,14 +80,24 @@ namespace AMS.ViewModels
                 var all = await _repo.GetAllAsync();
                 IEnumerable<Contract> filtered = all;
 
-                // Status filter
                 if (SelectedStatusFilter != "Tất cả")
                 {
-                    if (Enum.TryParse<ContractStatus>(SelectedStatusFilter, out var st))
-                        filtered = filtered.Where(c => c.Status == st);
+                    if (SelectedStatusFilter == "Cần phụ lục")
+                        filtered = filtered.Where(c => c.NeedsAddendum);
+                    else
+                    {
+                        var st = SelectedStatusFilter switch
+                        {
+                            "Bản nháp" => ContractStatus.Draft,
+                            "Hiệu lực" => ContractStatus.Active,
+                            "Hết hạn" => ContractStatus.Expired,
+                            "Chấm dứt" => ContractStatus.Terminated,
+                            _ => (ContractStatus?)null
+                        };
+                        if (st.HasValue) filtered = filtered.Where(c => c.Status == st.Value);
+                    }
                 }
 
-                // Search filter
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
                     var k = SearchText.Trim().ToLowerInvariant();
@@ -106,6 +124,16 @@ namespace AMS.ViewModels
             }
         }
 
+        private Task EditAsync(Contract? c)
+        {
+            if (c == null) return Task.CompletedTask;
+            return Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
+            {
+                ["Contract"] = c,
+                ["readonly"] = false
+            });
+        }
+
         private async Task CreateFromRoomAsync()
         {
             var availableRooms = await _roomsRepository.GetAvailableRoomsForContractAsync(DateTime.Today);
@@ -115,7 +143,7 @@ namespace AMS.ViewModels
 
             if (candidates.Count == 0)
             {
-                await Shell.Current.DisplayAlertAsync("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
+                await Shell.Current.DisplayAlert("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
                 return;
             }
 
@@ -146,24 +174,22 @@ namespace AMS.ViewModels
                 DueDay = 5
             };
 
-            await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object> { ["Contract"] = draft });
-        }
-
-        private Task EditAsync(Contract? c)
-        {
-            if (c == null) return Task.CompletedTask;
-            return Shell.Current.GoToAsync("editcontract", new Dictionary<string, object> { ["Contract"] = c });
+            await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
+            {
+                ["Contract"] = draft,
+                ["readonly"] = false
+            });
         }
 
         private async Task DeleteAsync(Contract? c)
         {
             if (c == null) return;
-            if (c.Status != ContractStatus.Terminated)
+            if ((c.Status != ContractStatus.Terminated) && (c.Status != ContractStatus.Draft))
             {
-                await Shell.Current.DisplayAlertAsync("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
+                await Shell.Current.DisplayAlert("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
                 return;
             }
-            var ok = await Shell.Current.DisplayAlertAsync("Xóa hợp đồng",
+            var ok = await Shell.Current.DisplayAlert("Xóa hợp đồng",
                 $"Xóa hợp đồng {c.ContractNumber ?? c.ContractId}?", "Xóa", "Hủy");
             if (!ok) return;
             await _repo.DeleteAsync(c.ContractId);
@@ -173,13 +199,87 @@ namespace AMS.ViewModels
         private async Task GeneratePdfAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlertAsync("PDF", "Tạo PDF (chưa triển khai).", "OK");
+            await Shell.Current.DisplayAlert("PDF", "Tạo PDF (chưa triển khai).", "OK");
         }
 
         private async Task SendEmailAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlertAsync("Email", "Gửi email (chưa triển khai).", "OK");
+            await Shell.Current.DisplayAlert("Email", "Gửi email (chưa triển khai).", "OK");
+        }
+
+        // ContractsPage → “Phụ lục”
+        private async Task HandleAddendumAsync(Contract? c)
+        {
+            if (c == null) return;
+            if (c.Status != ContractStatus.Active || !c.NeedsAddendum)
+            {
+                await Shell.Current.DisplayAlert("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
+                return;
+            }
+
+            // Route to Edit page to let admin confirm and execute CreateAddendum there (editable UI, richer summary)
+            await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
+            {
+                ["Contract"] = c,
+                ["readonly"] = false
+            });
+        }
+
+        // ContractsPage → “Lịch sử”
+        private async Task ShowHistoryAsync(Contract? c)
+        {
+            if (c == null) return;
+
+            var adds = await _addendumService.GetAddendumsAsync(c.ContractId);
+            var items = new List<string> { "Hợp đồng gốc" };
+            items.AddRange(adds.Select(a => a.AddendumNumber ?? a.AddendumId));
+
+            var choice = await Shell.Current.DisplayActionSheet("Lịch sử hợp đồng", "Đóng", null, items.ToArray());
+            if (string.IsNullOrEmpty(choice) || choice == "Đóng") return;
+
+            Contract preview;
+            if (choice == "Hợp đồng gốc")
+            {
+                var first = adds.OrderBy(a => a.CreatedAt).FirstOrDefault();
+                var originTenants = first?.OldTenants?.ToList() ?? c.Tenants.ToList();
+                preview = MakePreviewFrom(c, originTenants, " (Gốc)", c.PdfUrl);
+            }
+            else
+            {
+                var selected = adds.First(a => (a.AddendumNumber ?? a.AddendumId) == choice);
+                preview = MakePreviewFrom(c, selected.NewTenants.ToList(), $" / {selected.AddendumNumber}", selected.PdfUrl);
+            }
+
+            await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
+            {
+                ["Contract"] = preview,
+                ["readonly"] = true
+            });
+        }
+
+        private static Contract MakePreviewFrom(Contract baseContract, List<ContractTenant> tenants, string? labelSuffix, string? pdfUrl)
+        {
+            return new Contract
+            {
+                ContractId = baseContract.ContractId,
+                ContractNumber = string.IsNullOrWhiteSpace(labelSuffix) ? baseContract.ContractNumber : $"{baseContract.ContractNumber}{labelSuffix}",
+                RoomCode = baseContract.RoomCode,
+                HouseAddress = baseContract.HouseAddress,
+                StartDate = baseContract.StartDate,
+                EndDate = baseContract.EndDate,
+                RentAmount = baseContract.RentAmount,
+                DueDay = baseContract.DueDay,
+                PaymentMethods = baseContract.PaymentMethods,
+                LateFeePolicy = baseContract.LateFeePolicy,
+                SecurityDeposit = baseContract.SecurityDeposit,
+                DepositReturnDays = baseContract.DepositReturnDays,
+                MaxOccupants = baseContract.MaxOccupants,
+                MaxBikeAllowance = baseContract.MaxBikeAllowance,
+                Tenants = tenants,
+                Status = baseContract.Status,
+                PdfUrl = pdfUrl
+            };
         }
     }
 }

@@ -14,6 +14,7 @@ namespace AMS.Data
         public DbSet<Bike> Bikes { get; set; } = null!;
         public DbSet<Invoice> Invoices { get; set; } = null!;
         public DbSet<Contract> Contracts { get; set; } = null!;
+        public DbSet<ContractAddendum> ContractAddendums { get; set; } = null!;
         public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
         {
         }
@@ -236,18 +237,38 @@ namespace AMS.Data
                 entity.Property(e => e.PropertyDescription).HasColumnType("TEXT");
                 entity.Property(e => e.PdfUrl).HasMaxLength(1024).IsRequired(false);
 
+ 
                 // FIX: default value uses enum, not int
                 entity.Property(e => e.Status)
                       .HasConversion<int>()
                       .HasDefaultValue(ContractStatus.Draft);
 
                 entity.Property(e => e.NeedsAddendum).HasDefaultValue(false);
+                entity.Property(e => e.AddendumNotifiedAt).IsRequired(false);
 
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                entity.HasMany(entity => entity.Addendums)
+                      .WithOne(a => a.Parent!)
+                      .HasForeignKey(ca => ca.ParentContractId)
+                      .HasPrincipalKey(c => c.ContractId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 entity.HasIndex(e => e.RoomCode);
                 entity.HasIndex(e => e.ContractNumber).IsUnique(false);
+            });
+
+            // CONTRACT ADDENDUM
+            modelBuilder.Entity<ContractAddendum>(entity =>
+            {
+                entity.HasKey(e => e.AddendumId);
+                entity.Property(e => e.ParentContractId).IsRequired().HasMaxLength(64);
+                entity.Property(e => e.AddendumNumber).HasMaxLength(64).IsRequired(false);
+                entity.Property(e => e.PdfUrl).HasMaxLength(1024).IsRequired(false);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasIndex(e => e.AddendumNumber).IsUnique(false);
             });
         }
     }

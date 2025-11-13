@@ -7,7 +7,6 @@
 
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Đồng bộ phòng" Priority="0" Order="Primary" Command="{Binding SyncRoomsCommand}" />
-        <ToolbarItem Text="Thêm yêu cầu" Priority="1" Order="Primary" Command="{Binding CreateRequestCommand}" />
         <ToolbarItem Text="Nhập URL" Priority="2" Order="Primary" Command="{Binding ImportUrlCommand}" />
         <ToolbarItem Text="Làm mới" Priority="3" Order="Primary" Command="{Binding RefreshCommand}" />
         <ToolbarItem Text="Nhập Excel" Priority="4" Order="Secondary" Command="{Binding ImportSheetCommand}" />

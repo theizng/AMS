@@ -38,22 +38,22 @@
                     HorizontalOptions="FillAndExpand" />
 
             <Button Grid.Row="1"
-            Text="Xóa bộ lọc"
-            Command="{Binding ClearFilterCommand}"
-            BorderWidth="1"
-            CornerRadius="16"
-            Padding="12,4"
-            FontSize="13"
-            HeightRequest="32"
-            MinimumWidthRequest="0"
-            HorizontalOptions="Start"
-            Margin="0,0,0,0" />
+                    Text="Xóa bộ lọc"
+                    Command="{Binding ClearFilterCommand}"
+                    BorderWidth="1"
+                    CornerRadius="16"
+                    Padding="12,4"
+                    FontSize="13"
+                    HeightRequest="32"
+                    MinimumWidthRequest="0"
+                    HorizontalOptions="Start"
+                    Margin="0,0,0,0" />
         </HorizontalStackLayout>
 
         <!-- Note on button (moved to row 2) -->
         <Label Grid.Row="2"
                Text="Nhấn 'Xem chi tiết' để xem thông tin đầy đủ của phòng cụ thể."
-               TextColor="Black" FontSize="12" HorizontalOptions="Center" />
+               Style="{DynamicResource TextPrimary}" FontSize="12" HorizontalOptions="Center" />
 
         <!-- Pull-to-refresh (moved to row 3) -->
         <RefreshView Grid.Row="3"
@@ -66,7 +66,7 @@
                     <Grid Padding="20">
                         <Label Text="Chưa có phòng nào. Hãy nhấn 'Thêm phòng' để tạo mới."
                                HorizontalOptions="Center" VerticalOptions="Center"
-                               TextColor="#666" />
+                               Style="{DynamicResource TextPrimary}"/>
                     </Grid>
                 </CollectionView.EmptyView>
 
@@ -82,15 +82,20 @@
                                         <!-- Badge (theme-aware) -->
                                         <Border Style="{DynamicResource Chip}">
                                             <Label Text="{Binding RoomStatus}"
-                   TextColor="{Binding RoomStatus, Converter={StaticResource StatusColorConverter}}"
-                   FontAttributes="Bold" />
+                                                   TextColor="{Binding RoomStatus, Converter={StaticResource StatusColorConverter}}"
+                                                   FontAttributes="Bold" />
                                         </Border>
                                     </HorizontalStackLayout>
 
                                     <Label Text="{Binding House.Address, StringFormat='Nhà: {0}'}"
-               IsVisible="{Binding House}" Style="{DynamicResource TextPrimary}" />
-                                    <Label Text="{Binding Area, StringFormat='Diện tích: {0:N0} m²'}" Style="{DynamicResource TextPrimary}" />
-                                    <Label Text="{Binding Price, StringFormat='Giá: {0:N0} đ'}" Style="{DynamicResource TextPrimary}" />
+                                           IsVisible="{Binding House}" 
+                                           Style="{DynamicResource TextPrimary}" />
+                                    
+                                    <Label Text="{Binding Area, StringFormat='Diện tích: {0:N0} m²'}" 
+                                           Style="{DynamicResource TextPrimary}" />
+                                    
+                                    <Label Text="{Binding Price, StringFormat='Giá: {0:N0} đ'}" 
+                                           Style="{DynamicResource TextPrimary}" />
 
                                     <Label Style="{DynamicResource TextPrimary}">
                                         <Label.Text>

@@ -3,13 +3,15 @@
     x:Class="AMS.Views.EditContractPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:conv="clr-namespace:AMS.Converters"
     Title="Hợp đồng">
 
+   
     <ContentPage.Resources>
-        <!-- Add converters or styles here if you have them globally -->
+        <ResourceDictionary>
+            <conv:InvertBoolConverter x:Key="InvertBoolConverter" />
+        </ResourceDictionary>
     </ContentPage.Resources>
-
-    <!-- Single Content root -->
     <ScrollView>
         <VerticalStackLayout Padding="18" Spacing="16">
 
@@ -34,15 +36,15 @@
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0">
                             <Label Text="Ngày bắt đầu"/>
-                            <DatePicker Date="{Binding StartDate}"/>
+                            <DatePicker Date="{Binding StartDate}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1">
                             <Label Text="Ngày kết thúc"/>
-                            <DatePicker Date="{Binding EndDate}"/>
+                            <DatePicker Date="{Binding EndDate}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="2">
                             <Label Text="Ngày thu tiền (1..28)"/>
-                            <Entry Keyboard="Numeric" Text="{Binding DueDay}" Placeholder="5"/>
+                            <Entry Keyboard="Numeric" Text="{Binding DueDay}" Placeholder="5" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                     </Grid>
 
@@ -54,15 +56,15 @@
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0">
                             <Label Text="Giá thuê / tháng"/>
-                            <Entry Keyboard="Numeric" Text="{Binding RentAmount}" Placeholder="0"/>
+                            <Entry Keyboard="Numeric" Text="{Binding RentAmount}" Placeholder="0" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1">
                             <Label Text="Đặt cọc"/>
-                            <Entry Keyboard="Numeric" Text="{Binding SecurityDeposit}" Placeholder="0"/>
+                            <Entry Keyboard="Numeric" Text="{Binding SecurityDeposit}" Placeholder="0" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="2">
                             <Label Text="Trả cọc sau (ngày)"/>
-                            <Entry Keyboard="Numeric" Text="{Binding DepositReturnDays}" Placeholder="7"/>
+                            <Entry Keyboard="Numeric" Text="{Binding DepositReturnDays}" Placeholder="7" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                     </Grid>
                 </VerticalStackLayout>
@@ -77,11 +79,11 @@
                     </Grid.ColumnDefinitions>
                     <VerticalStackLayout Grid.Column="0">
                         <Label Text="Số người tối đa"/>
-                        <Entry Keyboard="Numeric" Text="{Binding MaxOccupants}" Placeholder="1"/>
+                        <Entry Keyboard="Numeric" Text="{Binding MaxOccupants}" Placeholder="1" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                     </VerticalStackLayout>
                     <VerticalStackLayout Grid.Column="1">
                         <Label Text="Xe máy tối đa"/>
-                        <Entry Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" Placeholder="1"/>
+                        <Entry Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" Placeholder="1" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                     </VerticalStackLayout>
                 </Grid>
             </Frame>
@@ -90,9 +92,9 @@
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Phương thức thanh toán"/>
-                    <Editor HeightRequest="60" Text="{Binding PaymentMethods}" Placeholder="Chuyển khoản, tiền mặt..."/>
+                    <Editor HeightRequest="60" Text="{Binding PaymentMethods}" Placeholder="Chuyển khoản, tiền mặt..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                     <Label Text="Chính sách trễ hạn"/>
-                    <Editor HeightRequest="60" Text="{Binding LateFeePolicy}" Placeholder="Phí trễ hạn, số ngày ân hạn..."/>
+                    <Editor HeightRequest="60" Text="{Binding LateFeePolicy}" Placeholder="Phí trễ hạn, số ngày ân hạn..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -100,7 +102,7 @@
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Mô tả tài sản"/>
-                    <Editor HeightRequest="80" Text="{Binding PropertyDescription}" Placeholder="Địa chỉ, tiện ích, chi tiết phòng..."/>
+                    <Editor HeightRequest="80" Text="{Binding PropertyDescription}" Placeholder="Địa chỉ, tiện ích, chi tiết phòng..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -128,64 +130,25 @@
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Link PDF hợp đồng"/>
-                    <Entry Placeholder="https://..." Text="{Binding PdfUrl}"/>
-                    <Label Text="(Khuyến nghị tạo và đính kèm PDF trước khi kích hoạt)"
-                           FontSize="12" TextColor="#9E9E9E"/>
+                    <Entry Placeholder="https://..." Text="{Binding PdfUrl}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- Actions -->
+            <!-- Primary Actions -->
             <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
-                <Button Text="Lưu" Command="{Binding SaveCommand}" WidthRequest="110">
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
-                            <Setter Property="IsEnabled" Value="False"/>
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <Button Text="Tạo PDF" Command="{Binding GeneratePdfCommand}" WidthRequest="110"
-                        IsVisible="{Binding CanGeneratePdf}">
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
-                            <Setter Property="IsEnabled" Value="False"/>
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <Button Text="Gửi PDF" Command="{Binding SendContractEmailCommand}" WidthRequest="110"
-                        IsVisible="{Binding CanSendEmail}">
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
-                            <Setter Property="IsEnabled" Value="False"/>
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" WidthRequest="110"
-                        IsVisible="{Binding CanActivate}">
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
-                            <Setter Property="IsEnabled" Value="False"/>
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <Button Text="Chấm dứt" Command="{Binding TerminateCommand}" WidthRequest="110"
-                        IsVisible="{Binding CanTerminate}" BackgroundColor="#FFECB3">
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
-                            <Setter Property="IsEnabled" Value="False"/>
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <!-- Delete removed here to avoid accidental delete; keep deletion in list page -->
-                <!-- If you later add a DeleteCommand + CanDelete, you can re-enable it:
-                <Button Text="Xóa" Command="{Binding DeleteCommand}" WidthRequest="110"
-                        IsVisible="{Binding CanDelete}" BackgroundColor="#FFCDD2"/>
-                -->
+                <Button Text="Lưu" Command="{Binding SaveCommand}" WidthRequest="110" IsVisible="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                <Button Text="Tạo PDF" Command="{Binding GeneratePdfCommand}" WidthRequest="110" IsVisible="{Binding CanGeneratePdf}"/>
+                <Button Text="Gửi PDF" Command="{Binding SendContractEmailCommand}" WidthRequest="110" IsVisible="{Binding CanSendEmail}"/>
+                <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" WidthRequest="110" IsVisible="{Binding CanActivate}"/>
+                <Button Text="Chấm dứt" Command="{Binding TerminateCommand}" WidthRequest="110" IsVisible="{Binding CanTerminate}" BackgroundColor="#FFECB3"/>
             </HorizontalStackLayout>
+
+            <!-- Addendum Actions -->
+            <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                <Button Text="Tạo phụ lục" Command="{Binding CreateAddendumCommand}" WidthRequest="130" IsVisible="{Binding CanCreateAddendum}"/>
+                <Button Text="Lịch sử" Command="{Binding ViewHistoryCommand}" WidthRequest="110" IsVisible="{Binding IsPersisted}"/>
+            </HorizontalStackLayout>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

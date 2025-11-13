@@ -9,6 +9,7 @@ using Microsoft.Maui;
 using AMS.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using AMS.Converters;
+using QuestPDF.Infrastructure;
 namespace AMS
 {
     public static class MauiProgram
@@ -51,17 +52,30 @@ namespace AMS
         {
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
-            builder.Services.AddScoped<TenantsNamesConverter>();
-            builder.Services.AddScoped<IRoomOccupancyAdminService, RoomOccupancyAdminService>();
+            //used for pdf contract
+            builder.Services.AddSingleton<IContractAddendumService, ContractAddendumService>();
+            builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
+            QuestPDF.Settings.License = LicenseType.Community;
+            //used for contract
             builder.Services.AddSingleton<IContractRoomGuard, ContractRoomGuard>();
             builder.Services.AddSingleton<IRoomStatusService, RoomStatusService>();
             builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
             builder.Services.AddSingleton<IContractsRepository, ContractsRepository>();
+            builder.Services.AddScoped<TenantsNamesConverter>();
+            builder.Services.AddScoped<IRoomOccupancyAdminService, RoomOccupancyAdminService>();
+
+            //used for tenant
             builder.Services.AddSingleton<IRoomOccupancyProvider, RoomOccupancyEfProvider>();
             builder.Services.AddSingleton<IRoomsRepository, RoomsEfRepository>();
+
+            //used for mail
             builder.Services.AddSingleton<IEmailService, EmailService>();
             builder.Services.AddSingleton<IEmailNotificationService, EmailNotificationService>();
+           
             builder.Services.AddSingleton<IRoomsProvider, RoomsEfProvider>();
+
+
+            //used for maintenance sheet
             builder.Services.AddSingleton<HttpClient>();
             builder.Services.AddSingleton<IMaintenanceSheetWriter>(sp =>
             {
@@ -73,7 +87,11 @@ namespace AMS
             });
             builder.Services.AddSingleton<IOnlineMaintenanceReader, GoogleSheetXlsxMaintenanceReader>();
             builder.Services.AddSingleton<IMaintenanceSheetReader, ClosedXMLMaintenanceSheetReader>();
+
+            //used for database sync
             builder.Services.AddSingleton<IDatabaseSyncService, DatabaseSyncService>();
+
+            //used for auth
             builder.Services.AddSingleton<ISecureStorage>(SecureStorage.Default);
             builder.Services.AddSingleton<IAuthService, AuthService>();
             builder.Services.AddSingleton<IThemeService, ThemeService>();

@@ -3,7 +3,12 @@
     x:Class="AMS.Views.ContractsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:converters="clr-namespace:AMS.Converters"
     Title="Hợp đồng">
+
+    <ContentPage.Resources>
+        <converters:TenantsNamesConverter x:Key="TenantsNamesConverter" />
+    </ContentPage.Resources>
 
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Tạo" Priority="0" Order="Primary" Command="{Binding CreateCommand}" />
@@ -17,7 +22,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Search & Filter -->
         <HorizontalStackLayout Grid.Row="0" Spacing="8">
             <Entry Placeholder="Tìm theo phòng / số hợp đồng / người thuê..."
                    HorizontalOptions="FillAndExpand"
@@ -33,27 +37,17 @@
             <Button Text="Xóa lọc" Command="{Binding ClearFilterCommand}" />
         </HorizontalStackLayout>
 
-        <!-- List -->
-        <RefreshView Grid.Row="2"
-                     IsRefreshing="{Binding IsBusy}"
-                     Command="{Binding RefreshCommand}">
+        <RefreshView Grid.Row="2" IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
             <CollectionView ItemsSource="{Binding Items}" SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Grid Padding="20">
-                        <Label Text="Chưa có hợp đồng."
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               TextColor="#666"/>
+                        <Label Text="Chưa có hợp đồng." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
                     </Grid>
                 </CollectionView.EmptyView>
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,6"
-                               Padding="14"
-                               HasShadow="True"
-                               BorderColor="#E0E0E0"
-                               CornerRadius="12">
+                        <Frame Margin="0,6" Padding="14" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="12">
                             <Grid ColumnSpacing="12" RowSpacing="6">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -65,22 +59,15 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Row 1 -->
                                 <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
-                                    <Label Text="{Binding ContractNumber}"
-                                           FontAttributes="Bold"
-                                           TextColor="#37474F"/>
-                                    <Label Text="•" TextColor="#B0BEC5"/>
-                                    <Label Text="{Binding RoomCode, StringFormat='Phòng {0}'}"
-                                           FontAttributes="Bold" TextColor="#455A64"/>
-                                    <!-- Status badge -->
-                                    <Border Padding="10,4"
-                                            StrokeThickness="0"
-                                            Background="#ECEFF1">
+                                    <Label Text="{Binding ContractNumber}" FontAttributes="Bold"/>
+                                    <Label Text="•"/>
+                                    <Label Text="{Binding RoomCode, StringFormat='Phòng {0}'}" FontAttributes="Bold"/>
+                                    <Border Padding="10,4" StrokeThickness="0" Background="#ECEFF1">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="14"/>
                                         </Border.StrokeShape>
-                                        <Label Text="{Binding StatusVi}" FontAttributes="Bold" />
+                                        <Label Text="{Binding StatusVi}" FontAttributes="Bold"/>
                                         <Border.Triggers>
                                             <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Draft">
                                                 <Setter Property="Background" Value="#FFF3CD"/>
@@ -96,57 +83,39 @@
                                             </DataTrigger>
                                         </Border.Triggers>
                                     </Border>
-                                    <Border Padding="10,4" Background="#FFD54F" StrokeThickness="0"
-                                            IsVisible="{Binding NeedsAddendum}">
+                                    <Border Padding="10,4" Background="#FFD54F" StrokeThickness="0" IsVisible="{Binding NeedsAddendum}">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="14"/>
                                         </Border.StrokeShape>
                                         <Label Text="Phụ lục" FontAttributes="Bold"/>
                                     </Border>
-                                    <Border Padding="10,4" Background="#B3E5FC" StrokeThickness="0"
-                                            IsVisible="{Binding IsExpiringSoon}">
-                                        <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="14"/>
-                                        </Border.StrokeShape>
-                                        <Label Text="{Binding DaysToEnd, StringFormat='Còn {0} ngày'}" />
-                                    </Border>
                                 </HorizontalStackLayout>
 
-                                <!-- Row 2 -->
-                                <HorizontalStackLayout Grid.Row="1" Spacing="14">
-                                    <Label Text="{Binding StartDate, StringFormat='Từ {0:yyyy-MM-dd}'}"/>
-                                    <Label Text="{Binding EndDate, StringFormat='Đến {0:yyyy-MM-dd}'}"/>
-                                    <Label Text="{Binding RentAmount, StringFormat='Giá {0:N0} đ'}"/>
-                                    <Label Text="{Binding Tenants.Count, StringFormat='Người thuê: {0}'}"/>
-                                </HorizontalStackLayout>
+                                <VerticalStackLayout Grid.Row="1" Spacing="14">
+                                    <Label Text="{Binding StartDate, StringFormat='Ngày bắt đầu: {0:yyyy-MM-dd}'}"/>
+                                    <Label Text="{Binding EndDate, StringFormat='Ngày kết thúc: {0:yyyy-MM-dd}'}"/>
+                                    <Label Text="{Binding RentAmount, StringFormat='Giá trị hợp đồng: {0:N0} đ'}"/>
+                                    <Label Text="{Binding Tenants.Count, StringFormat='Số lượng người thuê: {0}'}"/>
+                                </VerticalStackLayout>
 
-                                <!-- Row 3: Tenants names -->
                                 <Label Grid.Row="2" Grid.ColumnSpan="2"
                                        Text="{Binding Tenants, Converter={StaticResource TenantsNamesConverter}}"
-                                       LineBreakMode="TailTruncation"
-                                       MaxLines="1"
-                                       TextColor="#607D8B"/>
+                                       LineBreakMode="TailTruncation" MaxLines="1" TextColor="#607D8B"/>
 
-                                <!-- Actions -->
-                                <VerticalStackLayout Grid.Column="1" Grid.Row="0" Grid.RowSpan="3"
-                                                     Spacing="6" HorizontalOptions="End">
+                                <VerticalStackLayout Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Spacing="6" HorizontalOptions="End">
                                     <Button Text="Sửa"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditCommand}"
-                                            CommandParameter="{Binding .}"
-                                            WidthRequest="90"/>
-                                    <Button Text="PDF"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GeneratePdfCommand}"
-                                            CommandParameter="{Binding .}"
-                                            WidthRequest="90"/>
-                                    <Button Text="Email"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendEmailCommand}"
-                                            CommandParameter="{Binding .}"
-                                            WidthRequest="90"/>
-                                    <Button Text="Xóa"
-                                            BackgroundColor="#FFCDD2"
-                                            WidthRequest="90"
+                                            CommandParameter="{Binding .}" WidthRequest="90"/>
+                                    <Button Text="Phụ lục"
+                                            IsVisible="{Binding NeedsAddendum}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AddendumCommand}"
+                                            CommandParameter="{Binding .}" WidthRequest="90"/>
+                                    <Button Text="Lịch sử"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HistoryCommand}"
+                                            CommandParameter="{Binding .}" WidthRequest="90"/>
+                                    <Button Text="Xóa" BackgroundColor="#FFCDD2"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}"
-                                            CommandParameter="{Binding .}"/>
+                                            CommandParameter="{Binding .}" WidthRequest="90"/>
                                 </VerticalStackLayout>
                             </Grid>
                         </Frame>

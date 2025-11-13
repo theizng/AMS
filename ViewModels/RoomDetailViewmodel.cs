@@ -1,5 +1,7 @@
 ﻿using AMS.Data;
 using AMS.Models;
+using AMS.Services;
+using AMS.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Storage;
 using System.Collections.ObjectModel;
@@ -12,7 +14,7 @@ namespace AMS.ViewModels
     public class RoomDetailViewModel : INotifyPropertyChanged
     {
         private readonly AMSDbContext _db;
-
+        private readonly IEmailNotificationService _emailNotify;
         private int _roomId;
         private Room? _room;
         private string? _emergencyContactName;
@@ -34,9 +36,10 @@ namespace AMS.ViewModels
         public ICommand RemoveBikeCommand { get; }
         public ICommand CallPhoneCommand { get; }
 
-        public RoomDetailViewModel(AMSDbContext db)
+        public RoomDetailViewModel(AMSDbContext db, IEmailNotificationService email)
         {
             _db = db;
+            _emailNotify = email;
 
             RefreshCommand = new Command(async () => await LoadAsync());
             AddTenantCommand = new Command(async () => await AddTenantAsync());
@@ -168,6 +171,7 @@ namespace AMS.ViewModels
                 await _db.SaveChangesAsync();
 
                 await LoadAsync();
+                await FlagAddendumIfActiveContractAsync();
                 await Shell.Current.DisplayAlertAsync("Thành công", "Đã thêm người thuê vào phòng.", "OK");
             }
             catch (Exception ex)
@@ -209,15 +213,11 @@ namespace AMS.ViewModels
                 var roomId = tracked.RoomId;
 
                 // 1) Delete all bikes of this tenant in this room
-                // If you're on EF Core 7+, ExecuteDeleteAsync is available:
                 await _db.Bikes
                     .Where(b => b.RoomId == roomId && b.OwnerId == tenantId)
                     .ExecuteDeleteAsync();
 
-                // If your EF version doesn't support ExecuteDeleteAsync, use:
-                // var bikes = await _db.Bikes.Where(b => b.RoomId == roomId && b.OwnerId == tenantId).ToListAsync();
-                // _db.Bikes.RemoveRange(bikes);
-                // await _db.SaveChangesAsync();
+
 
                 // 2) Set BikeCount to 0 for this (now-ended) occupancy and mark MoveOut
                 tracked.BikeCount = 0;
@@ -233,6 +233,7 @@ namespace AMS.ViewModels
 
                 // Refresh UI
                 await LoadAsync();
+                await FlagAddendumIfActiveContractAsync();
                 await Shell.Current.DisplayAlertAsync("Thành công", "Đã gỡ người thuê và xóa xe máy liên quan.", "OK");
             }
             catch (Exception ex)
@@ -264,7 +265,60 @@ namespace AMS.ViewModels
             Preferences.Set($"room:{_roomId}:emergencyContactOccId", picked.IdRoomOccupancy);
         }
 
-   
+
+        // Inside RoomDetailViewModel after a successful add or remove:
+        // Only the updated FlagAddendumIfActiveContractAsync method is shown here.
+        // Replace your current implementation with this version.
+
+        private async Task FlagAddendumIfActiveContractAsync()
+        {
+            try
+            {
+                var roomCode = Room?.RoomCode;
+                if (string.IsNullOrWhiteSpace(roomCode)) return;
+
+                var activeContracts = await _db.Contracts
+                    .Where(c => c.RoomCode == roomCode
+                        && c.Status == ContractStatus.Active
+                        && c.StartDate <= DateTime.Today
+                        && c.EndDate >= DateTime.Today)
+                    .ToListAsync();
+
+                if (activeContracts.Count == 0) return;
+
+                foreach (var c in activeContracts)
+                {
+                    // Flip flag to true if needed
+                    var justFlipped = !c.NeedsAddendum;
+                    if (justFlipped)
+                    {
+                        c.NeedsAddendum = true;
+                        c.UpdatedAt = DateTime.UtcNow;
+                    }
+
+                    // Only send if just flipped and not notified yet
+                    if (justFlipped && c.AddendumNotifiedAt == null)
+                    {
+                        await _emailNotify.SendContractAddendumNeededAsync(c);
+                        c.AddendumNotifiedAt = DateTime.UtcNow;
+                        c.UpdatedAt = DateTime.UtcNow;
+                    }
+
+                    _db.Contracts.Update(c);
+                }
+
+                await _db.SaveChangesAsync();
+
+                await Shell.Current.DisplayAlertAsync(
+                    "Phòng đã thuộc hợp đồng",
+                    "Thay đổi người thuê yêu cầu lập phụ lục hợp đồng (Cần phụ lục).",
+                    "OK");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[RoomDetail] Addendum flag error: {ex.Message}");
+            }
+        }
         private async Task AddBikeAsync()
         {
             if (_roomId <= 0) return;

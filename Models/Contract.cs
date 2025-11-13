@@ -23,17 +23,12 @@ namespace AMS.Models
 
     public class Contract
     {
-        // PK: GUID string
         public string ContractId { get; set; } = Guid.NewGuid().ToString("N");
-
-        // Human-readable number (optional)
         public string? ContractNumber { get; set; }
 
-        // Room snapshot/context
         public string RoomCode { get; set; } = "";
         public string HouseAddress { get; set; } = "";
 
-        // Tenants snapshot stored as JSON in DB; Tenants property exposes typed list
         public string TenantsJson { get; set; } = "[]";
 
         [NotMapped]
@@ -58,11 +53,9 @@ namespace AMS.Models
             }
         }
 
-        // Dates
         public DateTime StartDate { get; set; } = DateTime.Today;
         public DateTime EndDate { get; set; } = DateTime.Today.AddMonths(12);
 
-        // Rent and deposit snapshot
         public decimal RentAmount { get; set; }
         public int DueDay { get; set; } = 5;
         public string PaymentMethods { get; set; } = "";
@@ -76,15 +69,18 @@ namespace AMS.Models
         public string PropertyDescription { get; set; } = "";
         public string? PdfUrl { get; set; }
 
-        // Lifecycle
         public ContractStatus Status { get; set; } = ContractStatus.Draft;
         public bool NeedsAddendum { get; set; } = false;
 
-        // Audit
+        // NEW: Timestamp to avoid email spam. Set when NeedsAddendum flips to true and email is sent.
+        public DateTime? AddendumNotifiedAt { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Convenience
+        // NEW: Children addendums
+        public List<ContractAddendum> Addendums { get; set; } = new();
+
         [NotMapped]
         public bool IsActiveNow => Status == ContractStatus.Active && DateTime.Today <= EndDate && DateTime.Today >= StartDate;
 
@@ -103,4 +99,4 @@ namespace AMS.Models
             _ => "Bản nháp"
         };
     }
-}
+} 
