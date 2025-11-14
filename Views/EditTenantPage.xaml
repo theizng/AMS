@@ -36,17 +36,17 @@
                 </Entry.Behaviors>
             </Entry>
 
-            <Label Text="Email" />
+            <Label Text="Email *" />
             <Entry Text="{Binding Email}" Keyboard="Email" Placeholder="ví dụ: a@example.com" />
 
             <Label Text="Ngày sinh *" />
             <DatePicker Date="{Binding DateOfBirth}" />
 
             <Label Text="Địa chỉ thường trú (Quê quán) *" />
-            <Entry Text="{Binding PermanentAddress}" />
+            <Entry Text="{Binding PermanentAddress}" Placeholder="ví dụ: Hà Nội"/>
 
-            <Label Text="Ghi chú *" />
-            <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" />
+            <Label Text="Ghi chú (nếu có)" />
+            <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" Placeholder="ví dụ: Đi làm về trễ sau 11h đêm"/>
 
             <Label Text="Liên hệ khẩn cấp (mỗi dòng 1 mục) *" />
             <Editor Text="{Binding EmergencyContactsText}" AutoSize="TextChanges" HeightRequest="100" />

@@ -288,30 +288,26 @@ namespace AMS.ViewModels
 
                 foreach (var c in activeContracts)
                 {
-                    // Flip flag to true if needed
                     var justFlipped = !c.NeedsAddendum;
                     if (justFlipped)
                     {
                         c.NeedsAddendum = true;
                         c.UpdatedAt = DateTime.UtcNow;
-                    }
 
-                    // Only send if just flipped and not notified yet
-                    if (justFlipped && c.AddendumNotifiedAt == null)
-                    {
-                        await _emailNotify.SendContractAddendumNeededAsync(c);
-                        c.AddendumNotifiedAt = DateTime.UtcNow;
-                        c.UpdatedAt = DateTime.UtcNow;
+                        if (c.AddendumNotifiedAt == null)
+                        {
+                            await _emailNotify.SendContractAddendumNeededAsync(c);
+                            c.AddendumNotifiedAt = DateTime.UtcNow;
+                        }
                     }
-
                     _db.Contracts.Update(c);
                 }
 
                 await _db.SaveChangesAsync();
 
                 await Shell.Current.DisplayAlertAsync(
-                    "Phòng đã thuộc hợp đồng",
-                    "Thay đổi người thuê yêu cầu lập phụ lục hợp đồng (Cần phụ lục).",
+                    "Thay đổi người thuê",
+                    "Phòng thuộc hợp đồng đang hiệu lực đã thay đổi. Vui lòng tạo Phụ lục để cập nhật hợp đồng.",
                     "OK");
             }
             catch (Exception ex)

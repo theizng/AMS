@@ -7,19 +7,12 @@ namespace AMS.Models
 {
     public class ContractAddendum
     {
-        // PK: GUID string
         public string AddendumId { get; set; } = Guid.NewGuid().ToString("N");
-
-        // FK to parent contract
         public string ParentContractId { get; set; } = "";
-
-        // Optional: human-readable addendum number
         public string? AddendumNumber { get; set; }
-
-        // Summary/reason for change (optional, for admin note)
         public string? Reason { get; set; }
 
-        // Snapshots of tenants (before/after)
+        // Tenants-only (kept for compatibility)
         public string OldTenantsJson { get; set; } = "[]";
         public string NewTenantsJson { get; set; } = "[]";
 
@@ -41,17 +34,34 @@ namespace AMS.Models
             set => NewTenantsJson = JsonSerializer.Serialize(value ?? new());
         }
 
-        // Effective date of addendum (optional)
-        public DateTime? EffectiveDate { get; set; }
+        // NEW: full snapshots (for reliable history)
+        public string OldSnapshotJson { get; set; } = "{}";
+        public string NewSnapshotJson { get; set; } = "{}";
 
-        // Generated PDF for this addendum (optional)
+        [NotMapped]
+        public ContractSnapshot OldSnapshot
+        {
+            get => string.IsNullOrWhiteSpace(OldSnapshotJson)
+                ? new ContractSnapshot()
+                : (JsonSerializer.Deserialize<ContractSnapshot>(OldSnapshotJson) ?? new ContractSnapshot());
+            set => OldSnapshotJson = JsonSerializer.Serialize(value ?? new ContractSnapshot());
+        }
+
+        [NotMapped]
+        public ContractSnapshot NewSnapshot
+        {
+            get => string.IsNullOrWhiteSpace(NewSnapshotJson)
+                ? new ContractSnapshot()
+                : (JsonSerializer.Deserialize<ContractSnapshot>(NewSnapshotJson) ?? new ContractSnapshot());
+            set => NewSnapshotJson = JsonSerializer.Serialize(value ?? new ContractSnapshot());
+        }
+
+        public DateTime? EffectiveDate { get; set; }
         public string? PdfUrl { get; set; }
 
-        // Audit
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation
         public Contract? Parent { get; set; }
     }
 }

@@ -8,14 +8,25 @@ namespace AMS.Services.Interfaces
 {
     public interface IContractAddendumService
     {
-        /// <summary>
-        /// Creates an addendum based on current room occupancies vs parent contract tenants.
-        /// Generates PDF, persists the addendum, updates the parent contract Tenants snapshot
-        /// to the new tenants, and clears NeedsAddendum/AddendumNotifiedAt on parent.
-        /// Returns the created addendum.
-        /// </summary>
+        // Keep your existing APIs if already used elsewhere
         Task<ContractAddendum> CreateAddendumFromRoomChangeAsync(
+            Contract parent, string? reason, DateTime? effectiveDate, LandlordInfo landlord, CancellationToken ct = default);
+
+        Task<ContractAddendum> CreateAddendumWithSnapshotsAsync(
             Contract parent,
+            ContractSnapshot oldSnapshot,
+            ContractSnapshot newSnapshot,
+            string? reason,
+            DateTime? effectiveDate,
+            LandlordInfo landlord,
+            CancellationToken ct = default);
+
+        // NEW: Single entry-point for the flow you described:
+        // - OldSnapshot = current Contract
+        // - NewSnapshot = current Contract overwritten by UI changes, and Tenants taken from RoomOccupancy
+        Task<ContractAddendum> CreateAddendumFromCurrentContractAndRoomAsync(
+            Contract parent,
+            ContractSnapshot uiChangesSnapshot,
             string? reason,
             DateTime? effectiveDate,
             LandlordInfo landlord,

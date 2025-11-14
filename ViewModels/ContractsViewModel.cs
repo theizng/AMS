@@ -143,7 +143,7 @@ namespace AMS.ViewModels
 
             if (candidates.Count == 0)
             {
-                await Shell.Current.DisplayAlert("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
                 return;
             }
 
@@ -186,10 +186,10 @@ namespace AMS.ViewModels
             if (c == null) return;
             if ((c.Status != ContractStatus.Terminated) && (c.Status != ContractStatus.Draft))
             {
-                await Shell.Current.DisplayAlert("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
                 return;
             }
-            var ok = await Shell.Current.DisplayAlert("Xóa hợp đồng",
+            var ok = await Shell.Current.DisplayAlertAsync("Xóa hợp đồng",
                 $"Xóa hợp đồng {c.ContractNumber ?? c.ContractId}?", "Xóa", "Hủy");
             if (!ok) return;
             await _repo.DeleteAsync(c.ContractId);
@@ -199,26 +199,24 @@ namespace AMS.ViewModels
         private async Task GeneratePdfAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlert("PDF", "Tạo PDF (chưa triển khai).", "OK");
+            await Shell.Current.DisplayAlertAsync("PDF", "Tạo PDF (chưa triển khai).", "OK");
         }
 
         private async Task SendEmailAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlert("Email", "Gửi email (chưa triển khai).", "OK");
+            await Shell.Current.DisplayAlertAsync("Email", "Gửi email (chưa triển khai).", "OK");
         }
 
-        // ContractsPage → “Phụ lục”
         private async Task HandleAddendumAsync(Contract? c)
         {
             if (c == null) return;
             if (c.Status != ContractStatus.Active || !c.NeedsAddendum)
             {
-                await Shell.Current.DisplayAlert("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
+                await Shell.Current.DisplayAlertAsync("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
                 return;
             }
 
-            // Route to Edit page to let admin confirm and execute CreateAddendum there (editable UI, richer summary)
             await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
             {
                 ["Contract"] = c,
@@ -226,7 +224,6 @@ namespace AMS.ViewModels
             });
         }
 
-        // ContractsPage → “Lịch sử”
         private async Task ShowHistoryAsync(Contract? c)
         {
             if (c == null) return;
@@ -242,13 +239,13 @@ namespace AMS.ViewModels
             if (choice == "Hợp đồng gốc")
             {
                 var first = adds.OrderBy(a => a.CreatedAt).FirstOrDefault();
-                var originTenants = first?.OldTenants?.ToList() ?? c.Tenants.ToList();
-                preview = MakePreviewFrom(c, originTenants, " (Gốc)", c.PdfUrl);
+                var originSnap = first?.OldSnapshot ?? ToSnapshot(c);
+                preview = MakePreviewFrom(originSnap, " (Gốc)");
             }
             else
             {
                 var selected = adds.First(a => (a.AddendumNumber ?? a.AddendumId) == choice);
-                preview = MakePreviewFrom(c, selected.NewTenants.ToList(), $" / {selected.AddendumNumber}", selected.PdfUrl);
+                preview = MakePreviewFrom(selected.NewSnapshot, $" / {selected.AddendumNumber}");
             }
 
             await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
@@ -258,27 +255,50 @@ namespace AMS.ViewModels
             });
         }
 
-        private static Contract MakePreviewFrom(Contract baseContract, List<ContractTenant> tenants, string? labelSuffix, string? pdfUrl)
+        private static ContractSnapshot ToSnapshot(Contract c)
+        {
+            return new ContractSnapshot
+            {
+                ContractNumber = c.ContractNumber ?? "",
+                RoomCode = c.RoomCode,
+                HouseAddress = c.HouseAddress,
+                StartDate = c.StartDate,
+                EndDate = c.EndDate,
+                DueDay = c.DueDay,
+                RentAmount = c.RentAmount,
+                SecurityDeposit = c.SecurityDeposit,
+                DepositReturnDays = c.DepositReturnDays,
+                MaxOccupants = c.MaxOccupants,
+                MaxBikeAllowance = c.MaxBikeAllowance,
+                PaymentMethods = c.PaymentMethods,
+                LateFeePolicy = c.LateFeePolicy,
+                PropertyDescription = c.PropertyDescription,
+                Tenants = c.Tenants?.ToList() ?? new(),
+                PdfUrl = c.PdfUrl
+            };
+        }
+
+        private static Contract MakePreviewFrom(ContractSnapshot snap, string? suffix)
         {
             return new Contract
             {
-                ContractId = baseContract.ContractId,
-                ContractNumber = string.IsNullOrWhiteSpace(labelSuffix) ? baseContract.ContractNumber : $"{baseContract.ContractNumber}{labelSuffix}",
-                RoomCode = baseContract.RoomCode,
-                HouseAddress = baseContract.HouseAddress,
-                StartDate = baseContract.StartDate,
-                EndDate = baseContract.EndDate,
-                RentAmount = baseContract.RentAmount,
-                DueDay = baseContract.DueDay,
-                PaymentMethods = baseContract.PaymentMethods,
-                LateFeePolicy = baseContract.LateFeePolicy,
-                SecurityDeposit = baseContract.SecurityDeposit,
-                DepositReturnDays = baseContract.DepositReturnDays,
-                MaxOccupants = baseContract.MaxOccupants,
-                MaxBikeAllowance = baseContract.MaxBikeAllowance,
-                Tenants = tenants,
-                Status = baseContract.Status,
-                PdfUrl = pdfUrl
+                ContractId = Guid.NewGuid().ToString("N"),
+                ContractNumber = string.IsNullOrWhiteSpace(suffix) ? snap.ContractNumber : $"{snap.ContractNumber}{suffix}",
+                RoomCode = snap.RoomCode,
+                HouseAddress = snap.HouseAddress,
+                StartDate = snap.StartDate,
+                EndDate = snap.EndDate,
+                RentAmount = snap.RentAmount,
+                DueDay = snap.DueDay,
+                PaymentMethods = snap.PaymentMethods,
+                LateFeePolicy = snap.LateFeePolicy,
+                SecurityDeposit = snap.SecurityDeposit,
+                DepositReturnDays = snap.DepositReturnDays,
+                MaxOccupants = snap.MaxOccupants,
+                MaxBikeAllowance = snap.MaxBikeAllowance,
+                Tenants = snap.Tenants?.ToList() ?? new(),
+                Status = ContractStatus.Active,
+                PdfUrl = snap.PdfUrl
             };
         }
     }

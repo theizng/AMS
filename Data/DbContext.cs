@@ -53,6 +53,7 @@ namespace AMS.Data
             {
                 entity.HasKey(e => e.IdRoom);
 
+                entity.HasIndex(e => e.RoomCode).IsUnique();
                 entity.Property(e => e.HouseID).IsRequired();
                 entity.Property(e => e.RoomCode).IsRequired().HasMaxLength(32);
 
@@ -180,8 +181,8 @@ namespace AMS.Data
                 entity.Property(e => e.DepositAmount).HasColumnType("decimal(18, 2)");
 
                 // Optional: add quick-search indexes if you often search by name/phone
-                // entity.HasIndex(e => e.FullName);
-                // entity.HasIndex(e => e.PhoneNumber);
+                entity.HasIndex(e => e.FullName);
+                entity.HasIndex(e => e.PhoneNumber);
             });
             
             //PAYMENTS
@@ -266,9 +267,15 @@ namespace AMS.Data
                 entity.Property(e => e.ParentContractId).IsRequired().HasMaxLength(64);
                 entity.Property(e => e.AddendumNumber).HasMaxLength(64).IsRequired(false);
                 entity.Property(e => e.PdfUrl).HasMaxLength(1024).IsRequired(false);
+
+                // NEW: store full snapshots
+                entity.Property(e => e.OldSnapshotJson).HasColumnType("TEXT").IsRequired();
+                entity.Property(e => e.NewSnapshotJson).HasColumnType("TEXT").IsRequired();
+
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.HasIndex(e => e.AddendumNumber).IsUnique(false);
+                entity.HasIndex(e => e.ParentContractId);
             });
         }
     }

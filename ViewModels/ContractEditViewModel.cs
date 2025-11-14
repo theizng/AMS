@@ -61,8 +61,9 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand CreateAddendumCommand { get; }
         public IAsyncRelayCommand ViewHistoryCommand { get; }
 
-        // Snapshot hash of the original editable values to detect changes for Active contracts
         private string? _originalEditHash;
+        // NEW: baseline snapshot at load/after save, for accurate “old state”
+        private ContractSnapshot? _loadedSnapshot;
 
         public ContractEditViewModel(IContractsRepository repo,
                                      IRoomStatusService roomStatusService,
@@ -91,7 +92,6 @@ namespace AMS.ViewModels
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            // Default to edit-mode unless explicitly readonly
             IsReadOnly = false;
 
             if (query.TryGetValue("Contract", out var obj) && obj is Contract c)
@@ -103,6 +103,7 @@ namespace AMS.ViewModels
                 IsReadOnly = b2;
 
             LoadFieldsFromEditable();
+            _loadedSnapshot = BuildSnapshotFrom(Editable);
             _originalEditHash = ComputeEditHash(Editable);
             _ = RecalcStateFlagsAsync();
         }
@@ -144,7 +145,6 @@ namespace AMS.ViewModels
             Editable.PaymentMethods = PaymentMethods?.Trim() ?? "";
             Editable.LateFeePolicy = LateFeePolicy?.Trim() ?? "";
             Editable.PropertyDescription = PropertyDescription?.Trim() ?? "";
-            // PdfUrl is not part of addendum-triggered fields; we still persist it:
             Editable.PdfUrl = PdfUrl?.Trim();
             Editable.UpdatedAt = DateTime.UtcNow;
         }
@@ -179,7 +179,7 @@ namespace AMS.ViewModels
             {
                 if (EndDate <= StartDate)
                 {
-                    await Shell.Current.DisplayAlert("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu.", "OK");
                     return;
                 }
 
@@ -188,16 +188,15 @@ namespace AMS.ViewModels
                 if (string.IsNullOrWhiteSpace(Editable.ContractNumber))
                     Editable.ContractNumber = "HD-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
-                // Apply UI values to the entity first
+                // Apply UI changes
                 PushFieldsIntoEditable();
 
-                // If Active and fields changed → confirm addendum flow
                 var newHash = ComputeEditHash(Editable);
                 var changedWhileActive = IsActive && _originalEditHash != null && _originalEditHash != newHash;
 
                 if (changedWhileActive)
                 {
-                    var proceed = await Shell.Current.DisplayAlert(
+                    var proceed = await Shell.Current.DisplayAlertAsync(
                         "Hợp đồng đang hiệu lực",
                         "Bạn đang sửa hợp đồng đang hiệu lực. Áp dụng thay đổi sẽ tạo PHỤ LỤC hợp đồng. Tiếp tục?",
                         "Tạo phụ lục",
@@ -205,50 +204,31 @@ namespace AMS.ViewModels
 
                     if (!proceed) return;
 
-                    // Create a formal addendum based on current room snapshot (tenants).
                     var landlord = new LandlordInfo("Chủ nhà", Editable.HouseAddress, "XXXXXXXXXXX", "0123456789");
-                    var add = await _addendumService.CreateAddendumFromRoomChangeAsync(
-                        Editable, "Điều chỉnh điều khoản hợp đồng", DateTime.Today, landlord);
 
-                    // Reload parent to get tenants snapshot (updated by the addendum service),
-                    // then persist the edited fields we just changed.
+                    // Build snapshots: old = baseline at load/last save; new = now (edited values)
+                    var oldSnapshot = _loadedSnapshot ?? BuildSnapshotFrom(Editable);
+                    var newSnapshot = BuildSnapshotFrom(Editable);
+
+                    var add = await _addendumService.CreateAddendumWithSnapshotsAsync(
+                        Editable, oldSnapshot, newSnapshot, "Điều chỉnh điều khoản hợp đồng", DateTime.Today, landlord);
+
+                    // Reload parent updated by service
                     var reloaded = await _repo.GetByIdAsync(Editable.ContractId);
                     if (reloaded != null)
                     {
-                        // Preserve Tenants from service
-                        var preservedTenants = reloaded.Tenants.ToList();
-
-                        // Copy-over edited fields
-                        reloaded.StartDate = Editable.StartDate;
-                        reloaded.EndDate = Editable.EndDate;
-                        reloaded.DueDay = Editable.DueDay;
-                        reloaded.RentAmount = Editable.RentAmount;
-                        reloaded.SecurityDeposit = Editable.SecurityDeposit;
-                        reloaded.DepositReturnDays = Editable.DepositReturnDays;
-                        reloaded.MaxOccupants = Editable.MaxOccupants;
-                        reloaded.MaxBikeAllowance = Editable.MaxBikeAllowance;
-                        reloaded.PaymentMethods = Editable.PaymentMethods;
-                        reloaded.LateFeePolicy = Editable.LateFeePolicy;
-                        reloaded.PropertyDescription = Editable.PropertyDescription;
-                        reloaded.PdfUrl = Editable.PdfUrl;
-
-                        // Keep tenants from addendum service
-                        reloaded.Tenants = preservedTenants;
-
-                        reloaded.UpdatedAt = DateTime.UtcNow;
-                        await _repo.UpdateAsync(reloaded);
-
                         Editable = reloaded;
                         LoadFieldsFromEditable();
+                        _loadedSnapshot = BuildSnapshotFrom(Editable); // baseline for next edits
                         _originalEditHash = ComputeEditHash(Editable);
                     }
 
-                    await Shell.Current.DisplayAlert("Thành công", $"Đã tạo phụ lục {add.AddendumNumber} và áp dụng thay đổi.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Thành công", $"Đã tạo phụ lục {add.AddendumNumber} và áp dụng thay đổi.", "OK");
                     await RecalcStateFlagsAsync();
                     return;
                 }
 
-                // Normal save (Draft or Active but unchanged tracked fields)
+                // Normal save (Draft or unchanged)
                 var existing = await _repo.GetByIdAsync(Editable.ContractId);
                 if (existing == null)
                 {
@@ -260,13 +240,14 @@ namespace AMS.ViewModels
                     await _repo.UpdateAsync(Editable);
                 }
 
+                _loadedSnapshot = BuildSnapshotFrom(Editable);
                 _originalEditHash = newHash;
 
-                await Shell.Current.DisplayAlert("Thành công", "Đã lưu hợp đồng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã lưu hợp đồng.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
             finally
             {
@@ -280,7 +261,7 @@ namespace AMS.ViewModels
             if (IsBusy) return;
             if (!CanActivate)
             {
-                await Shell.Current.DisplayAlert("Không thể kích hoạt", "Chưa đủ điều kiện kích hoạt.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể kích hoạt", "Chưa đủ điều kiện kích hoạt.", "OK");
                 return;
             }
             IsBusy = true;
@@ -289,19 +270,20 @@ namespace AMS.ViewModels
                 PushFieldsIntoEditable();
                 if (Editable.Tenants.Count == 0)
                 {
-                    await Shell.Current.DisplayAlert("Lỗi", "Hợp đồng không có người thuê.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Lỗi", "Hợp đồng không có người thuê.", "OK");
                     return;
                 }
                 Editable.Status = ContractStatus.Active;
                 await _repo.UpdateAsync(Editable);
                 await _roomStatusService.SetRoomOccupiedAsync(Editable.RoomCode);
                 await _emailNotify.SendContractActivatedAsync(Editable);
+                _loadedSnapshot = BuildSnapshotFrom(Editable);
                 _originalEditHash = ComputeEditHash(Editable);
-                await Shell.Current.DisplayAlert("Thành công", "Hợp đồng đã kích hoạt.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Hợp đồng đã kích hoạt.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
             finally
             {
@@ -315,10 +297,10 @@ namespace AMS.ViewModels
             if (IsBusy) return;
             if (!CanTerminate)
             {
-                await Shell.Current.DisplayAlert("Không thể chấm dứt", "Chỉ chấm dứt hợp đồng đang hiệu lực.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể chấm dứt", "Chỉ chấm dứt hợp đồng đang hiệu lực.", "OK");
                 return;
             }
-            var confirm = await Shell.Current.DisplayAlert("Xác nhận", "Chấm dứt hợp đồng này?", "Đồng ý", "Hủy");
+            var confirm = await Shell.Current.DisplayAlertAsync("Xác nhận", "Chấm dứt hợp đồng này?", "Đồng ý", "Hủy");
             if (!confirm) return;
 
             IsBusy = true;
@@ -330,12 +312,13 @@ namespace AMS.ViewModels
                 await _roomOccAdmin.EndAllActiveOccupanciesForRoomAsync(Editable.RoomCode);
                 await _roomStatusService.SetRoomAvailableAsync(Editable.RoomCode);
                 await _emailNotify.SendContractTerminatedAsync(Editable);
+                _loadedSnapshot = BuildSnapshotFrom(Editable);
                 _originalEditHash = ComputeEditHash(Editable);
-                await Shell.Current.DisplayAlert("Thành công", "Đã chấm dứt hợp đồng và giải phóng phòng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã chấm dứt hợp đồng và giải phóng phòng.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
             finally
             {
@@ -348,7 +331,7 @@ namespace AMS.ViewModels
         {
             if (!CanGeneratePdf)
             {
-                await Shell.Current.DisplayAlert("Không thể tạo PDF", "Chỉ tạo PDF khi hợp đồng ở trạng thái nháp và đã lưu.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể tạo PDF", "Chỉ tạo PDF khi hợp đồng ở trạng thái nháp và đã lưu.", "OK");
                 return;
             }
 
@@ -357,8 +340,9 @@ namespace AMS.ViewModels
             PdfUrl = path;
             PushFieldsIntoEditable();
             await _repo.UpdateAsync(Editable);
+            _loadedSnapshot = BuildSnapshotFrom(Editable);
             _originalEditHash = ComputeEditHash(Editable);
-            await Shell.Current.DisplayAlert("Thành công", "Đã tạo hợp đồng điện tử PDF và lưu đường dẫn.", "OK");
+            await Shell.Current.DisplayAlertAsync("Thành công", "Đã tạo hợp đồng điện tử PDF và lưu đường dẫn.", "OK");
             await RecalcStateFlagsAsync();
         }
 
@@ -366,11 +350,11 @@ namespace AMS.ViewModels
         {
             if (!CanSendEmail)
             {
-                await Shell.Current.DisplayAlert("Không thể gửi", "Chưa có PDF hoặc hợp đồng chưa được lưu.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể gửi", "Chưa có PDF hoặc hợp đồng chưa được lưu.", "OK");
                 return;
             }
             await _emailNotify.SendContractPdfAsync(Editable);
-            await Shell.Current.DisplayAlert("Thành công", "Đã gửi hợp đồng điện tử PDF.", "OK");
+            await Shell.Current.DisplayAlertAsync("Thành công", "Đã gửi hợp đồng điện tử PDF.", "OK");
         }
 
         private async Task CreateAddendumAsync()
@@ -381,25 +365,32 @@ namespace AMS.ViewModels
                 return;
             }
 
-            var current = await _occupancyProvider.GetTenantsForRoomAsync(Editable.RoomCode);
-            var currentNames = current.Select(t => t.Name).ToList();
-            var oldNames = Editable.Tenants.Select(t => t.Name).ToList();
-
-            var summary = $"Trước: {string.Join(", ", oldNames)}\nSau: {string.Join(", ", currentNames)}";
-            var confirm = await Shell.Current.DisplayAlert("Xác nhận tạo phụ lục", summary, "Áp dụng", "Hủy");
-            if (!confirm) return;
-
-            var reason = await Shell.Current.DisplayPromptAsync("Phụ lục", "Lý do thay đổi (tùy chọn):", "Tiếp tục", "Bỏ qua", maxLength: 200);
-            if (reason == "Bỏ qua") reason = null;
-
             try
             {
-                var landlord = new LandlordInfo("Chủ nhà", Editable.HouseAddress, "XXXXXXXXXXX", "0123456789");
-                var add = await _addendumService.CreateAddendumFromRoomChangeAsync(
-                    Editable, reason, DateTime.Today, landlord);
+                // Re-fetch (optional) to ensure fresh parent state
+                var latest = await _repo.GetByIdAsync(Editable.ContractId) ?? Editable;
 
-                await Shell.Current.DisplayAlert("Thành công", $"Đã tạo phụ lục {add.AddendumNumber}.", "OK");
+                var uiSnap = BuildUiChangesSnapshot();
 
+                // Prepare preview of tenant change
+                var occDtos = await _occupancyProvider.GetTenantsForRoomAsync(latest.RoomCode);
+                var newTenantNames = string.Join(", ", occDtos.Select(o => o.Name));
+                var oldTenantNames = string.Join(", ", latest.Tenants.Select(t => t.Name));
+
+                var summary = $"Trước: {oldTenantNames}\nSau: {newTenantNames}";
+                var proceed = await Shell.Current.DisplayAlert("Xác nhận tạo phụ lục", summary, "Tạo", "Hủy");
+                if (!proceed) return;
+
+                var reason = await Shell.Current.DisplayPromptAsync("Phụ lục", "Lý do thay đổi (tùy chọn):", "OK", "Bỏ qua", maxLength: 200);
+                if (reason == "Bỏ qua") reason = null;
+
+                var landlord = new LandlordInfo("Chủ nhà", latest.HouseAddress, "XXXXXXXXXXX", "0123456789");
+
+                // Service creates addendum, updates Contract to new snapshot, clears NeedsAddendum
+                var add = await _addendumService.CreateAddendumFromCurrentContractAndRoomAsync(
+                    latest, uiSnap, reason, DateTime.Today, landlord);
+
+                // Reload Contract to reflect new state
                 var reloaded = await _repo.GetByIdAsync(Editable.ContractId);
                 if (reloaded != null)
                 {
@@ -407,6 +398,8 @@ namespace AMS.ViewModels
                     LoadFieldsFromEditable();
                     _originalEditHash = ComputeEditHash(Editable);
                 }
+
+                await Shell.Current.DisplayAlert("Thành công", $"Đã tạo phụ lục {add.AddendumNumber}.", "OK");
                 await RecalcStateFlagsAsync();
             }
             catch (Exception ex)
@@ -419,7 +412,7 @@ namespace AMS.ViewModels
         {
             if (!IsPersisted)
             {
-                await Shell.Current.DisplayAlert("Lịch sử", "Hãy lưu hợp đồng trước.", "OK");
+                await Shell.Current.DisplayAlertAsync("Lịch sử", "Hãy lưu hợp đồng trước.", "OK");
                 return;
             }
 
@@ -436,13 +429,13 @@ namespace AMS.ViewModels
                 if (choice == "Hợp đồng gốc")
                 {
                     var first = list.OrderBy(a => a.CreatedAt).FirstOrDefault();
-                    var originTenants = first?.OldTenants?.ToList() ?? Editable.Tenants.ToList();
-                    preview = MakePreviewFrom(Editable, originTenants, " (Gốc)", Editable.PdfUrl);
+                    var originSnap = first?.OldSnapshot ?? BuildSnapshotFrom(Editable); // fallback if no addendum yet
+                    preview = MakePreviewFrom(originSnap, " (Gốc)");
                 }
                 else
                 {
                     var selected = list.First(a => (a.AddendumNumber ?? a.AddendumId) == choice);
-                    preview = MakePreviewFrom(Editable, selected.NewTenants.ToList(), $" / {selected.AddendumNumber}", selected.PdfUrl);
+                    preview = MakePreviewFrom(selected.NewSnapshot, $" / {selected.AddendumNumber}");
                 }
 
                 await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
@@ -453,38 +446,83 @@ namespace AMS.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
         }
 
-        private static Contract MakePreviewFrom(Contract baseContract, List<ContractTenant> tenants, string? labelSuffix, string? pdfUrl)
+        private ContractSnapshot BuildUiChangesSnapshot()
+        {
+            // Only fields editable on this page; leave strings empty/null if you want to keep base values (MergeSnapshots logic)
+            return new ContractSnapshot
+            {
+                ContractNumber = Editable.ContractNumber ?? "",
+                RoomCode = Editable.RoomCode,
+                HouseAddress = Editable.HouseAddress,
+                StartDate = StartDate,
+                EndDate = EndDate,
+                DueDay = DueDay,
+                RentAmount = RentAmount,
+                SecurityDeposit = SecurityDeposit,
+                DepositReturnDays = DepositReturnDays,
+                MaxOccupants = MaxOccupants,
+                MaxBikeAllowance = MaxBikeAllowance,
+                PaymentMethods = PaymentMethods,
+                LateFeePolicy = LateFeePolicy,
+                PropertyDescription = PropertyDescription,
+                Tenants = Editable.Tenants.ToList(), // will be replaced by occupancy in service
+                PdfUrl = PdfUrl
+            };
+        }
+
+        private ContractSnapshot BuildSnapshotFrom(Contract c)
+        {
+            return new ContractSnapshot
+            {
+                ContractNumber = c.ContractNumber ?? "",
+                RoomCode = c.RoomCode,
+                HouseAddress = c.HouseAddress,
+                StartDate = c.StartDate,
+                EndDate = c.EndDate,
+                DueDay = c.DueDay,
+                RentAmount = c.RentAmount,
+                SecurityDeposit = c.SecurityDeposit,
+                DepositReturnDays = c.DepositReturnDays,
+                MaxOccupants = c.MaxOccupants,
+                MaxBikeAllowance = c.MaxBikeAllowance,
+                PaymentMethods = c.PaymentMethods,
+                LateFeePolicy = c.LateFeePolicy,
+                PropertyDescription = c.PropertyDescription,
+                Tenants = c.Tenants?.ToList() ?? new(),
+                PdfUrl = c.PdfUrl
+            };
+        }
+
+        private static Contract MakePreviewFrom(ContractSnapshot snap, string? labelSuffix)
         {
             return new Contract
             {
-                ContractId = baseContract.ContractId,
-                ContractNumber = string.IsNullOrWhiteSpace(labelSuffix) ? baseContract.ContractNumber : $"{baseContract.ContractNumber}{labelSuffix}",
-                RoomCode = baseContract.RoomCode,
-                HouseAddress = baseContract.HouseAddress,
-                StartDate = baseContract.StartDate,
-                EndDate = baseContract.EndDate,
-                RentAmount = baseContract.RentAmount,
-                DueDay = baseContract.DueDay,
-                PaymentMethods = baseContract.PaymentMethods,
-                LateFeePolicy = baseContract.LateFeePolicy,
-                SecurityDeposit = baseContract.SecurityDeposit,
-                DepositReturnDays = baseContract.DepositReturnDays,
-                MaxOccupants = baseContract.MaxOccupants,
-                MaxBikeAllowance = baseContract.MaxBikeAllowance,
-                Tenants = tenants,
-                Status = baseContract.Status,
-                PdfUrl = pdfUrl
+                ContractId = Guid.NewGuid().ToString("N"), // preview-only
+                ContractNumber = string.IsNullOrWhiteSpace(labelSuffix) ? snap.ContractNumber : $"{snap.ContractNumber}{labelSuffix}",
+                RoomCode = snap.RoomCode,
+                HouseAddress = snap.HouseAddress,
+                StartDate = snap.StartDate,
+                EndDate = snap.EndDate,
+                RentAmount = snap.RentAmount,
+                DueDay = snap.DueDay,
+                PaymentMethods = snap.PaymentMethods,
+                LateFeePolicy = snap.LateFeePolicy,
+                SecurityDeposit = snap.SecurityDeposit,
+                DepositReturnDays = snap.DepositReturnDays,
+                MaxOccupants = snap.MaxOccupants,
+                MaxBikeAllowance = snap.MaxBikeAllowance,
+                Tenants = snap.Tenants?.ToList() ?? new(),
+                Status = ContractStatus.Active,
+                PdfUrl = snap.PdfUrl
             };
         }
 
         private static string ComputeEditHash(Contract c)
         {
-            // Only include fields that should trigger the addendum flow when Active.
-            // Exclude PdfUrl so attaching/regenerating PDFs does not force addendum.
             var payload = string.Join("|", new[]
             {
                 c.StartDate.ToString("O"),
@@ -500,7 +538,6 @@ namespace AMS.ViewModels
                 c.PropertyDescription ?? ""
             });
 
-            // Simple stable hash (SHA1 is fine here; no crypto required).
             using var sha1 = SHA1.Create();
             var bytes = sha1.ComputeHash(Encoding.UTF8.GetBytes(payload));
             return Convert.ToHexString(bytes);

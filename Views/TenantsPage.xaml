@@ -61,6 +61,7 @@
                                     <Label Text="{Binding PermanentAddress, StringFormat='Địa chỉ: {0}'}" Style="{DynamicResource TextPrimary}" />
                                     <Label Text="{Binding EmergencyContactsText, StringFormat='Người liên hệ khẩn cấp: {0}'}" Style="{DynamicResource TextSecondary}" />
                                     <Label Text="{Binding CurrentRoomDisplay, StringFormat='Đang thuê phòng: {0}'}" Style="{DynamicResource TextSecondary}" />
+                                    <Label Text="{Binding Notes, StringFormat='Ghi chú: {0}'}" Style="{DynamicResource TextSecondary}" />
                                     <Label Text="{Binding ActiveBikeCount, StringFormat='Số lượng xe máy: {0}'}" Style="{DynamicResource TextSecondary}" />
                                 </VerticalStackLayout>
 

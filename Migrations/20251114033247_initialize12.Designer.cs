@@ -3,6 +3,7 @@ using System;
 using AMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AMS.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    partial class AMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251114033247_initialize12")]
+    partial class initialize12
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -226,15 +229,7 @@ namespace AMS.Migrations
                     b.Property<DateTime?>("EffectiveDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NewSnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("NewTenantsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("OldSnapshotJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

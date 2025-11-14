@@ -28,7 +28,7 @@ namespace AMS.Models
         // Single source for emergency contacts
         public string EmergencyContactsJson { get; set; } = "[]";
 
-        public string Notes { get; set; } = "";
+        public string? Notes { get; set; } = "";
         public string? ProfilePictureUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

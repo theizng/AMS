@@ -108,6 +108,16 @@ namespace AMS.ViewModels
                 await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Vui lòng nhập CCCD/CMND.", "OK");
                 return;
             }
+            if (string.IsNullOrWhiteSpace(Email))
+            {
+                await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Vui lòng nhập Email.", "OK");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(PermanentAddress))
+            {
+                await Application.Current.MainPage.DisplayAlertAsync("Thiếu thông tin", "Vui lòng nhập quê quán người thuê.", "OK");
+                return;
+            }
 
             try
             {

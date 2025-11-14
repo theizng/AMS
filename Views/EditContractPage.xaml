@@ -102,7 +102,11 @@
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Mô tả tài sản"/>
-                    <Editor HeightRequest="80" Text="{Binding PropertyDescription}" Placeholder="Địa chỉ, tiện ích, chi tiết phòng..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                    <!-- Use IsReadOnly instead of disabling, to ensure text still shows in view-mode -->
+                    <Editor HeightRequest="80"
+                            Text="{Binding PropertyDescription}"
+                            IsReadOnly="{Binding IsReadOnly}"
+                            Placeholder="Địa chỉ, tiện ích, chi tiết phòng..."/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -140,7 +144,7 @@
                 <Button Text="Tạo PDF" Command="{Binding GeneratePdfCommand}" WidthRequest="110" IsVisible="{Binding CanGeneratePdf}"/>
                 <Button Text="Gửi PDF" Command="{Binding SendContractEmailCommand}" WidthRequest="110" IsVisible="{Binding CanSendEmail}"/>
                 <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" WidthRequest="110" IsVisible="{Binding CanActivate}"/>
-                <Button Text="Chấm dứt" Command="{Binding TerminateCommand}" WidthRequest="110" IsVisible="{Binding CanTerminate}" BackgroundColor="#FFECB3"/>
+                <Button Text="Chấm dứt" Command="{Binding TerminateCommand}" WidthRequest="110" IsVisible="{Binding CanTerminate}" Style="{DynamicResource TextPrimary}" BackgroundColor="#FFECB3"/>
             </HorizontalStackLayout>
 
             <!-- Addendum Actions -->

@@ -8,6 +8,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System;
+using System.Threading.Tasks;
 
 namespace AMS.ViewModels
 {
@@ -29,8 +31,6 @@ namespace AMS.ViewModels
         private DateTime _createdAt;
         private DateTime _updatedAt;
         private Room? _currentRoom;
-
-        // NEW: bind to Entry Text="{Binding MaxBikes}" in XAML
         private int _maxBikes = 1;
 
         public string PageTitle => _idRoom == 0 ? "Thêm phòng" : "Sửa phòng";
@@ -80,7 +80,6 @@ namespace AMS.ViewModels
             set { if (RoomStatus != value) RoomStatus = value; }
         }
 
-        // NEW: binds to "Số lượng xe tối đa"
         public int MaxBikes
         {
             get => _maxBikes;
@@ -121,13 +120,10 @@ namespace AMS.ViewModels
                 BikeExtraFeeText = _bikeExtraFee?.ToString(CultureInfo.InvariantCulture);
                 CreatedAt = _currentRoom.CreatedAt;
                 UpdatedAt = _currentRoom.UpdatedAt;
-
-                // NEW
                 MaxBikes = _currentRoom.MaxBikeAllowance;
             }
             else
             {
-                // Defaults for create
                 MaxBikes = 1;
             }
         }
@@ -182,33 +178,24 @@ namespace AMS.ViewModels
             if (string.IsNullOrWhiteSpace(RoomCode))
                 return await Fail("Thiếu thông tin", "Vui lòng nhập mã phòng.");
 
-            // Normalize RoomCode
             var normalized = RoomCode.Trim().ToUpperInvariant();
             if (!Regex.IsMatch(normalized, @"^[A-Z0-9_-]+$"))
-                return await Fail("Giá trị không hợp lệ", "Mã phòng chỉ được chứa chữ, số, gạch dưới (_) hoặc gạch ngang (-), không dấu cách.");
+                return await Fail("Giá trị không hợp lệ", "Mã phòng chỉ chứa chữ, số, _, -.");
             RoomCode = normalized;
 
             if (Area <= 0)
-                return await Fail("Giá trị không hợp lệ", "Diện tích phải lớn hơn 0.");
-
+                return await Fail("Giá trị không hợp lệ", "Diện tích phải > 0.");
             if (Price < 0)
                 return await Fail("Giá trị không hợp lệ", "Giá thuê không được âm.");
-
             if (MaxOccupants < 1)
                 return await Fail("Giá trị không hợp lệ", "Số người tối đa phải >= 1.");
-
             if (FreeBikeAllowance < 0)
-                return await Fail("Giá trị không hợp lệ", "Số xe miễn phí phải >= 0.");
-
-            // NEW: MaxBikes must be >= 0 (0 => không giới hạn nếu bạn muốn)
+                return await Fail("Giá trị không hợp lệ", "Xe miễn phí phải >= 0.");
             if (MaxBikes < 0)
-                return await Fail("Giá trị không hợp lệ", "Số lượng xe tối đa phải >= 0.");
-
-            // Optional: clamp FreeBikeAllowance to MaxBikes if MaxBikes > 0
+                return await Fail("Giá trị không hợp lệ", "Xe tối đa phải >= 0.");
             if (MaxBikes > 0 && FreeBikeAllowance > MaxBikes)
                 FreeBikeAllowance = MaxBikes;
 
-            // Parse optional BikeExtraFeeText
             if (string.IsNullOrWhiteSpace(BikeExtraFeeText))
             {
                 _bikeExtraFee = null;
@@ -222,14 +209,13 @@ namespace AMS.ViewModels
                 _bikeExtraFee = fee;
             }
 
-            // Uniqueness per house
+            // GLOBAL uniqueness (ignore HouseID)
             bool exists = await _db.Rooms.AnyAsync(r =>
-                r.HouseID == HouseID &&
                 r.RoomCode == normalized &&
                 r.IdRoom != IdRoom);
 
             if (exists)
-                return await Fail("Trùng mã", "Mã phòng đã tồn tại trong nhà này.");
+                return await Fail("Trùng mã", "Mã phòng đã tồn tại trong hệ thống.");
 
             return true;
         }
@@ -244,7 +230,7 @@ namespace AMS.ViewModels
             try
             {
                 var now = DateTime.UtcNow;
-                var roomCode = RoomCode!; // normalized already
+                var roomCode = RoomCode!;
 
                 if (IdRoom == 0)
                 {
@@ -261,8 +247,6 @@ namespace AMS.ViewModels
                         BikeExtraFee = _bikeExtraFee,
                         CreatedAt = now,
                         UpdatedAt = now,
-
-                        // NEW
                         MaxBikeAllowance = MaxBikes
                     };
                     _db.Rooms.Add(entity);
@@ -285,10 +269,8 @@ namespace AMS.ViewModels
                     tracked.MaxOccupants = MaxOccupants;
                     tracked.FreeBikeAllowance = FreeBikeAllowance;
                     tracked.BikeExtraFee = _bikeExtraFee;
-                    tracked.UpdatedAt = now;
-
-                    // NEW
                     tracked.MaxBikeAllowance = MaxBikes;
+                    tracked.UpdatedAt = now;
 
                     await _db.SaveChangesAsync();
                 }
