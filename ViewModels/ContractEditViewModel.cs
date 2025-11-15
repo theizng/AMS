@@ -3,8 +3,10 @@ using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -52,19 +54,28 @@ namespace AMS.ViewModels
         [ObservableProperty] private bool canActivate;
         [ObservableProperty] private bool canTerminate;
         [ObservableProperty] private bool canDelete;
-        [ObservableProperty] private bool canGeneratePdf;
-        [ObservableProperty] private bool canSendEmail;
+
+        // Draft flow: show when desktop-capable + draft + persisted
+        [ObservableProperty] private bool canGenerateContractPdfAndSend;
+
+        // Addendum flow: show create/send when there is at least one addendum
+        [ObservableProperty] private bool canGeneratePdf;          // Tạo PDF phụ lục (auto-send)
+        [ObservableProperty] private bool canSendAddendumEmail;    // Gửi phụ lục PDF (re-send)
+
+        // Internals to compute flags
+        private string? _originalEditHash;
+        private ContractSnapshot? _loadedSnapshot;
+        private bool _hasContractPdf;
+        private bool _hasAddendum;
 
         public IAsyncRelayCommand SaveCommand { get; }
         public IAsyncRelayCommand ActivateCommand { get; }
-        public IAsyncRelayCommand TerminateCommand { get; }
-        public IAsyncRelayCommand GeneratePdfCommand { get; }
-        public IAsyncRelayCommand SendContractEmailCommand { get; }
+        public IAsyncRelayCommand TerminateCommand { get; } // disabled on edit page
+        public IAsyncRelayCommand GeneratePdfCommand { get; } // addendum PDF (auto-send)
+        public IAsyncRelayCommand SendAddendumEmailCommand { get; } // re-send addendum PDF
         public IAsyncRelayCommand CreateAddendumCommand { get; }
         public IAsyncRelayCommand ViewHistoryCommand { get; }
-
-        private string? _originalEditHash;
-        private ContractSnapshot? _loadedSnapshot;
+        public IAsyncRelayCommand GenerateAndSendContractPdfCommand { get; } // NEW
 
         public ContractEditViewModel(IContractsRepository repo,
                                      IRoomStatusService roomStatusService,
@@ -89,8 +100,11 @@ namespace AMS.ViewModels
             SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             ActivateCommand = new AsyncRelayCommand(ActivateAsync, () => !IsBusy);
             TerminateCommand = new AsyncRelayCommand(TerminateAsync, () => !IsBusy);
-            GeneratePdfCommand = new AsyncRelayCommand(GeneratePdfAsync, () => !IsBusy);
-            SendContractEmailCommand = new AsyncRelayCommand(SendPdfEmailAsync, () => !IsBusy);
+
+            GenerateAndSendContractPdfCommand = new AsyncRelayCommand(GenerateAndSendContractPdfAsync, () => !IsBusy); // Contract PDF
+            GeneratePdfCommand = new AsyncRelayCommand(GenerateAddendumPdfAndSendAsync, () => !IsBusy);               // Addendum PDF
+            SendAddendumEmailCommand = new AsyncRelayCommand(SendAddendumEmailAsync, () => !IsBusy);
+
             CreateAddendumCommand = new AsyncRelayCommand(CreateAddendumAsync, () => !IsBusy);
             ViewHistoryCommand = new AsyncRelayCommand(ViewHistoryAsync, () => !IsBusy);
         }
@@ -168,15 +182,40 @@ namespace AMS.ViewModels
             IsActive = Editable.Status == ContractStatus.Active;
             IsTerminated = Editable.Status == ContractStatus.Terminated;
 
+            // Does a contract PDF file exist on disk?
+            _hasContractPdf = CheckContractPdfExists(Editable.ContractId);
+
+            // Do we have at least one addendum?
+            var adds = IsPersisted ? await _addendumService.GetAddendumsAsync(Editable.ContractId) : Array.Empty<ContractAddendum>();
+            _hasAddendum = adds.Count > 0;
+
             CanCreateAddendum = IsPersisted && IsActive && Editable.NeedsAddendum;
-            CanActivate = IsPersisted && IsDraft && Editable.Tenants.Count > 0;
+            // To avoid activating before sending the contract PDF, enforce _hasContractPdf
+            CanActivate = IsPersisted && IsDraft && Editable.Tenants.Count > 0 && _hasContractPdf;
+
+            // Terminate action moved to list page
             CanTerminate = false;
+
             CanDelete = IsPersisted && IsTerminated;
 
-            // Show "Tạo PDF" when no PDF exists (and feature is supported, not readonly)
-            CanGeneratePdf = _pdfCapability.IsSupported && IsPersisted && !IsReadOnly && string.IsNullOrWhiteSpace(Editable.PdfUrl);
-            // Show "Gửi PDF" only when a PDF exists
-            CanSendEmail = IsPersisted && !string.IsNullOrWhiteSpace(Editable.PdfUrl);
+            // Contract PDF + send (Draft)
+            CanGenerateContractPdfAndSend = _pdfCapability.IsSupported && IsPersisted && IsDraft;
+
+            // Addendum PDF flow (auto-send on generate)
+            CanGeneratePdf = _pdfCapability.IsSupported && IsPersisted && _hasAddendum && string.IsNullOrWhiteSpace(Editable.PdfUrl);
+            CanSendAddendumEmail = IsPersisted && _hasAddendum && !string.IsNullOrWhiteSpace(Editable.PdfUrl);
+        }
+
+        private bool CheckContractPdfExists(string? contractId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(contractId)) return false;
+                var folder = Path.Combine(FileSystem.AppDataDirectory, "contracts");
+                var path = Path.Combine(folder, $"{contractId}.pdf");
+                return File.Exists(path);
+            }
+            catch { return false; }
         }
 
         private async Task SaveAsync()
@@ -196,7 +235,6 @@ namespace AMS.ViewModels
                 if (string.IsNullOrWhiteSpace(Editable.ContractNumber))
                     Editable.ContractNumber = "HD-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
-                // Apply UI changes
                 PushFieldsIntoEditable();
 
                 var newHash = ComputeEditHash(Editable);
@@ -220,15 +258,14 @@ namespace AMS.ViewModels
                     var add = await _addendumService.CreateAddendumWithSnapshotsAsync(
                         Editable, oldSnapshot, newSnapshot, "Điều chỉnh điều khoản hợp đồng", DateTime.Today, landlord);
 
-                    // Reload parent updated by service
+                    // Reload parent updated by service and attach new addendum PDF link
                     var reloaded = await _repo.GetByIdAsync(Editable.ContractId);
                     if (reloaded != null)
                     {
                         Editable = reloaded;
 
-                        // Force newest PDF regeneration after an effective update
-                        Editable.PdfUrl = null;
-                        PdfUrl = null;
+                        PdfUrl = add.PdfUrl;
+                        Editable.PdfUrl = add.PdfUrl;
                         await _repo.UpdateAsync(Editable);
 
                         LoadFieldsFromEditable();
@@ -236,12 +273,12 @@ namespace AMS.ViewModels
                         _originalEditHash = ComputeEditHash(Editable);
                     }
 
-                    await Shell.Current.DisplayAlertAsync("Thành công", $"Đã tạo phụ lục {add.AddendumNumber} và áp dụng thay đổi.", "OK");
+                    await Shell.Current.DisplayAlertAsync("Thành công", $"Đã tạo phụ lục {add.AddendumNumber} và cập nhật hợp đồng.", "OK");
                     await RecalcStateFlagsAsync();
                     return;
                 }
 
-                // Normal save (Draft or Active with no tracked change)
+                // Normal save (Draft or unchanged)
                 var existing = await _repo.GetByIdAsync(Editable.ContractId);
                 if (existing == null)
                 {
@@ -250,7 +287,7 @@ namespace AMS.ViewModels
                 }
                 else
                 {
-                    // If fields changed, clear PdfUrl to require re-generation
+                    // If fields changed (in Draft), clear addendum link as it's no longer relevant
                     if (_originalEditHash != null && _originalEditHash != newHash)
                     {
                         Editable.PdfUrl = null;
@@ -280,7 +317,7 @@ namespace AMS.ViewModels
             if (IsBusy) return;
             if (!CanActivate)
             {
-                await Shell.Current.DisplayAlertAsync("Không thể kích hoạt", "Chưa đủ điều kiện kích hoạt.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể kích hoạt", "Cần tạo và gửi PDF hợp đồng trước khi kích hoạt.", "OK");
                 return;
             }
             IsBusy = true;
@@ -313,27 +350,32 @@ namespace AMS.ViewModels
 
         private async Task TerminateAsync()
         {
-            if (IsBusy) return;
-            if (!CanTerminate)
+            await Shell.Current.DisplayAlertAsync("Không khả dụng", "Vui lòng chấm dứt hợp đồng từ danh sách hợp đồng.", "OK");
+        }
+
+        // CONTRACT PDF: create and send (Draft flow)
+        private async Task GenerateAndSendContractPdfAsync()
+        {
+            if (!_pdfCapability.IsSupported)
             {
-                await Shell.Current.DisplayAlertAsync("Không thể chấm dứt", "Chỉ chấm dứt hợp đồng đang hiệu lực.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không hỗ trợ", "Tính năng tạo PDF chỉ khả dụng trên phiên bản Desktop.", "OK");
                 return;
             }
-            var confirm = await Shell.Current.DisplayAlertAsync("Xác nhận", "Chấm dứt hợp đồng này?", "Đồng ý", "Hủy");
-            if (!confirm) return;
+            if (!IsPersisted || !IsDraft)
+            {
+                await Shell.Current.DisplayAlertAsync("Không thể tạo", "Chỉ tạo và gửi PDF hợp đồng khi đang ở trạng thái nháp.", "OK");
+                return;
+            }
 
-            IsBusy = true;
             try
             {
-                Editable.Status = ContractStatus.Terminated;
-                Editable.EndDate = DateTime.Today;
-                await _repo.UpdateAsync(Editable);
-                await _roomOccAdmin.EndAllActiveOccupanciesForRoomAsync(Editable.RoomCode);
-                await _roomStatusService.SetRoomAvailableAsync(Editable.RoomCode);
-                await _emailNotify.SendContractTerminatedAsync(Editable);
-                _loadedSnapshot = BuildSnapshotFrom(Editable);
-                _originalEditHash = ComputeEditHash(Editable);
-                await Shell.Current.DisplayAlertAsync("Thành công", "Đã chấm dứt hợp đồng và giải phóng phòng.", "OK");
+                var landlord = BuildLandlordInfo();
+                var path = await _pdfService.GenerateContractPdfAsync(Editable, landlord);
+
+                // Send the freshly generated contract PDF without altering Addendum link
+                await _emailNotify.SendContractPdfFromPathAsync(Editable, path);
+
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã tạo và gửi PDF hợp đồng cho người thuê.", "OK");
             }
             catch (Exception ex)
             {
@@ -341,44 +383,79 @@ namespace AMS.ViewModels
             }
             finally
             {
-                IsBusy = false;
                 await RecalcStateFlagsAsync();
             }
         }
 
-        private async Task GeneratePdfAsync()
+        // ADDENDUM PDF: create latest addendum PDF and send immediately
+        private async Task GenerateAddendumPdfAndSendAsync()
         {
             if (!_pdfCapability.IsSupported)
             {
                 await Shell.Current.DisplayAlertAsync("Không hỗ trợ", "Tính năng tạo PDF chỉ khả dụng trên phiên bản Desktop.", "OK");
                 return;
             }
-            if (!CanGeneratePdf)
+
+            // Find the latest addendum
+            var addendums = await _addendumService.GetAddendumsAsync(Editable.ContractId);
+            var latestAddendum = addendums.OrderBy(a => a.CreatedAt).LastOrDefault();
+            if (latestAddendum == null)
             {
-                await Shell.Current.DisplayAlertAsync("Không thể tạo PDF", "Chức năng này không khả dụng ở chế độ hiện tại.", "OK");
+                await Shell.Current.DisplayAlertAsync("Chưa có phụ lục", "Vui lòng tạo phụ lục trước khi tạo PDF.", "OK");
                 return;
             }
 
-            var landlord = BuildLandlordInfo();
-            var path = await _pdfService.GenerateContractPdfAsync(Editable, landlord);
-            PdfUrl = path;
-            PushFieldsIntoEditable();
-            await _repo.UpdateAsync(Editable);
-            _loadedSnapshot = BuildSnapshotFrom(Editable);
-            _originalEditHash = ComputeEditHash(Editable);
-            await Shell.Current.DisplayAlertAsync("Thành công", "Đã tạo hợp đồng điện tử PDF và lưu đường dẫn.", "OK");
-            await RecalcStateFlagsAsync();
+            try
+            {
+                var landlord = BuildLandlordInfo();
+                var path = await _pdfService.GenerateContractAddendumPdfAsync(Editable, latestAddendum, landlord);
+
+                // Save link to contract for display/send (link section is for addendum)
+                PdfUrl = path;
+                Editable.PdfUrl = path;
+                PushFieldsIntoEditable();
+                await _repo.UpdateAsync(Editable);
+
+                // Send right away
+                await _emailNotify.SendContractAddendumAsync(Editable, latestAddendum);
+
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã tạo và gửi PDF phụ lục.", "OK");
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
+            }
+            finally
+            {
+                await RecalcStateFlagsAsync();
+            }
         }
 
-        private async Task SendPdfEmailAsync()
+        private async Task SendAddendumEmailAsync()
         {
-            if (!CanSendEmail)
+            if (!CanSendAddendumEmail)
             {
-                await Shell.Current.DisplayAlertAsync("Không thể gửi", "Chưa có PDF hoặc hợp đồng chưa được lưu.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể gửi", "Chưa có file PDF phụ lục.", "OK");
                 return;
             }
-            await _emailNotify.SendContractPdfAsync(Editable);
-            await Shell.Current.DisplayAlertAsync("Thành công", "Đã gửi hợp đồng điện tử PDF.", "OK");
+
+            var addendums = await _addendumService.GetAddendumsAsync(Editable.ContractId);
+            var latestAddendum = addendums.OrderBy(a => a.CreatedAt).LastOrDefault();
+            if (latestAddendum == null)
+            {
+                await Shell.Current.DisplayAlertAsync("Chưa có phụ lục", "Vui lòng tạo phụ lục trước.", "OK");
+                return;
+            }
+
+            try
+            {
+                await _emailNotify.SendContractAddendumAsync(Editable, latestAddendum);
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã gửi PDF phụ lục đến người thuê.", "OK");
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
+            }
         }
 
         private async Task CreateAddendumAsync()
@@ -415,9 +492,10 @@ namespace AMS.ViewModels
                 if (reloaded != null)
                 {
                     Editable = reloaded;
-                    // Force newest PDF regeneration after update
-                    Editable.PdfUrl = null;
-                    PdfUrl = null;
+
+                    // Attach addendum PDF link from service result if available
+                    PdfUrl = add.PdfUrl;
+                    Editable.PdfUrl = add.PdfUrl;
                     await _repo.UpdateAsync(Editable);
 
                     LoadFieldsFromEditable();
@@ -435,7 +513,6 @@ namespace AMS.ViewModels
 
         private async Task ViewHistoryAsync()
         {
-            // Remove history access from edit page; use list page only
             await Shell.Current.DisplayAlertAsync("Lịch sử", "Vui lòng xem lịch sử từ danh sách hợp đồng.", "OK");
         }
 

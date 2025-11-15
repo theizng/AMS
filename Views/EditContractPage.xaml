@@ -6,22 +6,22 @@
     xmlns:conv="clr-namespace:AMS.Converters"
     Title="Hợp đồng">
 
-   
     <ContentPage.Resources>
         <ResourceDictionary>
             <conv:InvertBoolConverter x:Key="InvertBoolConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
+
     <ScrollView>
         <VerticalStackLayout Padding="18" Spacing="16">
 
             <!-- Header -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="4">
-                    <Label Text="{Binding Editable.ContractNumber, StringFormat='Số: {0}'}"
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Editable.ContractNumber, StringFormat='Số: {0}'}"
                            FontAttributes="Bold" FontSize="18"/>
-                    <Label Text="{Binding Editable.RoomCode, StringFormat='Phòng: {0}'}" FontSize="14"/>
-                    <Label Text="{Binding Editable.StatusVi}" TextColor="#455A64" FontAttributes="Bold"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Editable.RoomCode, StringFormat='Phòng: {0}'}" FontSize="14"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Editable.StatusVi}" TextColor="#455A64" FontAttributes="Bold"/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -35,16 +35,16 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0">
-                            <Label Text="Ngày bắt đầu"/>
-                            <DatePicker Date="{Binding StartDate}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Ngày bắt đầu"/>
+                            <DatePicker Style="{DynamicResource TextPrimary}" Date="{Binding StartDate}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1">
-                            <Label Text="Ngày kết thúc"/>
-                            <DatePicker Date="{Binding EndDate}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Ngày kết thúc"/>
+                            <DatePicker Style="{DynamicResource TextPrimary}" Date="{Binding EndDate}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="2">
-                            <Label Text="Ngày thu tiền (1..28)"/>
-                            <Entry Keyboard="Numeric" Text="{Binding DueDay}" Placeholder="5" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Ngày thu tiền (1..28)"/>
+                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding DueDay}" Placeholder="5" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                     </Grid>
 
@@ -55,21 +55,27 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0">
-                            <Label Text="Giá thuê / tháng"/>
-                            <Entry Keyboard="Numeric" Text="{Binding RentAmount}" Placeholder="0" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Giá thuê / tháng"/>
+                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding RentAmount}" Placeholder="0" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1">
-                            <Label Text="Đặt cọc"/>
-                            <Entry Keyboard="Numeric" Text="{Binding SecurityDeposit}" Placeholder="0" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Đặt cọc"/>
+                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding SecurityDeposit}" Placeholder="0" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="2">
-                            <Label Text="Trả cọc sau (ngày)"/>
-                            <Entry Keyboard="Numeric" Text="{Binding DepositReturnDays}" Placeholder="7" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Trả cọc sau (ngày)"/>
+                            <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding DepositReturnDays}" Placeholder="7" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                         </VerticalStackLayout>
                     </Grid>
                 </VerticalStackLayout>
             </Frame>
-
+            <!-- PDF (stores addendum PDF link) -->
+            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="6">
+                    <Label Style="{DynamicResource TextPrimary}" Text="Link PDF (phụ lục gần nhất)"/>
+                    <Entry Style="{DynamicResource TextPrimary}" Placeholder="https://..." Text="{Binding PdfUrl}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                </VerticalStackLayout>
+            </Frame>    
             <!-- Limits -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <Grid ColumnSpacing="12">
@@ -78,12 +84,12 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <VerticalStackLayout Grid.Column="0">
-                        <Label Text="Số người tối đa"/>
-                        <Entry Keyboard="Numeric" Text="{Binding MaxOccupants}" Placeholder="1" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Số người tối đa"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding MaxOccupants}" Placeholder="1" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                     </VerticalStackLayout>
                     <VerticalStackLayout Grid.Column="1">
-                        <Label Text="Xe máy tối đa"/>
-                        <Entry Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" Placeholder="1" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Xe máy tối đa"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding MaxBikeAllowance}" Placeholder="1" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                     </VerticalStackLayout>
                 </Grid>
             </Frame>
@@ -91,19 +97,18 @@
             <!-- Payment & Late -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Phương thức thanh toán"/>
-                    <Editor HeightRequest="60" Text="{Binding PaymentMethods}" Placeholder="Chuyển khoản, tiền mặt..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
-                    <Label Text="Chính sách trễ hạn"/>
-                    <Editor HeightRequest="60" Text="{Binding LateFeePolicy}" Placeholder="Phí trễ hạn, số ngày ân hạn..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Phương thức thanh toán"/>
+                    <Editor Style="{DynamicResource TextPrimary}" HeightRequest="60" Text="{Binding PaymentMethods}" Placeholder="Chuyển khoản, tiền mặt..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Chính sách trễ hạn"/>
+                    <Editor Style="{DynamicResource TextPrimary}" HeightRequest="60" Text="{Binding LateFeePolicy}" Placeholder="Phí trễ hạn, số ngày ân hạn..." IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                 </VerticalStackLayout>
             </Frame>
 
             <!-- Property Description -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Mô tả tài sản"/>
-                    <!-- Use IsReadOnly instead of disabling, to ensure text still shows in view-mode -->
-                    <Editor HeightRequest="80"
+                    <Label Style="{DynamicResource TextPrimary}" Text="Mô tả tài sản"/>
+                    <Editor Style="{DynamicResource TextPrimary}" HeightRequest="80"
                             Text="{Binding PropertyDescription}"
                             IsReadOnly="{Binding IsReadOnly}"
                             Placeholder="Địa chỉ, tiện ích, chi tiết phòng..."/>
@@ -113,19 +118,19 @@
             <!-- Tenants Snapshot -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Người thuê (snapshot)" FontAttributes="Bold"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Người thuê (snapshot)" FontAttributes="Bold"/>
                     <CollectionView ItemsSource="{Binding Editable.Tenants}" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <HorizontalStackLayout Spacing="6">
-                                    <Label Text="{Binding Name}" FontAttributes="Bold"/>
-                                    <Label Text="{Binding Phone}" TextColor="#607D8B"/>
-                                    <Label Text="{Binding Email}" TextColor="#1976D2"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Name}" FontAttributes="Bold"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Phone}" TextColor="#607D8B"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Email}" TextColor="#1976D2"/>
                                 </HorizontalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <Label Text="Sau khi kích hoạt, thay đổi người thuê sẽ đánh dấu 'Phụ lục'."
+                    <Label Style="{DynamicResource TextPrimary}" Text="Sau khi kích hoạt, thay đổi người thuê sẽ đánh dấu 'Phụ lục'."
                            FontSize="12" TextColor="#78909C"/>
                 </VerticalStackLayout>
             </Frame>
@@ -133,24 +138,59 @@
             <!-- PDF -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Link PDF hợp đồng"/>
-                    <Entry Placeholder="https://..." Text="{Binding PdfUrl}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Link PDF (phụ lục gần nhất)"/>
+                    <Entry Style="{DynamicResource TextPrimary}" Placeholder="https://..." Text="{Binding PdfUrl}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
                 </VerticalStackLayout>
             </Frame>
 
             <!-- Primary Actions -->
-            <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
-                <Button Text="Lưu" Command="{Binding SaveCommand}" WidthRequest="110" IsVisible="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
-                <Button Text="Tạo PDF" Command="{Binding GeneratePdfCommand}" WidthRequest="110" IsVisible="{Binding CanGeneratePdf}"/>
-                <Button Text="Gửi PDF" Command="{Binding SendContractEmailCommand}" WidthRequest="110" IsVisible="{Binding CanSendEmail}"/>
-                <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" WidthRequest="110" IsVisible="{Binding CanActivate}"/>
-                
-            </HorizontalStackLayout>
 
-            <!-- Addendum Actions -->
-            <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
-                <Button Text="Tạo phụ lục" Command="{Binding CreateAddendumCommand}" WidthRequest="130" IsVisible="{Binding CanCreateAddendum}"/>
-            </HorizontalStackLayout>
+            <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+
+                <!-- Draft flow: must create & send contract PDF before Activate -->
+                <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                    <Button Style="{DynamicResource TextPrimary}"
+                            Text="Tạo PDF hợp đồng và gửi"
+                            Command="{Binding GenerateAndSendContractPdfCommand}"
+                            WidthRequest="220"
+                            IsVisible="{Binding CanGenerateContractPdfAndSend}" />
+                    <Button Style="{DynamicResource TextPrimary}"
+                            Text="Kích hoạt"
+                            Command="{Binding ActivateCommand}"
+                            WidthRequest="110"
+                            IsVisible="{Binding CanActivate}" />
+                </HorizontalStackLayout>
+
+                <!-- Addendum flow -->
+                <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                    <Button Style="{DynamicResource TextPrimary}"
+                            Text="Tạo PDF phụ lục"
+                            Command="{Binding GeneratePdfCommand}"
+                            WidthRequest="150"
+                            IsVisible="{Binding CanGeneratePdf}" />
+                    <Button Style="{DynamicResource TextPrimary}"
+                            Text="Gửi phụ lục PDF"
+                            Command="{Binding SendAddendumEmailCommand}"
+                            WidthRequest="150"
+                            IsVisible="{Binding CanSendAddendumEmail}" />
+                    <!-- Keep Save for Draft editing -->
+                    <Button Style="{DynamicResource TextPrimary}"
+                            Text="Lưu"
+                            Command="{Binding SaveCommand}"
+                            WidthRequest="110"
+                            IsVisible="{Binding IsDraft}" />
+                </HorizontalStackLayout>
+
+                <!-- Addendum creation -->
+                <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                    <Button Style="{DynamicResource TextPrimary}"
+                            Text="Tạo phụ lục"
+                            Command="{Binding CreateAddendumCommand}"
+                            WidthRequest="130"
+                            IsVisible="{Binding CanCreateAddendum}" />
+                </HorizontalStackLayout>
+
+            </VerticalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>

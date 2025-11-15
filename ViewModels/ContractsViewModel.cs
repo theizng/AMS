@@ -70,8 +70,8 @@ namespace AMS.ViewModels
             CreateCommand = new AsyncRelayCommand(CreateFromRoomAsync);
             EditCommand = new AsyncRelayCommand<Contract>(EditAsync);
             DeleteCommand = new AsyncRelayCommand<Contract>(DeleteAsync);
-            GeneratePdfCommand = new AsyncRelayCommand<Contract>(GeneratePdfAsync);
-            SendEmailCommand = new AsyncRelayCommand<Contract>(SendEmailAsync);
+            //GeneratePdfCommand = new AsyncRelayCommand<Contract>(GeneratePdfAsync);
+            //SendEmailCommand = new AsyncRelayCommand<Contract>(SendEmailAsync);
             TerminateCommand = new AsyncRelayCommand<Contract>(TerminateAsync); // NEW
             ClearFilterCommand = new RelayCommand(() =>
             {
@@ -143,8 +143,8 @@ namespace AMS.ViewModels
             // For Active contracts: mark NeedsAddendum + notify once (do not navigate)
             if (c.Status == ContractStatus.Active)
             {
-                var proceed = await Shell.Current.DisplayAlert("Hợp đồng đang hiệu lực",
-                    "Hợp đồng đang có hiệu lực, nếu tiếp tục muốn chỉnh sửa sẽ tạo PHỤ LỤC. Đánh dấu cần phụ lục ngay bây giờ?",
+                var proceed = await Shell.Current.DisplayAlertAsync("Hợp đồng đang hiệu lực",
+                    "Hợp đồng đang có hiệu lực, nếu tiếp tục muốn chỉnh sửa sẽ đánh dấu tạo PHỤ LỤC. Bạn có muốn tiếp tục?",
                     "Đánh dấu", "Hủy");
 
                 if (!proceed) return;
@@ -159,7 +159,7 @@ namespace AMS.ViewModels
                 }
 
                 await _repo.UpdateAsync(c);
-                await Shell.Current.DisplayAlert("Đã đánh dấu", "Hợp đồng đã được đánh dấu cần phụ lục.", "OK");
+                await Shell.Current.DisplayAlertAsync("Đã đánh dấu thành công", "Hợp đồng đã được đánh dấu cần phụ lục.", "OK");
                 await LoadAsync();
                 return;
             }
@@ -181,7 +181,7 @@ namespace AMS.ViewModels
 
             if (candidates.Count == 0)
             {
-                await Shell.Current.DisplayAlert("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không có phòng khả dụng", "Cần có phòng khả dụng để tạo hợp đồng \nTrạng thái khả dụng và có gán người thuê ở trong phòng.", "OK");
                 return;
             }
 
@@ -224,34 +224,25 @@ namespace AMS.ViewModels
             if (c == null) return;
             if ((c.Status != ContractStatus.Terminated) && (c.Status != ContractStatus.Draft))
             {
-                await Shell.Current.DisplayAlert("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể xóa hợp đồng hiện tại", "Chỉ được xóa khi hợp đồng ở trạng thái đã chấm dứt.", "OK");
                 return;
             }
-            var ok = await Shell.Current.DisplayAlert("Xóa hợp đồng",
+            var ok = await Shell.Current.DisplayAlertAsync("Bạn có muốn xóa hợp đồng",
                 $"Xóa hợp đồng {c.ContractNumber ?? c.ContractId}?", "Xóa", "Hủy");
             if (!ok) return;
             await _repo.DeleteAsync(c.ContractId);
             await LoadAsync();
         }
 
-        private async Task GeneratePdfAsync(Contract? c)
-        {
-            if (c == null) return;
-            await Shell.Current.DisplayAlert("PDF", "Tạo PDF (chưa triển khai).", "OK");
-        }
-
-        private async Task SendEmailAsync(Contract? c)
-        {
-            if (c == null) return;
-            await Shell.Current.DisplayAlert("Email", "Gửi email (chưa triển khai).", "OK");
-        }
+       
+        
 
         private async Task HandleAddendumAsync(Contract? c)
         {
             if (c == null) return;
             if (c.Status != ContractStatus.Active || !c.NeedsAddendum)
             {
-                await Shell.Current.DisplayAlert("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
+                await Shell.Current.DisplayAlertAsync("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
                 return;
             }
 
@@ -300,12 +291,12 @@ namespace AMS.ViewModels
 
             if (c.Status != ContractStatus.Active)
             {
-                await Shell.Current.DisplayAlert("Không thể chấm dứt", "Chỉ chấm dứt hợp đồng đang hiệu lực.", "OK");
+                await Shell.Current.DisplayAlertAsync("Không thể chấm dứt", "Chỉ có thể chấm dứt hợp đồng đang trong trạng thái có hiệu lực.", "OK");
                 return;
             }
 
-            var confirm = await Shell.Current.DisplayAlert(
-                "Xác nhận chấm dứt",
+            var confirm = await Shell.Current.DisplayAlertAsync(
+                "Xác nhận chấm dứt hợp đồng",
                 "Hợp đồng đang hoạt động, bạn có thực sự muốn chấm dứt hợp đồng?\n\nNếu chấm dứt, người thuê sẽ lập tức trả phòng và gửi thông báo đến tất cả người thuê.",
                 "Chấm dứt", "Hủy");
 
@@ -327,12 +318,12 @@ namespace AMS.ViewModels
                 // 3) Notify tenants
                 await _emailNotify.SendContractTerminatedAsync(c);
 
-                await Shell.Current.DisplayAlert("Thành công", "Đã chấm dứt hợp đồng và giải phóng phòng.", "OK");
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã chấm dứt hợp đồng và giải phóng phòng.", "OK");
                 await LoadAsync();
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
         }
 

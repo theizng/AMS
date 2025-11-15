@@ -16,7 +16,8 @@ namespace AMS.Services.Interfaces
         Task SendContractAddendumNeededAsync(Contract contract, CancellationToken ct = default);
         Task SendToAllTenantsAsync(Contract contract, string subject, string body, string? attachmentName = null, byte[]? attachmentBytes = null, CancellationToken ct = default);
         String BuildContractBody(Contract contract, string heading, string note);
-
+        Task SendContractAddendumAsync(Contract parent, ContractAddendum addendum, CancellationToken ct = default);
+        Task SendContractPdfFromPathAsync(Contract contract, string pdfPath, CancellationToken ct = default);
         Task SendPasswordResetAsync(string toEmail, string adminName, string tempPassword);
     }
 }

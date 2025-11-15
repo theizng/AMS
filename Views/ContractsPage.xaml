@@ -7,7 +7,9 @@
     Title="Hợp đồng">
 
     <ContentPage.Resources>
-        <converters:TenantsNamesConverter x:Key="TenantsNamesConverter" />
+        <ResourceDictionary>
+            <converters:TenantsNamesConverter x:Key="TenantsNamesConverter" />
+        </ResourceDictionary>
     </ContentPage.Resources>
 
     <ContentPage.ToolbarItems>
@@ -22,6 +24,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Search -->
         <HorizontalStackLayout Grid.Row="0" Spacing="8">
             <Entry Placeholder="Tìm theo phòng / số hợp đồng / người thuê..."
                    HorizontalOptions="FillAndExpand"
@@ -29,6 +32,7 @@
             <Button Text="Tìm" Command="{Binding RefreshCommand}" />
         </HorizontalStackLayout>
 
+        <!-- Filters -->
         <HorizontalStackLayout Grid.Row="1" Spacing="8">
             <Label Text="Trạng thái:" VerticalOptions="Center" />
             <Picker WidthRequest="160"
@@ -37,17 +41,27 @@
             <Button Text="Xóa lọc" Command="{Binding ClearFilterCommand}" />
         </HorizontalStackLayout>
 
-        <RefreshView Grid.Row="2" IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
+        <!-- List -->
+        <RefreshView Grid.Row="2"
+                     IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding RefreshCommand}">
             <CollectionView ItemsSource="{Binding Items}" SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Grid Padding="20">
-                        <Label Text="Chưa có hợp đồng." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
+                        <Label Text="Chưa có hợp đồng."
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               TextColor="#666"/>
                     </Grid>
                 </CollectionView.EmptyView>
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,6" Padding="14" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="12">
+                        <Frame Margin="0,6"
+                               Padding="14"
+                               HasShadow="True"
+                               BorderColor="#E0E0E0"
+                               CornerRadius="12">
                             <Grid ColumnSpacing="12" RowSpacing="6">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -59,15 +73,24 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
+                                <!-- Header line -->
                                 <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding ContractNumber}" FontAttributes="Bold"/>
+                                    <Label Style="{DynamicResource TextPrimary}"
+                                           Text="{Binding ContractNumber}"
+                                           FontAttributes="Bold"/>
                                     <Label Style="{DynamicResource TextPrimary}" Text="•"/>
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RoomCode, StringFormat='Phòng {0}'}" FontAttributes="Bold"/>
-                                    <Border Padding="10,4" StrokeThickness="0" Background="#ECEFF1">
+                                    <Label Style="{DynamicResource TextPrimary}"
+                                           Text="{Binding RoomCode, StringFormat='Phòng {0}'}"
+                                           FontAttributes="Bold"/>
+                                    <Border Padding="10,4"
+                                            StrokeThickness="0"
+                                            Background="#ECEFF1">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="14"/>
                                         </Border.StrokeShape>
-                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusVi}" FontAttributes="Bold"/>
+                                        <Label Style="{DynamicResource TextPrimary}"
+                                               Text="{Binding StatusVi}"
+                                               FontAttributes="Bold"/>
                                         <Border.Triggers >
                                             <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Draft">
                                                 <Setter Property="Background" Value="#FFF3CD"/>
@@ -83,39 +106,88 @@
                                             </DataTrigger>
                                         </Border.Triggers>
                                     </Border>
-                                    <Border Padding="10,4" Background="#FFD54F" StrokeThickness="0" IsVisible="{Binding NeedsAddendum}">
+                                    <Border Padding="10,4"
+                                            Background="#FFD54F"
+                                            StrokeThickness="0"
+                                            IsVisible="{Binding NeedsAddendum}">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="14"/>
                                         </Border.StrokeShape>
-                                        <Label Style="{DynamicResource TextPrimary}" Text="Phụ lục" FontAttributes="Bold"/>
+                                        <Label Style="{DynamicResource TextPrimary}"
+                                               Text="Phụ lục"
+                                               FontAttributes="Bold"/>
                                     </Border>
                                 </HorizontalStackLayout>
 
+                                <!-- Details -->
                                 <VerticalStackLayout Grid.Row="1" Spacing="14">
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding StartDate, StringFormat='Ngày bắt đầu: {0:yyyy-MM-dd}'}"/>
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding EndDate, StringFormat='Ngày kết thúc: {0:yyyy-MM-dd}'}"/>
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RentAmount, StringFormat='Giá trị hợp đồng: {0:N0} đ'}"/>
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Tenants.Count, StringFormat='Số lượng người thuê: {0}'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}"
+                                           Text="{Binding StartDate, StringFormat='Ngày bắt đầu: {0:yyyy-MM-dd}'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}"
+                                           Text="{Binding EndDate, StringFormat='Ngày kết thúc: {0:yyyy-MM-dd}'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}"
+                                           Text="{Binding RentAmount, StringFormat='Giá trị hợp đồng: {0:N0} đ'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}"
+                                           Text="{Binding Tenants.Count, StringFormat='Số lượng người thuê: {0}'}"/>
                                 </VerticalStackLayout>
 
-                                <Label Style="{DynamicResource TextPrimary}" Grid.Row="2" Grid.ColumnSpan="2"
+                                <!-- Tenants line -->
+                                <Label Style="{DynamicResource TextPrimary}"
+                                       Grid.Row="2"
+                                       Grid.ColumnSpan="2"
                                        Text="{Binding Tenants, Converter={StaticResource TenantsNamesConverter}}"
-                                       LineBreakMode="TailTruncation" MaxLines="1" TextColor="#607D8B"/>
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="1"
+                                       TextColor="#607D8B"/>
 
-                                <VerticalStackLayout Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Spacing="6" HorizontalOptions="End">
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Sửa"
+                                <!-- Action buttons -->
+                                <VerticalStackLayout Grid.Column="1"
+                                                     Grid.Row="0"
+                                                     Grid.RowSpan="3"
+                                                     Spacing="6"
+                                                     HorizontalOptions="End">
+
+                                    <!-- Edit (hide if NeedsAddendum) -->
+                                    <Button Style="{DynamicResource TextPrimary}"
+                                            Text="Sửa"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditCommand}"
-                                            CommandParameter="{Binding .}" WidthRequest="90"/>
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Phụ lục"
+                                            CommandParameter="{Binding .}"
+                                            WidthRequest="90"
+                                            IsVisible="True">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding NeedsAddendum}" Value="True">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding Status}" Value="Terminated">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+
+                                    <!-- Addendum entry -->
+                                    <Button Style="{DynamicResource TextPrimary}"
+                                            Text="Phụ lục"
                                             IsVisible="{Binding NeedsAddendum}"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AddendumCommand}"
-                                            CommandParameter="{Binding .}" WidthRequest="90"/>
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Lịch sử"
+                                            CommandParameter="{Binding .}"
+                                            WidthRequest="90"/>
+
+                                    <!-- History -->
+                                    <Button Style="{DynamicResource TextPrimary}"
+                                            Text="Lịch sử"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HistoryCommand}"
-                                            CommandParameter="{Binding .}" WidthRequest="90"/>
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Xóa" BackgroundColor="#DC0E0E"
+                                            CommandParameter="{Binding .}"
+                                            WidthRequest="90"/>
+
+                                    <!-- Delete -->
+                                    <Button Style="{DynamicResource TextPrimary}"
+                                            Text="Xóa"
+                                            BackgroundColor="#DC0E0E"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}"
-                                            CommandParameter="{Binding .}" WidthRequest="90"/>
+                                            CommandParameter="{Binding .}"
+                                            WidthRequest="90"/>
+
+                                    <!-- Terminate -->
                                     <Button Text="Chấm dứt"
                                             Style="{DynamicResource TextPrimary}"
                                             BackgroundColor="#FFECB3"

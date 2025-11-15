@@ -33,7 +33,7 @@ namespace AMS.Services
             var ssl = Preferences.Get(K_SmtpSsl, true);
             var user = Preferences.Get(K_SmtpUser, "");
             var pwd = await SecureStorage.GetAsync(K_SmtpPwd) ?? Preferences.Get(K_SmtpPwd, "");
-            var senderName = Preferences.Get(K_SenderName, "AMS");
+            var senderName = Preferences.Get(K_SenderName, "QLT");
             var senderAddr = Preferences.Get(K_SenderAddr, user);
             return (host, port, ssl, user, pwd, senderName, senderAddr);
         }
@@ -100,17 +100,17 @@ namespace AMS.Services
         {
             if (string.IsNullOrWhiteSpace(tenantEmail)) return;
 
-            var subject = $"[AMS] Cập nhật bảo trì - {req.RoomCode} - {req.StatusVi}";
+            var subject = $"[QLT] Cập nhật bảo trì - {req.RoomCode} - {req.StatusVi}";
             var body =
-$@"Xin chào,
+            $@"Xin chào,
 
-Yêu cầu bảo trì có mã {req.RequestId} cho phòng {req.RoomCode} đã được cập nhật trạng thái: {req.StatusVi}.
-Phân loại: {req.Category}
-Mô tả: {req.Description}
-Chi phí ước tính: {(req.EstimatedCost.HasValue ? req.EstimatedCost.Value.ToString("N0") + " đ" : "(chưa có)")}
+            Yêu cầu bảo trì có mã {req.RequestId} cho phòng {req.RoomCode} đã được cập nhật trạng thái: {req.StatusVi}.
+            Phân loại: {req.Category}
+            Mô tả: {req.Description}
+            Chi phí ước tính: {(req.EstimatedCost.HasValue ? req.EstimatedCost.Value.ToString("N0") + " đ" : "(chưa có)")}
 
-Trân trọng,
-AMS";
+            Trân trọng,
+            QLT";
 
             await SendAsync(tenantEmail, subject, body, ct: ct);
         }
@@ -124,17 +124,23 @@ AMS";
         public async Task SendContractDraftAsync(Contract contract, CancellationToken ct = default)
         {
             await SendToAllTenantsAsync(contract,
-                subject: $"[AMS] Bản nháp hợp đồng phòng {contract.RoomCode}",
+                subject: $"[QLT] Bản nháp hợp đồng phòng {contract.RoomCode}",
                 body: BuildContractBody(contract, "BẢN NHÁP HỢP ĐỒNG", "Vui lòng kiểm tra thông tin và phản hồi nếu cần chỉnh sửa."),
                 ct: ct);
         }
 
-        // Attach contract PDF if available at PdfUrl
+        public async Task SendContractPdfFromPathAsync(Contract contract, string pdfPath, CancellationToken ct = default)
+        {
+            var (name, bytes) = TryLoadAttachment(pdfPath);
+            var subject = $"[QLT] Hợp đồng phòng {contract.RoomCode} (PDF đính kèm)";
+            var body = BuildContractBody(contract, "HỢP ĐỒNG THUÊ PHÒNG (PDF)", "PDF hợp đồng đính kèm email này.");
+            await SendToAllTenantsAsync(contract, subject, body, name, bytes, ct);
+        }
         public async Task SendContractPdfAsync(Contract contract, CancellationToken ct = default)
         {
             var (name, bytes) = TryLoadAttachment(contract.PdfUrl);
 
-            var subject = $"[AMS] Hợp đồng phòng {contract.RoomCode} (PDF đính kèm)";
+            var subject = $"[QLT] Hợp đồng phòng {contract.RoomCode} (PDF đính kèm)";
             var note = bytes != null
                 ? "PDF hợp đồng đính kèm email này."
                 : (string.IsNullOrWhiteSpace(contract.PdfUrl) ? "(Chưa có file PDF đính kèm)" : $"Link (không đính kèm): {contract.PdfUrl}");
@@ -142,11 +148,22 @@ AMS";
 
             await SendToAllTenantsAsync(contract, subject, body, name, bytes, ct);
         }
+        public async Task SendContractAddendumAsync(Contract parent, ContractAddendum addendum, CancellationToken ct = default)
+        {
+            var (name, bytes) = TryLoadAttachment(addendum.PdfUrl);
 
+            var subject = $"[QLT] Phụ lục hợp đồng {addendum.AddendumNumber ?? addendum.AddendumId} (PDF đính kèm)";
+            var note = bytes != null
+                ? "PDF phụ lục hợp đồng đính kèm email này."
+                : (string.IsNullOrWhiteSpace(addendum.PdfUrl) ? "(Chưa có PDF đính kèm)" : $"Link (không đính kèm): {addendum.PdfUrl}");
+            var body = BuildContractBody(parent, "PHỤ LỤC HỢP ĐỒNG", note);
+
+            await SendToAllTenantsAsync(parent, subject, body, name, bytes, ct);
+        }
         public async Task SendContractActivatedAsync(Contract contract, CancellationToken ct = default)
         {
             await SendToAllTenantsAsync(contract,
-                subject: $"[AMS] Hợp đồng phòng {contract.RoomCode} đã kích hoạt",
+                subject: $"[QLT] Hợp đồng phòng {contract.RoomCode} đã kích hoạt",
                 body: BuildContractBody(contract, "HỢP ĐỒNG KÍCH HOẠT", "Hợp đồng đã có hiệu lực. Cảm ơn bạn."),
                 ct: ct);
         }
@@ -154,7 +171,7 @@ AMS";
         public async Task SendContractTerminatedAsync(Contract contract, CancellationToken ct = default)
         {
             await SendToAllTenantsAsync(contract,
-                subject: $"[AMS] Hợp đồng phòng {contract.RoomCode} đã chấm dứt",
+                subject: $"[QLT] Hợp đồng phòng {contract.RoomCode} đã chấm dứt",
                 body: BuildContractBody(contract, "HỢP ĐỒNG CHẤM DỨT", "Vui lòng phối hợp bàn giao phòng / tài sản."),
                 ct: ct);
         }
@@ -162,14 +179,14 @@ AMS";
         public async Task SendContractAddendumNeededAsync(Contract contract, CancellationToken ct = default)
         {
             await SendToAllTenantsAsync(contract,
-                subject: $"[AMS] Phòng {contract.RoomCode} cần phụ lục hợp đồng",
+                subject: $"[QLT] Phòng {contract.RoomCode} cần phụ lục hợp đồng",
                 body: BuildContractBody(contract, "PHỤ LỤC HỢP ĐỒNG", "Có thay đổi trong hợp đồng. Phụ lục cần được lập để cập nhật thông tin."),
                 ct: ct);
         }
 
         public async Task SendPasswordResetAsync(string toEmail, string adminName, string tempPassword)
         {
-            var subject = "[AMS] Đặt lại mật khẩu quản trị";
+            var subject = "[QLT] Đặt lại mật khẩu quản trị";
             var body = $"Xin chào {adminName},\n\nMật khẩu tạm thời của bạn là: {tempPassword}\n" +
                        $"Vui lòng đăng nhập và đổi mật khẩu mới trong mục Cài đặt.\n\nThời gian: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC.";
 

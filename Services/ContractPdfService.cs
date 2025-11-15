@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using AMS.Models;
 using AMS.Services.Interfaces;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using QuestPDF.Helpers;
 
 namespace AMS.Services
 {
@@ -138,11 +138,10 @@ namespace AMS.Services
             Directory.CreateDirectory(folder);
             var path = Path.Combine(folder, $"{parent.ContractId}-{addendum.AddendumId}.pdf");
 
-            // Diff (very simple: list old and new)
-            var oldNames = addendum.OldTenants.Select(t => $"{t.Name} ({t.Phone})");
-            var newNames = addendum.NewTenants.Select(t => $"{t.Name} ({t.Phone})");
+            var oldS = addendum.OldSnapshot ?? new ContractSnapshot();
+            var newS = addendum.NewSnapshot ?? new ContractSnapshot();
 
-            var effective = addendum.EffectiveDate ?? DateTime.Today;
+            string FmD(DateTime d) => d == default ? "" : d.ToString("dd/MM/yyyy");
 
             var doc = Document.Create(container =>
             {
@@ -160,34 +159,71 @@ namespace AMS.Services
 
                     page.Content().Column(col =>
                     {
-                        col.Item().Text($"Phụ lục cho Hợp đồng: {parent.ContractNumber ?? parent.ContractId} – Phòng: {parent.RoomCode}")
-                            .FontSize(11);
+                        col.Item().Text($"Phụ lục cho Hợp đồng: {parent.ContractNumber ?? parent.ContractId} – Phòng: {parent.RoomCode}").FontSize(11);
                         col.Item().Text($"Địa chỉ: {parent.HouseAddress}").FontSize(11);
-                        col.Item().Text($"Ngày hiệu lực phụ lục: {effective:dd/MM/yyyy}").FontSize(11);
+                        col.Item().Text($"Chủ nhà: {landlord.FullName} — CCCD: {landlord.IdCardNumber} — ĐT: {landlord.Phone}").FontSize(11);
+                        col.Item().Text($"Ngày hiệu lực phụ lục: {(addendum.EffectiveDate ?? DateTime.Today):dd/MM/yyyy}").FontSize(11);
                         if (!string.IsNullOrWhiteSpace(addendum.Reason))
                             col.Item().Text($"Nội dung thay đổi: {addendum.Reason}").FontSize(11);
 
-                        col.Item().PaddingTop(10).Text("Danh sách người thuê trước khi thay đổi:").Bold().FontSize(12);
+                        col.Item().PaddingTop(12).Text("TÓM TẮT THAY ĐỔI").Bold().FontSize(12);
+                        col.Item().Table(t =>
+                        {
+                            t.ColumnsDefinition(c =>
+                            {
+                                c.RelativeColumn(3); // Field
+                                c.RelativeColumn(3); // Before
+                                c.RelativeColumn(3); // After
+                            });
+
+                            void Row(string field, string before, string after)
+                            {
+                                t.Cell()
+                                 .Element(x => x.BorderBottom(0.5f).BorderColor(QuestPDF.Helpers.Colors.Grey.Lighten2).PaddingVertical(4))
+                                 .Text(field);
+
+                                t.Cell()
+                                 .Element(x => x.BorderBottom(0.5f).BorderColor(QuestPDF.Helpers.Colors.Grey.Lighten2).PaddingVertical(4))
+                                 .Text(before);
+
+                                t.Cell()
+                                 .Element(x => x.BorderBottom(0.5f).BorderColor(QuestPDF.Helpers.Colors.Grey.Lighten2).PaddingVertical(4))
+                                 .Text(after);
+                            }
+
+                            Row("Thời hạn", $"{FmD(oldS.StartDate)} → {FmD(oldS.EndDate)}", $"{FmD(newS.StartDate)} → {FmD(newS.EndDate)}");
+                            Row("Ngày thu tiền", oldS.DueDay.ToString(), newS.DueDay.ToString());
+                            Row("Tiền thuê", $"{oldS.RentAmount:N0} đ", $"{newS.RentAmount:N0} đ");
+                            Row("Đặt cọc", $"{oldS.SecurityDeposit:N0} đ", $"{newS.SecurityDeposit:N0} đ");
+                            Row("Trả cọc sau (ngày)", oldS.DepositReturnDays.ToString(), newS.DepositReturnDays.ToString());
+                            Row("Số người tối đa", oldS.MaxOccupants.ToString(), newS.MaxOccupants.ToString());
+                            Row("Xe máy tối đa", oldS.MaxBikeAllowance.ToString(), newS.MaxBikeAllowance.ToString());
+                            Row("Phương thức thanh toán", oldS.PaymentMethods ?? "", newS.PaymentMethods ?? "");
+                            Row("Chính sách trễ hạn", oldS.LateFeePolicy ?? "", newS.LateFeePolicy ?? "");
+                            Row("Mô tả tài sản", oldS.PropertyDescription ?? "", newS.PropertyDescription ?? "");
+                        });
+
+                        col.Item().PaddingTop(10).Text("Người thuê trước khi thay đổi:").Bold().FontSize(12);
+                        var oldNames = (addendum.OldTenants ?? oldS.Tenants ?? new()).Select(t => $"{t.Name} ({t.Phone})");
                         col.Item().Text(string.Join("\n", oldNames)).FontSize(11);
 
-                        col.Item().PaddingTop(8).Text("Danh sách người thuê sau khi thay đổi:").Bold().FontSize(12);
+                        col.Item().PaddingTop(8).Text("Người thuê sau khi thay đổi:").Bold().FontSize(12);
+                        var newNames = (addendum.NewTenants ?? newS.Tenants ?? new()).Select(t => $"{t.Name} ({t.Phone})");
                         col.Item().Text(string.Join("\n", newNames)).FontSize(11);
 
-                        col.Item().PaddingTop(12).Text("Hai bên thống nhất các điều khoản điều chỉnh liên quan đến người thuê và các trách nhiệm đi kèm. Các điều khoản khác của Hợp đồng không thay đổi.")
-                            .FontSize(11);
+                        col.Item().PaddingTop(12).Text("Hai bên thống nhất các điều khoản điều chỉnh như trên. Các điều khoản khác của Hợp đồng giữ nguyên.").FontSize(11);
 
-                        col.Item().PaddingTop(12).Text("ĐẠI DIỆN CÁC BÊN KÝ TÊN").Bold().FontSize(12);
-
+                        col.Item().PaddingTop(16).Text("ĐẠI DIỆN CÁC BÊN KÝ TÊN").Bold().FontSize(12);
                         col.Item().Row(row =>
                         {
                             row.RelativeItem().Column(cLeft =>
                             {
-                                cLeft.Item().PaddingTop(10).Text("BÊN A").Bold();
+                                cLeft.Item().PaddingTop(10).Text("BÊN A (Chủ nhà)").Bold();
                                 cLeft.Item().PaddingTop(40).Text("(Ký, ghi rõ họ tên)");
                             });
                             row.RelativeItem().Column(cRight =>
                             {
-                                cRight.Item().PaddingTop(10).Text("BÊN B").Bold();
+                                cRight.Item().PaddingTop(10).Text("BÊN B (Người thuê)").Bold();
                                 cRight.Item().PaddingTop(40).Text("(Ký, ghi rõ họ tên)");
                             });
                         });
