@@ -21,6 +21,10 @@ namespace AMS.ViewModels
         private readonly IRoomsRepository _roomsRepository;
         private readonly IRoomOccupancyProvider _occupancyProvider;
 
+        // NEW: needed to terminate a contract from the list page
+        private readonly IRoomStatusService _roomStatusService;
+        private readonly IRoomOccupancyAdminService _roomOccAdmin;
+
         [ObservableProperty] private ObservableCollection<Contract> items = new();
         [ObservableProperty] private bool isBusy;
         [ObservableProperty] private string searchText = "";
@@ -37,6 +41,7 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand<Contract> DeleteCommand { get; }
         public IAsyncRelayCommand<Contract> GeneratePdfCommand { get; }
         public IAsyncRelayCommand<Contract> SendEmailCommand { get; }
+        public IAsyncRelayCommand<Contract> TerminateCommand { get; } // NEW
         public IRelayCommand ClearFilterCommand { get; }
 
         public ContractsViewModel(IContractsRepository repo,
@@ -44,7 +49,10 @@ namespace AMS.ViewModels
             IRoomOccupancyProvider occupancyProvider,
             IContractAddendumService addendumService,
             IContractPdfService contractPdfService,
-            IEmailNotificationService email)
+            IEmailNotificationService email,
+            // NEW injections
+            IRoomStatusService roomStatusService,
+            IRoomOccupancyAdminService roomOccAdmin)
         {
             _addendumService = addendumService;
             _emailNotify = email;
@@ -52,6 +60,9 @@ namespace AMS.ViewModels
             _repo = repo;
             _roomsRepository = roomsRepository;
             _occupancyProvider = occupancyProvider;
+
+            _roomStatusService = roomStatusService;
+            _roomOccAdmin = roomOccAdmin;
 
             AddendumCommand = new AsyncRelayCommand<Contract>(HandleAddendumAsync);
             HistoryCommand = new AsyncRelayCommand<Contract>(ShowHistoryAsync);
@@ -61,6 +72,7 @@ namespace AMS.ViewModels
             DeleteCommand = new AsyncRelayCommand<Contract>(DeleteAsync);
             GeneratePdfCommand = new AsyncRelayCommand<Contract>(GeneratePdfAsync);
             SendEmailCommand = new AsyncRelayCommand<Contract>(SendEmailAsync);
+            TerminateCommand = new AsyncRelayCommand<Contract>(TerminateAsync); // NEW
             ClearFilterCommand = new RelayCommand(() =>
             {
                 SearchText = "";
@@ -124,10 +136,36 @@ namespace AMS.ViewModels
             }
         }
 
-        private Task EditAsync(Contract? c)
+        private async Task EditAsync(Contract? c)
         {
-            if (c == null) return Task.CompletedTask;
-            return Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
+            if (c == null) return;
+
+            // For Active contracts: mark NeedsAddendum + notify once (do not navigate)
+            if (c.Status == ContractStatus.Active)
+            {
+                var proceed = await Shell.Current.DisplayAlert("Hợp đồng đang hiệu lực",
+                    "Hợp đồng đang có hiệu lực, nếu tiếp tục muốn chỉnh sửa sẽ tạo PHỤ LỤC. Đánh dấu cần phụ lục ngay bây giờ?",
+                    "Đánh dấu", "Hủy");
+
+                if (!proceed) return;
+
+                if (!c.NeedsAddendum)
+                    c.NeedsAddendum = true;
+
+                if (c.AddendumNotifiedAt == null)
+                {
+                    await _emailNotify.SendContractAddendumNeededAsync(c);
+                    c.AddendumNotifiedAt = DateTime.UtcNow;
+                }
+
+                await _repo.UpdateAsync(c);
+                await Shell.Current.DisplayAlert("Đã đánh dấu", "Hợp đồng đã được đánh dấu cần phụ lục.", "OK");
+                await LoadAsync();
+                return;
+            }
+
+            // Non-active → proceed to edit page
+            await Shell.Current.GoToAsync("editcontract", new Dictionary<string, object>
             {
                 ["Contract"] = c,
                 ["readonly"] = false
@@ -143,7 +181,7 @@ namespace AMS.ViewModels
 
             if (candidates.Count == 0)
             {
-                await Shell.Current.DisplayAlertAsync("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
+                await Shell.Current.DisplayAlert("Không có phòng", "Không có phòng trống để tạo hợp đồng.", "OK");
                 return;
             }
 
@@ -186,10 +224,10 @@ namespace AMS.ViewModels
             if (c == null) return;
             if ((c.Status != ContractStatus.Terminated) && (c.Status != ContractStatus.Draft))
             {
-                await Shell.Current.DisplayAlertAsync("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
+                await Shell.Current.DisplayAlert("Không thể xóa", "Chỉ được xóa khi hợp đồng đã chấm dứt.", "OK");
                 return;
             }
-            var ok = await Shell.Current.DisplayAlertAsync("Xóa hợp đồng",
+            var ok = await Shell.Current.DisplayAlert("Xóa hợp đồng",
                 $"Xóa hợp đồng {c.ContractNumber ?? c.ContractId}?", "Xóa", "Hủy");
             if (!ok) return;
             await _repo.DeleteAsync(c.ContractId);
@@ -199,13 +237,13 @@ namespace AMS.ViewModels
         private async Task GeneratePdfAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlertAsync("PDF", "Tạo PDF (chưa triển khai).", "OK");
+            await Shell.Current.DisplayAlert("PDF", "Tạo PDF (chưa triển khai).", "OK");
         }
 
         private async Task SendEmailAsync(Contract? c)
         {
             if (c == null) return;
-            await Shell.Current.DisplayAlertAsync("Email", "Gửi email (chưa triển khai).", "OK");
+            await Shell.Current.DisplayAlert("Email", "Gửi email (chưa triển khai).", "OK");
         }
 
         private async Task HandleAddendumAsync(Contract? c)
@@ -213,7 +251,7 @@ namespace AMS.ViewModels
             if (c == null) return;
             if (c.Status != ContractStatus.Active || !c.NeedsAddendum)
             {
-                await Shell.Current.DisplayAlertAsync("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
+                await Shell.Current.DisplayAlert("Phụ lục", "Hợp đồng không cần phụ lục.", "OK");
                 return;
             }
 
@@ -253,6 +291,49 @@ namespace AMS.ViewModels
                 ["Contract"] = preview,
                 ["readonly"] = true
             });
+        }
+
+        // NEW: termination logic moved here (list page)
+        private async Task TerminateAsync(Contract? c)
+        {
+            if (c == null) return;
+
+            if (c.Status != ContractStatus.Active)
+            {
+                await Shell.Current.DisplayAlert("Không thể chấm dứt", "Chỉ chấm dứt hợp đồng đang hiệu lực.", "OK");
+                return;
+            }
+
+            var confirm = await Shell.Current.DisplayAlert(
+                "Xác nhận chấm dứt",
+                "Hợp đồng đang hoạt động, bạn có thực sự muốn chấm dứt hợp đồng?\n\nNếu chấm dứt, người thuê sẽ lập tức trả phòng và gửi thông báo đến tất cả người thuê.",
+                "Chấm dứt", "Hủy");
+
+            if (!confirm) return;
+
+            try
+            {
+                // 1) Update contract
+                c.Status = ContractStatus.Terminated;
+                c.EndDate = DateTime.Today;
+                c.NeedsAddendum = false;
+                c.AddendumNotifiedAt = null;
+                await _repo.UpdateAsync(c);
+
+                // 2) End room occupancies and free room
+                await _roomOccAdmin.EndAllActiveOccupanciesForRoomAsync(c.RoomCode);
+                await _roomStatusService.SetRoomAvailableAsync(c.RoomCode);
+
+                // 3) Notify tenants
+                await _emailNotify.SendContractTerminatedAsync(c);
+
+                await Shell.Current.DisplayAlert("Thành công", "Đã chấm dứt hợp đồng và giải phóng phòng.", "OK");
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+            }
         }
 
         private static ContractSnapshot ToSnapshot(Contract c)

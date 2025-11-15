@@ -2,21 +2,19 @@
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Networking;
 using Microsoft.Maui.Storage;
-using Org.BouncyCastle.Tls;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using MailKit;
 
 namespace AMS.ViewModels
 {
     public partial class SettingsViewModel : ObservableObject, INotifyPropertyChanged
     {
-        // Email settings keys (must match what EmailNotificationService reads)
+        // Email setting keys
         private const string K_SmtpHost = "email:smtp:host";
         private const string K_SmtpPort = "email:smtp:port";
         private const string K_SmtpSsl = "email:smtp:ssl";
@@ -27,20 +25,26 @@ namespace AMS.ViewModels
 
         private readonly IThemeService _themeService;
         private readonly IDatabaseSyncService _syncService;
-        private readonly IEmailService _email;          // for test email
-        private readonly IAuthService _auth;            // change admin password
+        private readonly IEmailService _email;
+        private readonly IAuthService _auth;
 
         [ObservableProperty] private bool isSystemTheme;
         [ObservableProperty] private bool isLightTheme;
         [ObservableProperty] private bool isDarkTheme;
         [ObservableProperty] private bool isBusy;
 
+        // Admin profile (NEW)
+        [ObservableProperty] private string? adminFullName;
+        [ObservableProperty] private string? adminEmail;
+        [ObservableProperty] private string? adminPhone;
+        [ObservableProperty] private string? adminIdCard;
+
         // Email config
         [ObservableProperty] private string? smtpHost;
-        [ObservableProperty] private string? smtpPort;     // keep as string for easier binding; default 587
+        [ObservableProperty] private string? smtpPort;     // string for UI binding
         [ObservableProperty] private bool smtpUseSsl = true;
         [ObservableProperty] private string? smtpUser;
-        [ObservableProperty] private string? smtpPassword; // will be saved to SecureStorage
+        [ObservableProperty] private string? smtpPassword;
         [ObservableProperty] private string? senderName = "AMS";
         [ObservableProperty] private string? senderAddress;
 
@@ -58,6 +62,8 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand SaveEmailSettingsCommand { get; }
         public IAsyncRelayCommand TestEmailCommand { get; }
         public IAsyncRelayCommand ChangePasswordCommand { get; }
+        // NEW
+        public IAsyncRelayCommand SaveAdminProfileCommand { get; }
 
         public SettingsViewModel(
             IThemeService themeService,
@@ -70,10 +76,8 @@ namespace AMS.ViewModels
             _email = email;
             _auth = auth;
 
-            // Load current theme
             UpdateThemeProperties();
 
-            // Commands
             ToggleThemeCommand = new RelayCommand(ToggleTheme);
             BackupCommand = new AsyncRelayCommand(BackupAsync);
             RestoreCommand = new AsyncRelayCommand(RestoreAsync);
@@ -82,8 +86,11 @@ namespace AMS.ViewModels
             TestEmailCommand = new AsyncRelayCommand(TestEmailAsync);
             ChangePasswordCommand = new AsyncRelayCommand(ChangePasswordAsync);
 
-            // Load email settings
+            // NEW
+            SaveAdminProfileCommand = new AsyncRelayCommand(SaveAdminProfileAsync);
+
             LoadEmailSettings();
+            LoadAdminProfile();
         }
 
         private void UpdateThemeProperties()
@@ -150,8 +157,61 @@ namespace AMS.ViewModels
             finally { IsBusy = false; }
         }
 
-        // ========== Email settings ==========
+        // ====== Admin profile (NEW) ======
+        private void LoadAdminProfile()
+        {
+            var a = _auth.CurrentAdmin;
+            if (a != null)
+            {
+                AdminFullName = a.FullName;
+                AdminEmail = a.Email;
+                AdminPhone = a.PhoneNumber;
+                AdminIdCard = a.IdCardNumber;
+            }
+            else
+            {
+                AdminFullName = "";
+                AdminEmail = "";
+                AdminPhone = "";
+                AdminIdCard = "";
+            }
+        }
 
+        private async Task SaveAdminProfileAsync()
+        {
+            try
+            {
+                var name = (AdminFullName ?? "").Trim();
+                var email = (AdminEmail ?? "").Trim();
+                var phone = (AdminPhone ?? "").Trim();
+                var idCard = (AdminIdCard ?? "").Trim();
+
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    await Shell.Current.DisplayAlertAsync("Thiếu thông tin", "Nhập Họ tên.", "OK");
+                    return;
+                }
+                if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    await Shell.Current.DisplayAlertAsync("Email không hợp lệ", "Vui lòng kiểm tra lại địa chỉ email.", "OK");
+                    return;
+                }
+
+                // Save via auth service (now accepts idCard)
+                await _auth.UpdateProfileAsync(name, email, phone, string.IsNullOrWhiteSpace(idCard) ? null : idCard);
+
+                // Reload to reflect persisted data
+                LoadAdminProfile();
+
+                await Shell.Current.DisplayAlertAsync("Thành công", "Đã cập nhật thông tin quản trị.", "OK");
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
+            }
+        }
+
+        // ====== Email settings ======
         private void LoadEmailSettings()
         {
             SmtpHost = Preferences.Get(K_SmtpHost, "");
@@ -160,8 +220,6 @@ namespace AMS.ViewModels
             SmtpUser = Preferences.Get(K_SmtpUser, "");
             SenderName = Preferences.Get(K_SenderName, "AMS");
             SenderAddress = Preferences.Get(K_SenderAddr, SmtpUser ?? "");
-
-            // Try SecureStorage first for password
             _ = LoadPwdAsync();
         }
 
@@ -189,9 +247,8 @@ namespace AMS.ViewModels
                 Preferences.Set(K_SenderName, string.IsNullOrWhiteSpace(SenderName) ? "AMS" : SenderName!);
                 Preferences.Set(K_SenderAddr, string.IsNullOrWhiteSpace(SenderAddress) ? (SmtpUser ?? "") : SenderAddress!);
 
-                // Save password securely
                 try { await SecureStorage.SetAsync(K_SmtpPwd, SmtpPassword ?? ""); }
-                catch { /* fallback */ Preferences.Set(K_SmtpPwd, SmtpPassword ?? ""); }
+                catch { Preferences.Set(K_SmtpPwd, SmtpPassword ?? ""); }
 
                 await Shell.Current.DisplayAlertAsync("Đã lưu", "Đã lưu cấu hình email.", "OK");
             }
@@ -210,7 +267,6 @@ namespace AMS.ViewModels
                 return;
             }
 
-            // Ensure current settings are saved before testing
             await SaveEmailSettingsAsync();
 
             var host = Preferences.Get(K_SmtpHost, "");
@@ -244,8 +300,6 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Lỗi gửi email", ex.Message, "OK");
             }
         }
-
-        // ========== Change password ==========
 
         private async Task ChangePasswordAsync()
         {
@@ -288,29 +342,15 @@ namespace AMS.ViewModels
         // Radio changes
         partial void OnIsSystemThemeChanged(bool value)
         {
-            if (value)
-            {
-                _themeService.Apply(ThemeOption.System);
-                UpdateThemeProperties();
-            }
+            if (value) { _themeService.Apply(ThemeOption.System); UpdateThemeProperties(); }
         }
-
         partial void OnIsLightThemeChanged(bool value)
         {
-            if (value)
-            {
-                _themeService.Apply(ThemeOption.Light);
-                UpdateThemeProperties();
-            }
+            if (value) { _themeService.Apply(ThemeOption.Light); UpdateThemeProperties(); }
         }
-
         partial void OnIsDarkThemeChanged(bool value)
         {
-            if (value)
-            {
-                _themeService.Apply(ThemeOption.Dark);
-                UpdateThemeProperties();
-            }
+            if (value) { _themeService.Apply(ThemeOption.Dark); UpdateThemeProperties(); }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

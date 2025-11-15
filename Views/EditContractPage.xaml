@@ -144,13 +144,12 @@
                 <Button Text="Tạo PDF" Command="{Binding GeneratePdfCommand}" WidthRequest="110" IsVisible="{Binding CanGeneratePdf}"/>
                 <Button Text="Gửi PDF" Command="{Binding SendContractEmailCommand}" WidthRequest="110" IsVisible="{Binding CanSendEmail}"/>
                 <Button Text="Kích hoạt" Command="{Binding ActivateCommand}" WidthRequest="110" IsVisible="{Binding CanActivate}"/>
-                <Button Text="Chấm dứt" Command="{Binding TerminateCommand}" WidthRequest="110" IsVisible="{Binding CanTerminate}" Style="{DynamicResource TextPrimary}" BackgroundColor="#FFECB3"/>
+                
             </HorizontalStackLayout>
 
             <!-- Addendum Actions -->
             <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
                 <Button Text="Tạo phụ lục" Command="{Binding CreateAddendumCommand}" WidthRequest="130" IsVisible="{Binding CanCreateAddendum}"/>
-                <Button Text="Lịch sử" Command="{Binding ViewHistoryCommand}" WidthRequest="110" IsVisible="{Binding IsPersisted}"/>
             </HorizontalStackLayout>
 
         </VerticalStackLayout>

@@ -10,4 +10,7 @@
     <ShellContent
         ContentTemplate="{DataTemplate local:LoginPage}"
         Route="LoginPage" />
+    <ShellContent
+        ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
+        Route="forgotpassword" />
 </Shell>

@@ -19,35 +19,51 @@
             <Frame Style="{DynamicResource Card}">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Giao diện" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
-
                     <VerticalStackLayout Spacing="6">
                         <RadioButton Style="{DynamicResource TextPrimary}" Content="Theo hệ thống" GroupName="ThemeOptions" IsChecked="{Binding IsSystemTheme}" />
                         <RadioButton Style="{DynamicResource TextPrimary}" Content="Chế độ sáng" GroupName="ThemeOptions" IsChecked="{Binding IsLightTheme}" />
                         <RadioButton Style="{DynamicResource TextPrimary}" Content="Chế độ tối" GroupName="ThemeOptions" IsChecked="{Binding IsDarkTheme}" />
                     </VerticalStackLayout>
+                    <Button Text="Chuyển đổi Sáng/Tối" Style="{DynamicResource PrimaryButton}" Command="{Binding ToggleThemeCommand}" />
+                </VerticalStackLayout>
+            </Frame>
 
-                    <Button Text="Chuyển đổi Sáng/Tối"
-                  Style="{DynamicResource PrimaryButton}"
-                  Command="{Binding ToggleThemeCommand}" />
+            <!-- THÔNG TIN CHỦ NHÀ / QUẢN TRỊ (NEW) -->
+            <Frame Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Thông tin chủ nhà / quản trị" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
+
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                        <Label Grid.Row="0" Grid.Column="0" Text="Họ tên" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="0" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding AdminFullName}" Placeholder="Nguyễn Văn A" />
+
+                        <Label Grid.Row="1" Grid.Column="0" Text="Email" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="1" Grid.Column="1" Style="{DynamicResource TextPrimary}" Keyboard="Email" Text="{Binding AdminEmail}" Placeholder="owner@example.com" />
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Số điện thoại" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="2" Grid.Column="1" Style="{DynamicResource TextPrimary}" Keyboard="Telephone" Text="{Binding AdminPhone}" Placeholder="090..." />
+
+                        <Label Grid.Row="3" Grid.Column="0" Text="Số CMND/CCCD" Style="{DynamicResource TextSecondary}" />
+                        <Entry Grid.Row="3" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding AdminIdCard}" Placeholder="0123456789" />
+                    </Grid>
+
+                    <Button Text="Lưu thông tin" Style="{DynamicResource PrimaryButton}" Command="{Binding SaveAdminProfileCommand}" />
+                    <Label Text="Thông tin này sẽ được dùng khi tạo PDF hợp đồng/phụ lục và gửi email." FontSize="12" Style="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
             </Frame>
 
             <!-- TÀI KHOẢN & BẢO MẬT -->
-            <!-- CHANGE PASSWORD -->
             <Frame Style="{DynamicResource Card}">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Đổi mật khẩu quản trị" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
                     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
                         <Label Grid.Row="0" Grid.Column="0" Text="Mật khẩu hiện tại" Style="{DynamicResource TextSecondary}" />
-                        <Entry Grid.Row="0" Style="{DynamicResource TextPrimary}" Grid.Column="1" IsPassword="True" Text="{Binding CurrentPassword}" />
-
+                        <Entry Grid.Row="0" Grid.Column="1" Style="{DynamicResource TextPrimary}" IsPassword="True" Text="{Binding CurrentPassword}" />
                         <Label Grid.Row="1" Grid.Column="0" Text="Mật khẩu mới" Style="{DynamicResource TextSecondary}" />
-                        <Entry Grid.Row="1" Style="{DynamicResource TextPrimary}" Grid.Column="1" IsPassword="True" Text="{Binding NewPassword}" />
-
+                        <Entry Grid.Row="1" Grid.Column="1" Style="{DynamicResource TextPrimary}" IsPassword="True" Text="{Binding NewPassword}" />
                         <Label Grid.Row="2" Grid.Column="0" Text="Xác nhận mật khẩu" Style="{DynamicResource TextSecondary}" />
-                        <Entry Grid.Row="2" Style="{DynamicResource TextPrimary}" Grid.Column="1" IsPassword="True" Text="{Binding ConfirmPassword}" />
+                        <Entry Grid.Row="2" Grid.Column="1" Style="{DynamicResource TextPrimary}" IsPassword="True" Text="{Binding ConfirmPassword}" />
                     </Grid>
-
                     <Button Text="Đổi mật khẩu" Style="{DynamicResource PrimaryButton}" Command="{Binding ChangePasswordCommand}" />
                 </VerticalStackLayout>
             </Frame>
@@ -58,13 +74,13 @@
                     <Label Text="Đồng bộ cơ sở dữ liệu" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
                     <HorizontalStackLayout Spacing="12">
                         <Button Text="Sao lưu lên đám mây"
-                    Style="{DynamicResource PrimaryButton}"
-                    Command="{Binding BackupCommand}"
-                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
+                                Style="{DynamicResource PrimaryButton}"
+                                Command="{Binding BackupCommand}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
                         <Button Text="Khôi phục từ đám mây"
-                    Style="{DynamicResource WarningButton}"
-                    Command="{Binding RestoreCommand}"
-                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
+                                Style="{DynamicResource WarningButton}"
+                                Command="{Binding RestoreCommand}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=true}" />
                     </HorizontalStackLayout>
                     <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
                     <Label Text="{Binding LastBackupInfo}" FontSize="12" Style="{DynamicResource TextSecondary}" />
@@ -72,34 +88,25 @@
             </Frame>
 
             <!-- EMAIL & THÔNG BÁO -->
-            <!-- EMAIL SETTINGS -->
             <Frame Style="{DynamicResource Card}">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Email (SMTP)" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />
-
                     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
                         <Label Grid.Row="0" Grid.Column="0" Text="SMTP Host" Style="{DynamicResource TextSecondary}" />
                         <Entry Grid.Row="0" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SmtpHost}" />
-
                         <Label Grid.Row="1" Grid.Column="0" Text="Port" Style="{DynamicResource TextSecondary}" />
                         <Entry Grid.Row="1" Grid.Column="1" Style="{DynamicResource TextPrimary}" Keyboard="Numeric" Text="{Binding SmtpPort}" />
-
                         <Label Grid.Row="2" Grid.Column="0" Text="Use SSL/TLS" Style="{DynamicResource TextSecondary}" />
                         <Switch Grid.Row="2" Grid.Column="1" IsToggled="{Binding SmtpUseSsl}" />
-
                         <Label Grid.Row="3" Grid.Column="0" Text="User" Style="{DynamicResource TextSecondary}" />
                         <Entry Grid.Row="3" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SmtpUser}" />
-
                         <Label Grid.Row="4" Grid.Column="0" Text="Password" Style="{DynamicResource TextSecondary}" />
                         <Entry Grid.Row="4" Grid.Column="1" Style="{DynamicResource TextPrimary}" IsPassword="True" Text="{Binding SmtpPassword}" />
-
                         <Label Grid.Row="5" Grid.Column="0" Text="Sender name" Style="{DynamicResource TextSecondary}" />
-                        <Entry Grid.Row="5" Grid.Column="1" Style="{DynamicResource TextPrimary}"  Text="{Binding SenderName}" />
-
+                        <Entry Grid.Row="5" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SenderName}" />
                         <Label Grid.Row="6" Grid.Column="0" Text="Sender email" Style="{DynamicResource TextSecondary}" />
                         <Entry Grid.Row="6" Grid.Column="1" Style="{DynamicResource TextPrimary}" Text="{Binding SenderAddress}" />
                     </Grid>
-
                     <HorizontalStackLayout Spacing="8">
                         <Button Text="Lưu cấu hình" Style="{DynamicResource PrimaryButton}" Command="{Binding SaveEmailSettingsCommand}" />
                         <Entry WidthRequest="220" Placeholder="Gửi thử tới..." Style="{DynamicResource TextPrimary}" Text="{Binding TestEmailTo}" />
@@ -108,7 +115,7 @@
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- THÔNG TIN -->
+            <!-- THÔNG TIN ỨNG DỤNG / THIẾT BỊ -->
             <Frame Style="{DynamicResource Card}">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Thông tin" FontAttributes="Bold" FontSize="18" Style="{DynamicResource TextPrimary}" />

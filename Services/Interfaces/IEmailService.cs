@@ -17,5 +17,19 @@ namespace AMS.Services.Interfaces
             string senderName,
             string senderAddress,
             CancellationToken ct = default);
+        Task SendAsync(
+            string to,
+            string subject,
+            string body,
+            string smtpHost,
+            int smtpPort,
+            string smtpUser,
+            string smtpPassword,
+            bool useSsl,
+            string senderName,
+            string senderAddress,
+            string? attachmentFileName,
+            byte[]? attachmentBytes,
+            CancellationToken ct = default);
     }
 }

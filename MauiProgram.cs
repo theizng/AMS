@@ -53,9 +53,18 @@ namespace AMS
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
             //used for pdf contract
-            builder.Services.AddSingleton<IContractAddendumService, ContractAddendumService>();
-            builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
+#if WINDOWS || MACCATALYST || LINUX
             QuestPDF.Settings.License = LicenseType.Community;
+            builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
+#else       
+            builder.Services.AddSingleton<IContractPdfService, DisabledContractPdfService>();
+#endif
+            builder.Services.AddSingleton<IPdfCapabilityService, PdfCapabilityService>();
+
+
+            builder.Services.AddSingleton<IContractAddendumService, ContractAddendumService>();
+    
+            
             //used for contract
             builder.Services.AddSingleton<IContractRoomGuard, ContractRoomGuard>();
             builder.Services.AddSingleton<IRoomStatusService, RoomStatusService>();
@@ -100,8 +109,9 @@ namespace AMS
         public static MauiAppBuilder RegisterViewModels(this MauiAppBuilder builder)
         {
             // Đăng ký các ViewModel khác tại đây nếu cần
-            //Đăng ký ViewModels
+            //Đăng ký ViewModels cho LOGIN
             builder.Services.AddTransient<LoginViewModel>();
+            builder.Services.AddTransient<ForgotPasswordViewModel>();
             builder.Services.AddTransient<MainPageViewModel>();
             //Đăng ký Viewmodels CRUD House:
             builder.Services.AddTransient<HousesViewModel>();
@@ -129,6 +139,7 @@ namespace AMS
             // Đăng ký các Page khác tại đây nếu cần
             //Đăng ký Pages cho Auth:
             builder.Services.AddTransient<LoginPage>();
+            builder.Services.AddTransient<ForgotPasswordPage>();
             //Đăng ký Pages cho Main:
             builder.Services.AddTransient<MainPage>();
             //Đăng ký Pages cho House:

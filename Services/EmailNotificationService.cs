@@ -1,6 +1,8 @@
 ﻿using AMS.Models;
 using AMS.Services.Interfaces;
 using Microsoft.Maui.Storage;
+using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,11 +24,81 @@ namespace AMS.Services
 
         public EmailNotificationService(IEmailService email) => _email = email;
 
+        // ========= Helpers =========
+
+        private static async Task<(string host, int port, bool ssl, string user, string pwd, string senderName, string senderAddr)> LoadSmtpAsync()
+        {
+            var host = Preferences.Get(K_SmtpHost, "");
+            var port = int.TryParse(Preferences.Get(K_SmtpPort, "587"), out var p) ? p : 587;
+            var ssl = Preferences.Get(K_SmtpSsl, true);
+            var user = Preferences.Get(K_SmtpUser, "");
+            var pwd = await SecureStorage.GetAsync(K_SmtpPwd) ?? Preferences.Get(K_SmtpPwd, "");
+            var senderName = Preferences.Get(K_SenderName, "AMS");
+            var senderAddr = Preferences.Get(K_SenderAddr, user);
+            return (host, port, ssl, user, pwd, senderName, senderAddr);
+        }
+
+        private static (string? fileName, byte[]? bytes) TryLoadAttachment(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return (null, null);
+
+            try
+            {
+                // Normalize file:// URI to local path
+                if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.IsFile)
+                    path = uri.LocalPath;
+
+                if (File.Exists(path))
+                    return (Path.GetFileName(path), File.ReadAllBytes(path));
+            }
+            catch
+            {
+                // ignore, will send without attachment
+            }
+            return (null, null);
+        }
+
+        private async Task SendAsync(string to, string subject, string body, string? attachmentName = null, byte[]? attachmentBytes = null, CancellationToken ct = default)
+        {
+            var (host, port, ssl, user, pwd, senderName, senderAddr) = await LoadSmtpAsync();
+
+            await _email.SendAsync(
+                to: to,
+                subject: subject,
+                body: body,
+                smtpHost: host,
+                smtpPort: port,
+                smtpUser: user,
+                smtpPassword: pwd,
+                useSsl: ssl,
+                senderName: senderName,
+                senderAddress: senderAddr,
+                attachmentFileName: attachmentName,
+                attachmentBytes: attachmentBytes,
+                ct: ct);
+        }
+
+        public async Task SendToAllTenantsAsync(Contract contract, string subject, string body, string? attachmentName = null, byte[]? attachmentBytes = null, CancellationToken ct = default)
+        {
+            foreach (var t in contract.Tenants)
+            {
+                if (string.IsNullOrWhiteSpace(t.Email)) continue;
+
+                await SendAsync(
+                    to: t.Email,
+                    subject: subject,
+                    body: body,
+                    attachmentName: attachmentName,
+                    attachmentBytes: attachmentBytes,
+                    ct: ct);
+            }
+        }
+
+        // ========= Notifications =========
+
         public async Task SendMaintenanceStatusChangedAsync(string tenantEmail, MaintenanceRequest req, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(tenantEmail)) return;
-
-            var (host, port, ssl, user, pwd, senderName, senderAddr) = await LoadSmtpAsync();
 
             var subject = $"[AMS] Cập nhật bảo trì - {req.RoomCode} - {req.StatusVi}";
             var body =
@@ -40,90 +112,90 @@ Chi phí ước tính: {(req.EstimatedCost.HasValue ? req.EstimatedCost.Value.To
 Trân trọng,
 AMS";
 
-            await _email.SendAsync(tenantEmail, subject, body, host, port, user, pwd, ssl, senderName, senderAddr, ct);
+            await SendAsync(tenantEmail, subject, body, ct: ct);
         }
+
         public async Task SendInvoiceAsync(string tenantEmail, string subject, string body, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(tenantEmail)) return;
-            var (host, port, ssl, user, pwd, senderName, senderAddr) = await LoadSmtpAsync();
-            await _email.SendAsync(tenantEmail, subject, body, host, port, user, pwd, ssl, senderName, senderAddr, ct);
+            await SendAsync(tenantEmail, subject, body, ct: ct);
         }
-        private static async Task<(string host, int port, bool ssl, string user, string pwd, string senderName, string senderAddr)> LoadSmtpAsync()
-        {
-            var host = Preferences.Get(K_SmtpHost, "");
-            var port = int.TryParse(Preferences.Get(K_SmtpPort, "587"), out var p) ? p : 587;
-            var ssl = Preferences.Get(K_SmtpSsl, true);
-            var user = Preferences.Get(K_SmtpUser, "");
-            // Prefer SecureStorage for password; fallback to Preferences (if you kept it there)
-            var pwd = await SecureStorage.GetAsync(K_SmtpPwd) ?? Preferences.Get(K_SmtpPwd, "");
-            var senderName = Preferences.Get(K_SenderName, "AMS");
-            var senderAddr = Preferences.Get(K_SenderAddr, user);
-            return (host, port, ssl, user, pwd, senderName, senderAddr);
-        }
+
         public async Task SendContractDraftAsync(Contract contract, CancellationToken ct = default)
         {
-            await SendToAllTenants(contract,
+            await SendToAllTenantsAsync(contract,
                 subject: $"[AMS] Bản nháp hợp đồng phòng {contract.RoomCode}",
                 body: BuildContractBody(contract, "BẢN NHÁP HỢP ĐỒNG", "Vui lòng kiểm tra thông tin và phản hồi nếu cần chỉnh sửa."),
-                ct);
+                ct: ct);
         }
+
+        // Attach contract PDF if available at PdfUrl
         public async Task SendContractPdfAsync(Contract contract, CancellationToken ct = default)
         {
-            var pdfNote = string.IsNullOrWhiteSpace(contract.PdfUrl) ? "(Chưa có file PDF đính kèm)" : $"Link PDF: {contract.PdfUrl}";
-            await SendToAllTenants(contract,
-                subject: $"[AMS] Hợp đồng phòng {contract.RoomCode} (PDF đính kèm)",
-                body: BuildContractBody(contract, "HỢP ĐỒNG (PDF)", pdfNote + "\nVui lòng đọc và chấp thuận trước khi kích hoạt."),
-                ct);
+            var (name, bytes) = TryLoadAttachment(contract.PdfUrl);
+
+            var subject = $"[AMS] Hợp đồng phòng {contract.RoomCode} (PDF đính kèm)";
+            var note = bytes != null
+                ? "PDF hợp đồng đính kèm email này."
+                : (string.IsNullOrWhiteSpace(contract.PdfUrl) ? "(Chưa có file PDF đính kèm)" : $"Link (không đính kèm): {contract.PdfUrl}");
+            var body = BuildContractBody(contract, "HỢP ĐỒNG THUÊ PHÒNG ĐIỆN TỬ (PDF)", note);
+
+            await SendToAllTenantsAsync(contract, subject, body, name, bytes, ct);
         }
+
         public async Task SendContractActivatedAsync(Contract contract, CancellationToken ct = default)
         {
-            await SendToAllTenants(contract,
+            await SendToAllTenantsAsync(contract,
                 subject: $"[AMS] Hợp đồng phòng {contract.RoomCode} đã kích hoạt",
                 body: BuildContractBody(contract, "HỢP ĐỒNG KÍCH HOẠT", "Hợp đồng đã có hiệu lực. Cảm ơn bạn."),
-                ct);
+                ct: ct);
         }
+
         public async Task SendContractTerminatedAsync(Contract contract, CancellationToken ct = default)
         {
-            await SendToAllTenants(contract,
+            await SendToAllTenantsAsync(contract,
                 subject: $"[AMS] Hợp đồng phòng {contract.RoomCode} đã chấm dứt",
                 body: BuildContractBody(contract, "HỢP ĐỒNG CHẤM DỨT", "Vui lòng phối hợp bàn giao phòng / tài sản."),
-                ct);
+                ct: ct);
         }
+
         public async Task SendContractAddendumNeededAsync(Contract contract, CancellationToken ct = default)
         {
-            await SendToAllTenants(contract,
+            await SendToAllTenantsAsync(contract,
                 subject: $"[AMS] Phòng {contract.RoomCode} cần phụ lục hợp đồng",
-                body: BuildContractBody(contract, "PHỤ LỤC HỢP ĐỒNG", "Có thay đổi người thuê. Phụ lục cần được lập để cập nhật thông tin."),
-                ct);
+                body: BuildContractBody(contract, "PHỤ LỤC HỢP ĐỒNG", "Có thay đổi trong hợp đồng. Phụ lục cần được lập để cập nhật thông tin."),
+                ct: ct);
         }
-        public async Task SendToAllTenants(Contract contract, string subject, string body, CancellationToken ct)
+
+        public async Task SendPasswordResetAsync(string toEmail, string adminName, string tempPassword)
         {
-            foreach (var t in contract.Tenants)
-            {
-                if (!string.IsNullOrWhiteSpace(t.Email))
-                    await SendInvoiceAsync(t.Email, subject, body, ct); // reuse generic send
-            }
+            var subject = "[AMS] Đặt lại mật khẩu quản trị";
+            var body = $"Xin chào {adminName},\n\nMật khẩu tạm thời của bạn là: {tempPassword}\n" +
+                       $"Vui lòng đăng nhập và đổi mật khẩu mới trong mục Cài đặt.\n\nThời gian: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC.";
+
+            await SendAsync(toEmail, subject, body);
         }
+
+        // ========= Body builder =========
+
         public string BuildContractBody(Contract c, string heading, string note)
         {
             var sb = new StringBuilder();
             sb.AppendLine(heading);
             sb.AppendLine($"Số HĐ: {c.ContractNumber}");
-            sb.AppendLine($"Phòng: {c.RoomCode}");
+            sb.AppendLine($"Mã phòng: {c.RoomCode}");
             sb.AppendLine($"Địa chỉ: {c.HouseAddress}");
-            sb.AppendLine($"Thời hạn: {c.StartDate:dd/MM/yyyy} - {c.EndDate:dd/MM/yyyy}");
-            sb.AppendLine($"Giá thuê: {c.RentAmount:N0} đ / tháng (thu ngày {c.DueDay})");
-            sb.AppendLine($"Đặt cọc: {c.SecurityDeposit:N0} đ");
-            if (!string.IsNullOrWhiteSpace(c.PdfUrl))
-                sb.AppendLine($"PDF: {c.PdfUrl}");
+            sb.AppendLine($"Thời hạn hợp đồng: {c.StartDate:dd/MM/yyyy} - {c.EndDate:dd/MM/yyyy}");
+            sb.AppendLine($"Giá thuê phòng: {c.RentAmount:N0} đ / tháng (thu vào ngày {c.DueDay} đầu tháng)");
+            sb.AppendLine($"Số tiền đặt cọc: {c.SecurityDeposit:N0} đ");
             sb.AppendLine();
-            sb.AppendLine("Người thuê:");
+            sb.AppendLine("Danh sách người thuê bao gồm:");
             foreach (var t in c.Tenants)
                 sb.AppendLine($"- {t.Name} / {t.Phone} / {t.Email}");
             sb.AppendLine();
             sb.AppendLine(note);
             sb.AppendLine();
-            sb.AppendLine("Trân trọng,\nAMS");
+            sb.AppendLine("Trân trọng,\nQLT - Phần mềm quản lý thuê");
             return sb.ToString();
         }
     }

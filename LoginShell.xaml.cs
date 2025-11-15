@@ -1,3 +1,5 @@
+using AMS.Views;
+
 namespace AMS
 {
     public partial class LoginShell : Shell
@@ -5,6 +7,9 @@ namespace AMS
         public LoginShell()
         {
             InitializeComponent();
+
+
         }
+
     }
 }

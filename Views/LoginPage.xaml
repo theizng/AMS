@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:AMS.Converters"
              x:Class="AMS.Views.LoginPage"
              Title="Đăng nhập hệ thống"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto, *">
-        <!-- Header -->
-        <VerticalStackLayout Grid.Row="0" 
-                             Padding="0,10,0,10"
-                             BackgroundColor="#6E8CFB">
-            <Image Source="logo.png" 
-                     
-                   HeightRequest="100" 
-                   WidthRequest="100" 
-                   HorizontalOptions="Center" />
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+        <VerticalStackLayout Grid.Row="0" Padding="0,10" BackgroundColor="#6E8CFB">
+            <Image Source="logo.png" HeightRequest="100" WidthRequest="100" HorizontalOptions="Center" />
             <Label Text="PHẦN MỀM QUẢN LÝ THUÊ NHÀ"
                    FontSize="24"
                    FontAttributes="Bold"
@@ -23,7 +23,6 @@
                    HorizontalOptions="Center" />
         </VerticalStackLayout>
 
-        <!-- Login Form - Sử dụng Border với cấu hình đơn giản hơn -->
         <Border Grid.Row="1"
                 Margin="20,70,20,0"
                 StrokeShape="RoundRectangle 10"
@@ -31,30 +30,18 @@
                 BackgroundColor="White"
                 StrokeThickness="1"
                 VerticalOptions="Start">
-
             <VerticalStackLayout Padding="20" Spacing="15">
                 <Label Text="Vui lòng đăng nhập để tiếp tục"
                        FontSize="22"
                        FontAttributes="Bold"
                        HorizontalOptions="Center"
-                       Margin="0,0,0,20" />
+                       Margin="0,0,0,10" />
 
-                <!-- Sử dụng Frame thay vì Border cho các trường nhập -->
-                <Frame Padding="5,0" 
-                       HasShadow="False" 
-                       BorderColor="LightGray" 
-                       CornerRadius="5">
-                    <Entry Placeholder="Tên đăng nhập"
-                           Text="{Binding Username}" />
+                <Frame Padding="5,0" HasShadow="False" BorderColor="LightGray" CornerRadius="5">
+                    <Entry Placeholder="Tên đăng nhập" Text="{Binding Username}" />
                 </Frame>
-
-                <Frame Padding="5,0" 
-                       HasShadow="False" 
-                       BorderColor="LightGray" 
-                       CornerRadius="5">
-                    <Entry Placeholder="Mật khẩu"
-                           Text="{Binding Password}"
-                           IsPassword="True" />
+                <Frame Padding="5,0" HasShadow="False" BorderColor="LightGray" CornerRadius="5">
+                    <Entry Placeholder="Mật khẩu" Text="{Binding Password}" IsPassword="True" />
                 </Frame>
 
                 <Label Text="{Binding ErrorMessage}"
@@ -69,6 +56,15 @@
                         Margin="10,10"
                         HeightRequest="50"
                         CornerRadius="25"/>
+
+                <!-- Forgot password link -->
+                <Label Text="Quên mật khẩu?"
+                       TextColor="#3366BB"
+                       HorizontalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ForgotPasswordNavigateCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    IsVisible="{Binding IsBusy}"
