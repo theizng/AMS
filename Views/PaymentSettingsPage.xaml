@@ -10,53 +10,53 @@
 
             <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Chu kỳ và Hạn" FontAttributes="Bold" FontSize="18"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Chu kỳ và Hạn" FontAttributes="Bold" FontSize="18"/>
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
-                        <Label Grid.Column="0" Text="Ngày thu (1..28)" />
-                        <Entry Grid.Column="1" WidthRequest="90" Keyboard="Numeric" Text="{Binding DefaultDueDay}"/>
-                        <Label Grid.Column="2" Text="Số ngày ân hạn" />
-                        <Entry Grid.Column="3" WidthRequest="90" Keyboard="Numeric" Text="{Binding GraceDays}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Ngày thu (1..28)" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" WidthRequest="90" Keyboard="Numeric" Text="{Binding DefaultDueDay}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Số ngày ân hạn" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" WidthRequest="90" Keyboard="Numeric" Text="{Binding GraceDays}"/>
                     </Grid>
                     <HorizontalStackLayout Spacing="8">
                         <Switch IsToggled="{Binding AutoReminderEnabled}" />
-                        <Label Text="Tự động nhắc trễ hạn" VerticalTextAlignment="Center"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Tự động nhắc trễ hạn" VerticalTextAlignment="Center"/>
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Frame>
 
             <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Google Sheets" FontAttributes="Bold" FontSize="18"/>
-                    <Entry Placeholder="Spreadsheet ID" Text="{Binding SpreadsheetId}" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="Google Sheets" FontAttributes="Bold" FontSize="18"/>
+                    <Entry Style="{DynamicResource TextPrimary}" Placeholder="Spreadsheet ID" Text="{Binding SpreadsheetId}" />
                     <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8" RowDefinitions="Auto,Auto">
-                        <Label Grid.Row="0" Grid.Column="0" Text="Tab Điện" />
-                        <Entry Grid.Row="0" Grid.Column="1" Text="{Binding ElectricSheetName}" />
-                        <Label Grid.Row="0" Grid.Column="2" Text="Tab Nước" />
-                        <Entry Grid.Row="0" Grid.Column="3" Text="{Binding WaterSheetName}" />
-                        <Label Grid.Row="1" Grid.Column="0" Text="Tab Thông báo phí" />
-                        <Entry Grid.Row="1" Grid.Column="1" Text="{Binding InvoiceSheetName}" />
-                        <Label Grid.Row="1" Grid.Column="2" Text="Range gốc" />
-                        <Entry Grid.Row="1" Grid.Column="3" Text="{Binding BaseRange}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0" Text="Tab Điện" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="1" Text="{Binding ElectricSheetName}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="2" Text="Tab Nước" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="3" Text="{Binding WaterSheetName}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="0" Text="Tab Thông báo phí" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="1" Text="{Binding InvoiceSheetName}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="2" Text="Range gốc" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="3" Text="{Binding BaseRange}" />
                     </Grid>
-                    <Button Text="Kiểm tra kết nối" Command="{Binding TestSheetsCommand}" />
+                    <Button Style="{DynamicResource TextPrimary}" Text="Kiểm tra kết nối" Command="{Binding TestSheetsCommand}" />
                 </VerticalStackLayout>
             </Frame>
 
             <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Mặc định giá" FontAttributes="Bold" FontSize="18"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Mặc định giá" FontAttributes="Bold" FontSize="18"/>
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
-                        <Label Grid.Column="0" Grid.Row="0" Text="Điện (đ/kWh)" />
-                        <Entry Grid.Column="1" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultElectricRate}"/>
-                        <Label Grid.Column="2" Grid.Row="0" Text="Nước (đ/m³)" />
-                        <Entry Grid.Column="3" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultWaterRate}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Grid.Row="0" Text="Điện (đ/kWh)" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultElectricRate}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Grid.Row="0" Text="Nước (đ/m³)" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultWaterRate}"/>
 
-                        <Label Grid.Column="0" Grid.Row="1" Text="Internet (đ/phòng)" />
-                        <Entry Grid.Column="1" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultInternetFlat}"/>
-                        <Label Grid.Column="2" Grid.Row="1" Text="Vệ sinh (đ/phòng)" />
-                        <Entry Grid.Column="3" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultCleaningFlat}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Grid.Row="1" Text="Internet (đ/phòng)" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultInternetFlat}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Grid.Row="1" Text="Vệ sinh (đ/phòng)" />
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultCleaningFlat}"/>
                     </Grid>
-                    <Button Text="Lưu thiết lập" Command="{Binding SaveSettingsCommand}" WidthRequest="140" />
+                    <Button Style="{DynamicResource TextPrimary}" Text="Lưu thiết lập" Command="{Binding SaveSettingsCommand}" WidthRequest="140" />
                 </VerticalStackLayout>
             </Frame>
 

@@ -1,9 +1,21 @@
-namespace AMS.Views;
+using AMS.ViewModels;
+using Microsoft.Maui.Controls;
 
-public partial class PaymentMeterEntryPage : ContentPage
+namespace AMS.Views
 {
-	public PaymentMeterEntryPage()
-	{
-		InitializeComponent();
-	}
+    public partial class PaymentMeterEntryPage : ContentPage
+    {
+        public PaymentMeterEntryPage(PaymentMeterEntryViewModel vm)
+        {
+            InitializeComponent();
+            BindingContext = vm;
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext is PaymentMeterEntryViewModel vm)
+                await vm.LoadAsync();
+        }
+    }
 }

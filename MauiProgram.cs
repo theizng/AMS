@@ -80,12 +80,15 @@ namespace AMS
             //used for mail
             builder.Services.AddSingleton<IEmailService, EmailService>();
             builder.Services.AddSingleton<IEmailNotificationService, EmailNotificationService>();
-           
             builder.Services.AddSingleton<IRoomsProvider, RoomsEfProvider>();
 
-
-            //used for maintenance sheet
+            //used for payments
+            builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
+            //used for maintenance and meters sheet
             builder.Services.AddSingleton<HttpClient>();
+            builder.Services.AddSingleton<IMeterSheetReader, ClosedXMLSimpleMeterSheetReader>();
+            builder.Services.AddSingleton<IOnlineMeterSheetReader, GoogleSheetSimpleMeterReader>();
+            //builder.Services.AddSingleton<IMeterSheetWriter, ClosedXMLSimpleMeterSheetWriter>();
             builder.Services.AddSingleton<IMaintenanceSheetWriter>(sp =>
             {
                 var http = sp.GetRequiredService<HttpClient>();
@@ -128,6 +131,7 @@ namespace AMS
             //Đăng ký Viewmodels cho Settings:
             builder.Services.AddTransient<SettingsViewModel>();
             //Đăng ký Viewmodels cho Payments:
+            builder.Services.AddTransient<PaymentMeterEntryViewModel>();
             builder.Services.AddTransient<PaymentsViewModel>();
             //Đăng ký Viewmodels cho Contracts:
             builder.Services.AddTransient<ContractsViewModel>();

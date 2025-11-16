@@ -9,11 +9,11 @@
         <VerticalStackLayout Padding="14" Spacing="12">
 
             <HorizontalStackLayout Spacing="8">
-                <Button Text="Tạo hóa đơn (chờ gửi)"
+                <Button Style="{DynamicResource TextPrimary}" Text="Tạo hóa đơn (chờ gửi)"
                         Command="{Binding GenerateInvoicesCommand}" />
-                <Button Text="Gửi hóa đơn lần đầu"
+                <Button Style="{DynamicResource TextPrimary}" Text="Gửi hóa đơn lần đầu"
                         Command="{Binding SendInitialInvoicesCommand}" />
-                <Button Text="Xuất 3 sheet"
+                <Button Style="{DynamicResource TextPrimary}" Text="Xuất 3 sheet"
                         Command="{Binding ExportSheetsCommand}" />
             </HorizontalStackLayout>
 
@@ -23,16 +23,16 @@
                         <Frame Padding="10" Margin="0,6" BorderColor="#CFD8DC" CornerRadius="10">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
                                 <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
-                                    <Label Text="{Binding RoomCode}" FontAttributes="Bold"/>
-                                    <Label Text="{Binding Status}" TextColor="#607D8B"/>
-                                    <Label Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RoomCode}" FontAttributes="Bold"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Status}" TextColor="#607D8B"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
                                 </HorizontalStackLayout>
 
                                 <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6" HorizontalOptions="End">
-                                    <Button Text="Xem trước"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Xem trước"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PreviewInvoiceCommand}"
                                             CommandParameter="{Binding .}"/>
-                                    <Button Text="Gửi lại"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Gửi lại"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendInvoiceCommand}"
                                             CommandParameter="{Binding .}"/>
                                 </HorizontalStackLayout>
@@ -42,7 +42,7 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <Button Text="Gửi nhắc trễ hạn"
+            <Button Style="{DynamicResource TextPrimary}" Text="Gửi nhắc trễ hạn"
                     Command="{Binding SendLateRemindersCommand}"
                     BackgroundColor="#FFECB3"/>
         </VerticalStackLayout>

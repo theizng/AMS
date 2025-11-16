@@ -18,39 +18,39 @@
 
             <!-- Cycle controls -->
             <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
-                <Picker Grid.Column="0" Title="Tháng"
+                <Picker Style="{DynamicResource TextPrimary}" Grid.Column="0" Title="Tháng"
                         ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}" WidthRequest="110"/>
-                <Picker Grid.Column="1" Title="Năm"
+                <Picker Style="{DynamicResource TextPrimary}" Grid.Column="1" Title="Năm"
                         ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" WidthRequest="110"/>
-                <Entry Grid.Column="2" Placeholder="Tìm phòng..." Text="{Binding SearchText}" />
-                <Button Grid.Column="3" Text="Tải" Command="{Binding LoadCommand}" />
-                <Button Grid.Column="4" Text="Tạo chu kỳ" Command="{Binding CreateCycleCommand}" />
+                <Entry Style="{DynamicResource TextPrimary}" Grid.Column="2" Placeholder="Tìm phòng..." Text="{Binding SearchText}" />
+                <Button Style="{DynamicResource TextPrimary}" Grid.Column="3" Text="Tải" Command="{Binding LoadCommand}" />
+                <Button Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="Tạo chu kỳ" Command="{Binding CreateCycleCommand}" />
             </Grid>
 
             <!-- Summary -->
             <Grid ColumnDefinitions="*,*,*,*" Padding="0,8" ColumnSpacing="10">
                 <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                     <VerticalStackLayout>
-                        <Label Text="Phải thu" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalDue, StringFormat='{0:N0} đ'}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Phải thu" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='{0:N0} đ'}"/>
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                     <VerticalStackLayout>
-                        <Label Text="Đã thu" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Đã thu" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}"/>
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                     <VerticalStackLayout>
-                        <Label Text="Còn lại" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" TextColor="#D84315"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Còn lại" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" TextColor="#D84315"/>
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
                     <VerticalStackLayout>
-                        <Label Text="Trễ hạn" FontAttributes="Bold"/>
-                        <Label Text="{Binding LateCount}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Trễ hạn" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding LateCount}"/>
                     </VerticalStackLayout>
                 </Frame>
             </Grid>
@@ -59,7 +59,7 @@
             <CollectionView ItemsSource="{Binding RoomCharges}" SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Grid Padding="20">
-                        <Label Text="Chưa có dữ liệu tháng này." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Chưa có dữ liệu tháng này." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
                     </Grid>
                 </CollectionView.EmptyView>
 
@@ -68,30 +68,30 @@
                         <Frame Padding="12" Margin="0,6" BorderColor="#CFD8DC" CornerRadius="10">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
                                 <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
-                                    <Label Text="{Binding RoomCode}" FontAttributes="Bold" />
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RoomCode}" FontAttributes="Bold" />
                                     <Border Padding="10,4" StrokeThickness="0" Background="{Binding Status, Converter={StaticResource PaymentStatusToColorConverter}}">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="12"/>
                                         </Border.StrokeShape>
-                                        <Label Text="{Binding Status}" FontAttributes="Bold" />
+                                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding Status}" FontAttributes="Bold" />
                                     </Border>
                                 </HorizontalStackLayout>
 
                                 <VerticalStackLayout Grid.Row="1" Spacing="4">
-                                    <Label Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
-                                    <Label Text="{Binding AmountPaid, StringFormat='Đã trả: {0:N0} đ'}"/>
-                                    <Label Text="{Binding AmountRemaining, StringFormat='Còn: {0:N0} đ'}" TextColor="#D84315"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding AmountPaid, StringFormat='Đã trả: {0:N0} đ'}"/>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding AmountRemaining, StringFormat='Còn: {0:N0} đ'}" TextColor="#D84315"/>
                                 </VerticalStackLayout>
 
                                 <HorizontalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6" HorizontalOptions="End">
-                                    <Button Text="Ghi nhận"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Ghi nhận"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RecordPaymentCommand}"
                                             CommandParameter="{Binding .}" />
-                                    <Button Text="Trả một phần"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Trả một phần"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MarkPartialCommand}"
                                             CommandParameter="{Binding .}"
                                             IsVisible="{Binding AmountRemaining, Converter={StaticResource PositiveAmountToBoolConverter}}"/>
-                                    <Button Text="Đã trả"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Đã trả"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MarkPaidCommand}"
                                             CommandParameter="{Binding .}"
                                             IsVisible="{Binding AmountRemaining, Converter={StaticResource PositiveAmountToBoolConverter}}"/>
@@ -102,7 +102,7 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <Button Text="Gửi nhắc trễ hạn (toàn chu kỳ)"
+            <Button Style="{DynamicResource TextPrimary}" Text="Gửi nhắc trễ hạn (toàn chu kỳ)"
                     Command="{Binding SendLateRemindersCommand}"
                     BackgroundColor="#FFECB3"
                     Margin="0,8,0,0"/>
