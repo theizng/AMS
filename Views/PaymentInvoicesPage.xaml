@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AMS.Views.PaymentInvoicesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Hóa đơn">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Tạo hóa đơn (chờ gửi)"
+                        Command="{Binding GenerateInvoicesCommand}" />
+                <Button Text="Gửi hóa đơn lần đầu"
+                        Command="{Binding SendInitialInvoicesCommand}" />
+                <Button Text="Xuất 3 sheet"
+                        Command="{Binding ExportSheetsCommand}" />
+            </HorizontalStackLayout>
+
+            <CollectionView ItemsSource="{Binding RoomCharges}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Padding="10" Margin="0,6" BorderColor="#CFD8DC" CornerRadius="10">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
+                                <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
+                                    <Label Text="{Binding RoomCode}" FontAttributes="Bold"/>
+                                    <Label Text="{Binding Status}" TextColor="#607D8B"/>
+                                    <Label Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
+                                </HorizontalStackLayout>
+
+                                <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6" HorizontalOptions="End">
+                                    <Button Text="Xem trước"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PreviewInvoiceCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                    <Button Text="Gửi lại"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendInvoiceCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Gửi nhắc trễ hạn"
+                    Command="{Binding SendLateRemindersCommand}"
+                    BackgroundColor="#FFECB3"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

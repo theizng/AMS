@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AMS.Views.PaymentSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Thiết lập thanh toán">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Chu kỳ và Hạn" FontAttributes="Bold" FontSize="18"/>
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
+                        <Label Grid.Column="0" Text="Ngày thu (1..28)" />
+                        <Entry Grid.Column="1" WidthRequest="90" Keyboard="Numeric" Text="{Binding DefaultDueDay}"/>
+                        <Label Grid.Column="2" Text="Số ngày ân hạn" />
+                        <Entry Grid.Column="3" WidthRequest="90" Keyboard="Numeric" Text="{Binding GraceDays}"/>
+                    </Grid>
+                    <HorizontalStackLayout Spacing="8">
+                        <Switch IsToggled="{Binding AutoReminderEnabled}" />
+                        <Label Text="Tự động nhắc trễ hạn" VerticalTextAlignment="Center"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Google Sheets" FontAttributes="Bold" FontSize="18"/>
+                    <Entry Placeholder="Spreadsheet ID" Text="{Binding SpreadsheetId}" />
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8" RowDefinitions="Auto,Auto">
+                        <Label Grid.Row="0" Grid.Column="0" Text="Tab Điện" />
+                        <Entry Grid.Row="0" Grid.Column="1" Text="{Binding ElectricSheetName}" />
+                        <Label Grid.Row="0" Grid.Column="2" Text="Tab Nước" />
+                        <Entry Grid.Row="0" Grid.Column="3" Text="{Binding WaterSheetName}" />
+                        <Label Grid.Row="1" Grid.Column="0" Text="Tab Thông báo phí" />
+                        <Entry Grid.Row="1" Grid.Column="1" Text="{Binding InvoiceSheetName}" />
+                        <Label Grid.Row="1" Grid.Column="2" Text="Range gốc" />
+                        <Entry Grid.Row="1" Grid.Column="3" Text="{Binding BaseRange}" />
+                    </Grid>
+                    <Button Text="Kiểm tra kết nối" Command="{Binding TestSheetsCommand}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Mặc định giá" FontAttributes="Bold" FontSize="18"/>
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                        <Label Grid.Column="0" Grid.Row="0" Text="Điện (đ/kWh)" />
+                        <Entry Grid.Column="1" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultElectricRate}"/>
+                        <Label Grid.Column="2" Grid.Row="0" Text="Nước (đ/m³)" />
+                        <Entry Grid.Column="3" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultWaterRate}"/>
+
+                        <Label Grid.Column="0" Grid.Row="1" Text="Internet (đ/phòng)" />
+                        <Entry Grid.Column="1" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultInternetFlat}"/>
+                        <Label Grid.Column="2" Grid.Row="1" Text="Vệ sinh (đ/phòng)" />
+                        <Entry Grid.Column="3" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultCleaningFlat}"/>
+                    </Grid>
+                    <Button Text="Lưu thiết lập" Command="{Binding SaveSettingsCommand}" WidthRequest="140" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

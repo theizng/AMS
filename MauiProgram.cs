@@ -163,6 +163,10 @@ namespace AMS
             builder.Services.AddTransient<EditMaintenancePage>();
             //Đăng ký Pages cho Payments:
             builder.Services.AddTransient<PaymentsPage>();
+            builder.Services.AddTransient<PaymentFeesPage>();
+            builder.Services.AddTransient<PaymentInvoicesPage>();
+            builder.Services.AddTransient<PaymentSettingsPage>();
+            builder.Services.AddTransient<PaymentMeterEntryPage>();
             //Đăng ký Pages cho Contracts:
             builder.Services.AddTransient<ContractsPage>();
             builder.Services.AddTransient<EditContractPage>();

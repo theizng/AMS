@@ -33,12 +33,25 @@
 
     <!-- FINANCIAL SECTION -->
     <FlyoutItem Title="Tài chính" FlyoutIcon="finance_icon.png">
-        <ShellContent x:Name="PaymentsShell"
+        <ShellContent x:Name="Payment_OverviewShell"
                       Title="Tiền thuê"
-                      Route="payments" />
-        <ShellContent x:Name="ReportsShell"
+                      Route="payment_overview" />
+        
+        <ShellContent x:Name="Payment_MeterEntryShell"
+                      Title="Ghi số điện / nước"
+                      Route="payment_meterentry" />
+        
+        <ShellContent x:Name="Payment_FeesShell"                     
                       Title="Chi phí"
-                      Route="reports" />
+                      Route="payment_fees" />
+        
+        <ShellContent x:Name="Payment_InvoicesShell"
+                      Title="Hóa đơn"
+                      Route="payment_invoices" />
+        
+        <ShellContent x:Name="Payment_SettingsShell"
+                      Title="Thiết lập thanh toán"
+                      Route="payment_settings" />
     </FlyoutItem>
     <!--REPORT SECTION-->
     <FlyoutItem Title="Báo cáo và thống kê" FlyoutIcon="report_icon.png">

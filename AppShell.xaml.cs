@@ -16,15 +16,24 @@ namespace AMS
             _authService = authService;
 
             // Wire ShellContent items to DI-created pages
+            //Trang dashboard
             SetDiTemplate(DashboardShell, typeof(MainPage));
+            //Trang Quản lý
+            SetDiTemplate(MaintenancesShell, typeof(MaintenancesPage));
             SetDiTemplate(HousesShell, typeof(HousesPage));
             SetDiTemplate(TenantsShell, typeof(TenantsPage));
-            SetDiTemplate(PaymentsShell, typeof(PaymentsPage));
-            SetDiTemplate(ReportsShell, typeof(ReportsPage));
-            SetDiTemplate(SettingsShell, typeof(SettingsPage));
-            SetDiTemplate(MaintenancesShell, typeof(MaintenancesPage));
-            SetDiTemplate(OverviewShell, typeof(OverviewPage));
             SetDiTemplate(ContractsShell, typeof(ContractsPage));
+            //Trang Tài chính
+            SetDiTemplate(Payment_OverviewShell, typeof(PaymentsPage));
+            SetDiTemplate(Payment_FeesShell, typeof(PaymentFeesPage));
+            SetDiTemplate(Payment_MeterEntryShell, typeof(PaymentMeterEntryPage));
+            SetDiTemplate(Payment_InvoicesShell, typeof(PaymentInvoicesPage));
+            SetDiTemplate(Payment_SettingsShell, typeof(PaymentSettingsPage));
+            //Trang Cài đặt
+            SetDiTemplate(SettingsShell, typeof(SettingsPage));
+            //Trang báo cáo thống kê
+            SetDiTemplate(OverviewShell, typeof(OverviewPage));
+            //SetDiTemplate(ReportsShell, typeof(ReportsPage));
             // Register routes for pages not in Shell tree (or for parameterized navigation)
             //Trang quản lý nhà
             Routing.RegisterRoute("edithouse", typeof(EditHousePage));

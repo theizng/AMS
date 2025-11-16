@@ -1,72 +1,111 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.PaymentsPage"
-             Title="Quản lý thanh toán">
+<ContentPage
+    x:Class="AMS.Views.PaymentsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:conv="clr-namespace:AMS.Converters"
+    Title="Tổng quan thanh toán">
 
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Tạo hóa đơn"
-                     Priority="0" Order="Primary"
-                     Command="{Binding GenerateCommand}" />
-        <ToolbarItem Text="Làm mới"
-                     Priority="1" Order="Primary"
-                     Command="{Binding RefreshCommand}" />
-    </ContentPage.ToolbarItems>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <conv:PositiveAmountToBoolConverter x:Key="PositiveAmountToBoolConverter" />
+            <conv:PaymentStatusToColorConverter x:Key="PaymentStatusToColorConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="10">
-        <!-- Tháng -->
-        <HorizontalStackLayout Spacing="8" Margin="0,0,0,8">
-            <Label Text="Tháng:" VerticalOptions="Center" />
-            <DatePicker Date="{Binding Month}" Format="MM/yyyy" />
-        </HorizontalStackLayout>
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
 
-        <!-- Tìm kiếm -->
-        <HorizontalStackLayout Grid.Row="1" Spacing="8" Margin="0,0,0,10">
-            <Entry Placeholder="Tìm theo mã phòng/ghi chú..."
-                   Text="{Binding SearchText}" HorizontalOptions="FillAndExpand" />
-            <Button Text="Tìm" Command="{Binding SearchCommand}" />
-        </HorizontalStackLayout>
+            <!-- Cycle controls -->
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
+                <Picker Grid.Column="0" Title="Tháng"
+                        ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}" WidthRequest="110"/>
+                <Picker Grid.Column="1" Title="Năm"
+                        ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" WidthRequest="110"/>
+                <Entry Grid.Column="2" Placeholder="Tìm phòng..." Text="{Binding SearchText}" />
+                <Button Grid.Column="3" Text="Tải" Command="{Binding LoadCommand}" />
+                <Button Grid.Column="4" Text="Tạo chu kỳ" Command="{Binding CreateCycleCommand}" />
+            </Grid>
 
-        <!-- Danh sách hóa đơn -->
-        <CollectionView Grid.Row="2"
-                        ItemsSource="{Binding Invoices}"
-                        SelectionMode="None">
-            <CollectionView.EmptyView>
-                <Grid Padding="20">
-                    <Label Text="Chưa có hóa đơn cho tháng này."
-                           HorizontalOptions="Center" VerticalOptions="Center"
-                           TextColor="#666" />
-                </Grid>
-            </CollectionView.EmptyView>
+            <!-- Summary -->
+            <Grid ColumnDefinitions="*,*,*,*" Padding="0,8" ColumnSpacing="10">
+                <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Phải thu" FontAttributes="Bold"/>
+                        <Label Text="{Binding TotalDue, StringFormat='{0:N0} đ'}"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Đã thu" FontAttributes="Bold"/>
+                        <Label Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Còn lại" FontAttributes="Bold"/>
+                        <Label Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" TextColor="#D84315"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
+                    <VerticalStackLayout>
+                        <Label Text="Trễ hạn" FontAttributes="Bold"/>
+                        <Label Text="{Binding LateCount}"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Frame Margin="0,6" Padding="12" HasShadow="True" BorderColor="#E0E0E0" CornerRadius="10">
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
-                            <VerticalStackLayout Grid.RowSpan="3" Grid.Column="0" Spacing="4">
-                                <Label Text="{Binding Room.RoomCode}" FontSize="18" FontAttributes="Bold" TextColor="#3C467B" />
-                                <Label Text="{Binding BillingMonth, StringFormat='Tháng: {0:MM/yyyy}'}" />
-                                <Label Text="{Binding TotalAmount, StringFormat='Tổng: {0:n0} VND'}" />
-                                <Label Text="{Binding PaidAmount, StringFormat='Đã thu: {0:n0} VND'}" />
-                                <Label Text="{Binding Outstanding, StringFormat='Còn thiếu: {0:n0} VND'}" TextColor="#E53935" />
-                                <Label Text="{Binding Status}" TextColor="#50589C" />
-                            </VerticalStackLayout>
+            <!-- Room list -->
+            <CollectionView ItemsSource="{Binding RoomCharges}" SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Grid Padding="20">
+                        <Label Text="Chưa có dữ liệu tháng này." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#666"/>
+                    </Grid>
+                </CollectionView.EmptyView>
 
-                            <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                <Button Text="Thu đủ" BackgroundColor="#22C55E" TextColor="White"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MarkPaidCommand}"
-                                        CommandParameter="{Binding .}" />
-                                <Button Text="Thu 1 phần" BackgroundColor="#F59E0B" TextColor="White"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RecordPartialCommand}"
-                                        CommandParameter="{Binding .}" />
-                                <Button Text="Chưa trả" BackgroundColor="#DC2626" TextColor="White"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MarkUnpaidCommand}"
-                                        CommandParameter="{Binding .}" />
-                            </VerticalStackLayout>
-                        </Grid>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-    </Grid>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Padding="12" Margin="0,6" BorderColor="#CFD8DC" CornerRadius="10">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                                <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
+                                    <Label Text="{Binding RoomCode}" FontAttributes="Bold" />
+                                    <Border Padding="10,4" StrokeThickness="0" Background="{Binding Status, Converter={StaticResource PaymentStatusToColorConverter}}">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12"/>
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding Status}" FontAttributes="Bold" />
+                                    </Border>
+                                </HorizontalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Spacing="4">
+                                    <Label Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
+                                    <Label Text="{Binding AmountPaid, StringFormat='Đã trả: {0:N0} đ'}"/>
+                                    <Label Text="{Binding AmountRemaining, StringFormat='Còn: {0:N0} đ'}" TextColor="#D84315"/>
+                                </VerticalStackLayout>
+
+                                <HorizontalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6" HorizontalOptions="End">
+                                    <Button Text="Ghi nhận"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RecordPaymentCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Trả một phần"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MarkPartialCommand}"
+                                            CommandParameter="{Binding .}"
+                                            IsVisible="{Binding AmountRemaining, Converter={StaticResource PositiveAmountToBoolConverter}}"/>
+                                    <Button Text="Đã trả"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MarkPaidCommand}"
+                                            CommandParameter="{Binding .}"
+                                            IsVisible="{Binding AmountRemaining, Converter={StaticResource PositiveAmountToBoolConverter}}"/>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Gửi nhắc trễ hạn (toàn chu kỳ)"
+                    Command="{Binding SendLateRemindersCommand}"
+                    BackgroundColor="#FFECB3"
+                    Margin="0,8,0,0"/>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
