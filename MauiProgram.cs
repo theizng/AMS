@@ -10,6 +10,7 @@ using AMS.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using AMS.Converters;
 using QuestPDF.Infrastructure;
+using DocumentFormat.OpenXml.VariantTypes;
 namespace AMS
 {
     public static class MauiProgram
@@ -50,6 +51,10 @@ namespace AMS
         }
         public static MauiAppBuilder RegisterServices(this MauiAppBuilder builder)
         {
+            var scriptUrl = "https://script.google.com/macros/s/AKfycbx9CIEPWpbIMlJ-2kpd6GpxzCHYG4bXBHbCvL5vmWXMHaPZEYp8uD_k_ByCPmzYWQI/exec";
+            var token = "PbR6tUEJDxdKVvheO7SCLb7IXufOVh1KlQQtGmm4l7294s9d3D6bgHueJ7xZOMqK";
+
+
             // Đăng ký các dịch vụ khác tại đây nếu cần
             //Đăng ký Services
             //used for pdf contract
@@ -76,6 +81,7 @@ namespace AMS
             //used for tenant
             builder.Services.AddSingleton<IRoomOccupancyProvider, RoomOccupancyEfProvider>();
             builder.Services.AddSingleton<IRoomsRepository, RoomsEfRepository>();
+            builder.Services.AddSingleton<IRoomTenantQuery, RoomTenantQuery>();
 
             //used for mail
             builder.Services.AddSingleton<IEmailService, EmailService>();
@@ -83,22 +89,37 @@ namespace AMS
             builder.Services.AddSingleton<IRoomsProvider, RoomsEfProvider>();
 
             //used for payments
-            builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
-            //used for maintenance and meters sheet
+            builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>(); //CRUD Payments
+            builder.Services.AddSingleton<IInvoiceScriptClient>(sp =>
+            {
+                var http = sp.GetRequiredService<HttpClient>();
+                return new GoogleScriptInvoiceClient(http, scriptUrl, token);
+            }); //Write data to template Invoices on Sheet
+            builder.Services.AddTransient<IInvoiceGenerator, InvoiceGenerator>(); // Generate PDF Invoice from InvoiceScriptClient
+            builder.Services.AddTransient<IPaymentSettingsProvider, PaymentSettingsProvider>(); //Provide Payment Settings data
+
+
             builder.Services.AddSingleton<HttpClient>();
-            builder.Services.AddSingleton<IMeterSheetReader, ClosedXMLSimpleMeterSheetReader>();
-            builder.Services.AddSingleton<IOnlineMeterSheetReader, GoogleSheetSimpleMeterReader>();
-            //builder.Services.AddSingleton<IMeterSheetWriter, ClosedXMLSimpleMeterSheetWriter>();
+            builder.Services.AddSingleton<IMeterSheetReader, ClosedXMLSimpleMeterSheetReader>(); //READ METERS SHEET AND LOAD FOR PaymentEntryMeterPage
+            builder.Services.AddSingleton<IOnlineMeterSheetReader, GoogleSheetSimpleMeterReader>(); //READ METERS SHEET AND LOAD FOR PaymentEntryMeterPage
+            builder.Services.AddSingleton<IOnlineMeterSheetWriter, GoogleScriptMeterWriter>(); //WRITE METERS SHEET AND LOAD FOR PaymentEntryMeterPage
+
+            //builder.Services.AddSingleton<IMeterSheetWriter, ClosedXMLSimpleMeterSheetWriter>(); 
+            builder.Services.AddSingleton<IOnlineMeterSheetWriter>(sp =>
+            {
+                var http = sp.GetRequiredService<HttpClient>();
+                return new GoogleScriptMeterWriter (http, scriptUrl, token);
+
+            }
+            ); 
             builder.Services.AddSingleton<IMaintenanceSheetWriter>(sp =>
             {
                 var http = sp.GetRequiredService<HttpClient>();
-                var scriptUrl = "https://script.google.com/macros/s/AKfycbxyDXjiYhAKT0wAngda_EDM2t15xU-8ZSa0Vn7Atynb1Y86-idMTs1t47pycDzM3y-N/exec"; // Thay bằng URL thực tế
-                var token = "PbR6tUEJDxdKVvheO7SCLb7IXufOVh1KlQQtGmm4l7294s9d3D6bgHueJ7xZOMqK";
                 return new GoogleAppScriptMaintenanceWriter(http, scriptUrl, token);
 
-            });
-            builder.Services.AddSingleton<IOnlineMaintenanceReader, GoogleSheetXlsxMaintenanceReader>();
-            builder.Services.AddSingleton<IMaintenanceSheetReader, ClosedXMLMaintenanceSheetReader>();
+            });  //ONLINE WRITE SHEET STATUS FOR MaintenanceRequest
+            builder.Services.AddSingleton<IOnlineMaintenanceReader, GoogleSheetXlsxMaintenanceReader>(); //READ MAINTENANCE SHEET AND LOAD FOR MaintenanceRequest
+            builder.Services.AddSingleton<IMaintenanceSheetReader, ClosedXMLMaintenanceSheetReader>(); //READ MAINTENANCE SHEET AND LOAD FOR MaintenanceRequest
 
             //used for database sync
             builder.Services.AddSingleton<IDatabaseSyncService, DatabaseSyncService>();
@@ -133,6 +154,9 @@ namespace AMS
             //Đăng ký Viewmodels cho Payments:
             builder.Services.AddTransient<PaymentMeterEntryViewModel>();
             builder.Services.AddTransient<PaymentsViewModel>();
+            builder.Services.AddTransient<PaymentInvoicesViewModel>();
+            builder.Services.AddTransient<PaymentSettingsViewModel>();
+            builder.Services.AddTransient<PaymentFeesViewModel>();
             //Đăng ký Viewmodels cho Contracts:
             builder.Services.AddTransient<ContractsViewModel>();
             builder.Services.AddTransient<ContractEditViewModel>();

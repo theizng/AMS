@@ -69,13 +69,7 @@
                     </Grid>
                 </VerticalStackLayout>
             </Frame>
-            <!-- PDF (stores addendum PDF link) -->
-            <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
-                <VerticalStackLayout Spacing="6">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Link PDF (phụ lục gần nhất)"/>
-                    <Entry Style="{DynamicResource TextPrimary}" Placeholder="https://..." Text="{Binding PdfUrl}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InvertBoolConverter}}"/>
-                </VerticalStackLayout>
-            </Frame>    
+            
             <!-- Limits -->
             <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
                 <Grid ColumnSpacing="12">

@@ -1,9 +1,21 @@
-namespace AMS.Views;
+using AMS.ViewModels;
+using Microsoft.Maui.Controls;
 
-public partial class PaymentInvoicesPage : ContentPage
+namespace AMS.Views
 {
-	public PaymentInvoicesPage()
-	{
-		InitializeComponent();
-	}
+    public partial class PaymentInvoicesPage : ContentPage
+    {
+        public PaymentInvoicesPage(PaymentInvoicesViewModel vm)
+        {
+            InitializeComponent();
+            BindingContext = vm;
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext is PaymentInvoicesViewModel vm)
+                await vm.LoadAsync();
+        }
+    }
 }

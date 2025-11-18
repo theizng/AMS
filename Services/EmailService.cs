@@ -10,18 +10,7 @@ namespace AMS.Services
 {
     public class EmailService : IEmailService
     {
-        public async Task SendAsync(
-            string to,
-            string subject,
-            string body,
-            string smtpHost,
-            int smtpPort,
-            string smtpUser,
-            string smtpPassword,
-            bool useSsl,
-            string senderName,
-            string senderAddress,
-            CancellationToken ct = default)
+        public async Task SendAsync(string to,string subject,string body,string smtpHost,int smtpPort,string smtpUser,string smtpPassword,bool useSsl,string senderName,string senderAddress,CancellationToken ct = default)
         {
             await SendAsync(to, subject, body, smtpHost, smtpPort, smtpUser, smtpPassword, useSsl, senderName, senderAddress, null, null, ct);
         }

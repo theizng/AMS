@@ -1,6 +1,7 @@
 ﻿using AMS.Models;
 using AMS.Services.Interfaces;
 using Microsoft.Maui.Storage;
+using Microsoft.UI.Xaml.Controls;
 using System;
 using System.IO;
 using System.Text;
@@ -58,6 +59,44 @@ namespace AMS.Services
             return (null, null);
         }
 
+
+
+        public string BuildInvoiceBody(string roomCode, string heading, string note)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(heading);
+            sb.AppendLine($"Ban quản lý gửi hóa đơn phòng ");
+            sb.AppendLine();
+            sb.AppendLine(note);
+            sb.AppendLine();
+            sb.AppendLine("Trân trọng,\nQLT - Phần mềm quản lý thuê");
+            return sb.ToString();
+        }
+
+        public async Task SendInvoicePdfAsync(RoomTenantInfo roomInfo, string roomCode, int year, int month, PaymentSettings settings, string pdfPath, CancellationToken ct = default)
+        {
+            if (roomInfo == null) return;
+            var (fileName, bytes) = TryLoadAttachment(pdfPath);
+            if (bytes == null || string.IsNullOrWhiteSpace(fileName)) return;
+
+            var subject = $"[QLT] Thông báo hóa đơn phí phòng {roomCode} tháng {month.ToString("00")} (PDF đính kèm)";
+
+
+            var body = BuildInvoiceBody(roomCode, subject, "Vui lòng kiểm tra kĩ và thanh toán đúng hẹn");
+
+            foreach (var to in roomInfo.Emails)
+            {
+                if (string.IsNullOrWhiteSpace(to)) continue;
+                await SendAsync(to, subject, body, fileName, bytes, ct);
+            }
+        }
+
+        public async Task SendInvoiceAsync(string tenantEmail, string subject, string body, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(tenantEmail)) return;
+            await SendAsync(tenantEmail, subject, body, ct: ct);
+        }
+
         private async Task SendAsync(string to, string subject, string body, string? attachmentName = null, byte[]? attachmentBytes = null, CancellationToken ct = default)
         {
             var (host, port, ssl, user, pwd, senderName, senderAddr) = await LoadSmtpAsync();
@@ -77,7 +116,6 @@ namespace AMS.Services
                 attachmentBytes: attachmentBytes,
                 ct: ct);
         }
-
         public async Task SendToAllTenantsAsync(Contract contract, string subject, string body, string? attachmentName = null, byte[]? attachmentBytes = null, CancellationToken ct = default)
         {
             foreach (var t in contract.Tenants)
@@ -94,8 +132,7 @@ namespace AMS.Services
             }
         }
 
-        // ========= Notifications =========
-
+        // ========= MAINTENANCE STATUS UPDATE Notifications =========
         public async Task SendMaintenanceStatusChangedAsync(string tenantEmail, MaintenanceRequest req, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(tenantEmail)) return;
@@ -115,19 +152,16 @@ namespace AMS.Services
             await SendAsync(tenantEmail, subject, body, ct: ct);
         }
 
-        public async Task SendInvoiceAsync(string tenantEmail, string subject, string body, CancellationToken ct = default)
-        {
-            if (string.IsNullOrWhiteSpace(tenantEmail)) return;
-            await SendAsync(tenantEmail, subject, body, ct: ct);
-        }
 
+        //========== CONTRACT Notifications =========
+       
         public async Task SendContractDraftAsync(Contract contract, CancellationToken ct = default)
         {
             await SendToAllTenantsAsync(contract,
                 subject: $"[QLT] Bản nháp hợp đồng phòng {contract.RoomCode}",
                 body: BuildContractBody(contract, "BẢN NHÁP HỢP ĐỒNG", "Vui lòng kiểm tra thông tin và phản hồi nếu cần chỉnh sửa."),
                 ct: ct);
-        }
+        } //SEND DRAFT
 
         public async Task SendContractPdfFromPathAsync(Contract contract, string pdfPath, CancellationToken ct = default)
         {

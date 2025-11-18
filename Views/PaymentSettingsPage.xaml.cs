@@ -1,9 +1,21 @@
-namespace AMS.Views;
+using AMS.ViewModels;
+using Microsoft.Maui.Controls;
 
-public partial class PaymentSettingsPage : ContentPage
+namespace AMS.Views
 {
-	public PaymentSettingsPage()
-	{
-		InitializeComponent();
-	}
+    public partial class PaymentSettingsPage : ContentPage
+    {
+        public PaymentSettingsPage(PaymentSettingsViewModel vm)
+        {
+            InitializeComponent();
+            BindingContext = vm;
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext is PaymentSettingsViewModel vm)
+                await vm.LoadAsync();
+        }
+    }
 }

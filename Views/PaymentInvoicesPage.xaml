@@ -3,48 +3,130 @@
     x:Class="AMS.Views.PaymentInvoicesPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Hóa đơn">
+    Title="Hóa đơn thanh toán">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="14" Spacing="12">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Làm mới" Priority="0" Order="Primary" Command="{Binding LoadCommand}" />
+    </ContentPage.ToolbarItems>
 
-            <HorizontalStackLayout Spacing="8">
-                <Button Style="{DynamicResource TextPrimary}" Text="Tạo hóa đơn (chờ gửi)"
-                        Command="{Binding GenerateInvoicesCommand}" />
-                <Button Style="{DynamicResource TextPrimary}" Text="Gửi hóa đơn lần đầu"
-                        Command="{Binding SendInitialInvoicesCommand}" />
-                <Button Style="{DynamicResource TextPrimary}" Text="Xuất 3 sheet"
-                        Command="{Binding ExportSheetsCommand}" />
-            </HorizontalStackLayout>
+    <Grid Padding="12" RowSpacing="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <CollectionView ItemsSource="{Binding RoomCharges}" SelectionMode="None">
+        <!-- Filters (Month/Year like a search row) -->
+        <HorizontalStackLayout Grid.Row="0" Spacing="8">
+            <Label Text="Tháng:" VerticalOptions="Center" />
+            <Entry WidthRequest="80" Keyboard="Numeric" HorizontalTextAlignment="Center" Text="{Binding Month}" />
+            <Label Text="Năm:" VerticalOptions="Center" />
+            <Entry WidthRequest="120" Keyboard="Numeric" HorizontalTextAlignment="Center" Text="{Binding Year}" />
+            <Button Text="Tải" Command="{Binding LoadCommand}" />
+        </HorizontalStackLayout>
+
+        <!-- Status row -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="8">
+            <Label Text="Trạng thái:" VerticalOptions="Center" />
+            <Label Text="{Binding StatusText}" VerticalOptions="Center" TextColor="#666" />
+        </HorizontalStackLayout>
+
+        <!-- List -->
+        <RefreshView
+            Grid.Row="2"
+            IsRefreshing="{Binding IsBusy}"
+            Command="{Binding LoadCommand}">
+            <CollectionView
+                ItemsSource="{Binding Items}"
+                SelectionMode="None">
+
+                <CollectionView.EmptyView>
+                    <Grid Padding="20">
+                        <Label
+                            Text="Chưa có dữ liệu hóa đơn cho tháng/năm đã chọn."
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            TextColor="#666" />
+                    </Grid>
+                </CollectionView.EmptyView>
+
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Padding="10" Margin="0,6" BorderColor="#CFD8DC" CornerRadius="10">
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
-                                <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding RoomCode}" FontAttributes="Bold"/>
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Status}" TextColor="#607D8B"/>
-                                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='Tổng: {0:N0} đ'}"/>
-                                </HorizontalStackLayout>
+                        <Frame
+                            Margin="0,6"
+                            Padding="12"
+                            HasShadow="True"
+                            BorderColor="#E0E0E0"
+                            CornerRadius="10">
+                            <Grid ColumnSpacing="12" RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6" HorizontalOptions="End">
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Xem trước"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PreviewInvoiceCommand}"
-                                            CommandParameter="{Binding .}"/>
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Gửi lại"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendInvoiceCommand}"
-                                            CommandParameter="{Binding .}"/>
-                                </HorizontalStackLayout>
+                                <!-- Row 1: Room code + status pill -->
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding RoomCode}"
+                                       FontAttributes="Bold" />
+
+                                <Border Grid.Row="0" Grid.Column="1"
+                                        Padding="8,4" StrokeThickness="0" Background="#EEE"
+                                        HorizontalOptions="End" VerticalOptions="Start">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8" />
+                                    </Border.StrokeShape>
+
+                                    <!-- Two labels toggled by HasPdf -->
+                                    <Grid>
+                                        <Label Text="Đã có hóa đơn" TextColor="#2E7D32" />
+                                        <Label Text="Chưa có hóa đơn" TextColor="#8D6E63">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding HasPdf}" Value="True">
+                                                    <Setter Property="IsVisible" Value="False" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                    </Grid>
+
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding HasPdf}" Value="True">
+                                            <Setter Property="Background" Value="#C8E6C9" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding HasPdf}" Value="False">
+                                            <Setter Property="Background" Value="#FFF3CD" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                </Border>
+
+                                <!-- Row 2: Summary (full width, compact) -->
+                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                       Text="{Binding Summary}"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="4" />
+
+                                <!-- Row 3: Actions (right) + LastResult (left) -->
+                                <Label Grid.Row="2" Grid.Column="0"
+                                       Text="{Binding LastResult}"
+                                       TextColor="#607D8B"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       VerticalTextAlignment="Center" />
+
+                                <Button
+                                    Grid.Row="2" Grid.Column="1"
+                                    Text="Tạo/ghi đè PDF"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GeneratePdfCommand}"
+                                    CommandParameter="{Binding .}" />
                             </Grid>
                         </Frame>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-
-            <Button Style="{DynamicResource TextPrimary}" Text="Gửi nhắc trễ hạn"
-                    Command="{Binding SendLateRemindersCommand}"
-                    BackgroundColor="#FFECB3"/>
-        </VerticalStackLayout>
-    </ScrollView>
+        </RefreshView>
+    </Grid>
 </ContentPage>

@@ -1,4 +1,5 @@
-﻿using AMS.Services.Interfaces;
+﻿using AMS.Models;
+using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Threading.Tasks;
@@ -7,46 +8,87 @@ namespace AMS.ViewModels
 {
     public partial class PaymentSettingsViewModel : ObservableObject
     {
-        private readonly IPaymentsRepository _repo;
-        //private readonly ISheetReader _sheetReader;
+        private readonly IPaymentSettingsProvider _provider;
 
-        [ObservableProperty] private int defaultDueDay;
-        [ObservableProperty] private int graceDays;
-        [ObservableProperty] private bool autoReminderEnabled;
+        // Banking
+        [ObservableProperty] private string nameAccount = "";
+        [ObservableProperty] private string bankAccount = "";
+        [ObservableProperty] private string bankName = "";
+        [ObservableProperty] private string branch = "";
 
-        [ObservableProperty] private string spreadsheetId;
-        [ObservableProperty] private string electricSheetName;
-        [ObservableProperty] private string waterSheetName;
-        [ObservableProperty] private string invoiceSheetName;
-        [ObservableProperty] private string baseRange;
+        // Billing
+        [ObservableProperty] private int defaultDueDay = 5;
+        [ObservableProperty] private int graceDays = 0;
 
+        // Optional defaults (keep if you still use them)
         [ObservableProperty] private decimal defaultElectricRate;
         [ObservableProperty] private decimal defaultWaterRate;
         [ObservableProperty] private decimal defaultInternetFlat;
         [ObservableProperty] private decimal defaultCleaningFlat;
 
-        public IAsyncRelayCommand SaveSettingsCommand { get; }
-        public IAsyncRelayCommand TestSheetsCommand { get; }
+        // Email templates
+        [ObservableProperty] private string emailSubject = "Thông báo phí {month}/{year} - {room}";
+        [ObservableProperty] private string emailBody = "Kính gửi {room}, hóa đơn (PDF đính kèm).";
 
-        public PaymentSettingsViewModel(IPaymentsRepository repo)
+        [ObservableProperty] private string status = "";
+
+        public IAsyncRelayCommand LoadCommand { get; }
+        public IAsyncRelayCommand SaveCommand { get; }
+
+        public PaymentSettingsViewModel(IPaymentSettingsProvider provider)
         {
-            _repo = repo;
-            //_sheetReader = sheetReader;
-
-            SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
-            TestSheetsCommand = new AsyncRelayCommand(TestSheetsAsync);
+            _provider = provider;
+            LoadCommand = new AsyncRelayCommand(LoadAsync);
+            SaveCommand = new AsyncRelayCommand(SaveAsync);
         }
 
-        private async Task SaveSettingsAsync()
+        public Task OnAppearAsync() => LoadAsync();
+
+        public Task LoadAsync()
         {
-            // TODO: persist settings
-            await Task.CompletedTask;
+            var s = _provider.Get();
+
+            NameAccount = s.NameAccount ?? "";
+            BankAccount = s.BankAccount ?? "";
+            BankName = s.BankName ?? "";
+            Branch = s.Branch ?? "";
+
+            DefaultDueDay = s.DefaultDueDay;
+            GraceDays = s.GraceDays;
+
+            DefaultElectricRate = s.DefaultElectricRate;
+            DefaultWaterRate = s.DefaultWaterRate;
+
+
+            Status = "Đã tải cấu hình.";
+            return Task.CompletedTask;
         }
 
-        private async Task TestSheetsAsync()
+        private async Task SaveAsync()
         {
-            // TODO: try a ReadMeterAsync or ping Google API to validate
-            await Task.CompletedTask;
+            // Clamp due day (avoid invalid date)
+            var due = DefaultDueDay;
+            if (due < 1) due = 1;
+            if (due > 28) due = 28;
+            DefaultDueDay = due;
+
+            var s = new PaymentSettings
+            {
+                NameAccount = NameAccount?.Trim() ?? "",
+                BankAccount = BankAccount?.Trim() ?? "",
+                BankName = BankName?.Trim() ?? "",
+                Branch = Branch?.Trim() ?? "",
+
+                DefaultDueDay = DefaultDueDay,
+                GraceDays = GraceDays,
+
+                DefaultElectricRate = DefaultElectricRate,
+                DefaultWaterRate = DefaultWaterRate,
+
+            };
+
+            await _provider.SaveAsync(s);
+            Status = "Đã lưu cấu hình.";
         }
     }
 }

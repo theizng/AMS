@@ -1,26 +1,21 @@
+using AMS.ViewModels;
 using Microsoft.Maui.Controls;
 
 namespace AMS.Views
 {
     public partial class PaymentsPage : ContentPage
     {
-        public PaymentsPage()
+        public PaymentsPage(PaymentsViewModel vm)
         {
             InitializeComponent();
+            BindingContext = vm;
         }
 
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            if (BindingContext is IAppearingAware vm && vm.LoadOnAppear)
-                await vm.OnAppearAsync();
+            if (BindingContext is PaymentsViewModel vm)
+                await vm.LoadCyclesAsync();
         }
-    }
-
-    // Optional pattern to avoid compile errors; implement on VMs you want auto-load
-    public interface IAppearingAware
-    {
-        bool LoadOnAppear { get; }
-        Task OnAppearAsync();
     }
 }

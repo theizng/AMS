@@ -2,8 +2,10 @@
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.Storage;
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,63 +14,112 @@ namespace AMS.ViewModels
     public partial class PaymentsViewModel : ObservableObject
     {
         private readonly IPaymentsRepository _repo;
+        private readonly IPaymentSettingsProvider _settings;
+        private readonly IRoomTenantQuery _roomQuery;
         private readonly IEmailNotificationService _email;
+        private readonly IContractsRepository _repoContract;
 
         [ObservableProperty] private bool isBusy;
-        [ObservableProperty] private int selectedYear;
-        [ObservableProperty] private int selectedMonth;
-        [ObservableProperty] private PaymentCycle? currentCycle;
-        [ObservableProperty] private ObservableCollection<RoomCharge> roomCharges = new();
-        [ObservableProperty] private string searchText = "";
+        [ObservableProperty] private ObservableCollection<PaymentCycleLight> cycles = new();
+        [ObservableProperty] private PaymentCycleLight? selectedCycle;
+        [ObservableProperty] private ObservableCollection<OverviewRow> rows = new();
 
         [ObservableProperty] private decimal totalDue;
         [ObservableProperty] private decimal totalPaid;
         [ObservableProperty] private decimal totalRemaining;
-        [ObservableProperty] private int lateCount;
+        [ObservableProperty] private int readyCount;
+        [ObservableProperty] private string statusMessage = "";
 
-        public IAsyncRelayCommand LoadCommand { get; }
+        public IAsyncRelayCommand LoadCyclesCommand { get; }
         public IAsyncRelayCommand CreateCycleCommand { get; }
-        public IAsyncRelayCommand<RecordPaymentRequest> RecordPaymentCommand { get; }
-        public IAsyncRelayCommand<RoomCharge> MarkPartialCommand { get; }
-        public IAsyncRelayCommand<RoomCharge> MarkPaidCommand { get; }
-        public IAsyncRelayCommand SendLateRemindersCommand { get; }
+        public IAsyncRelayCommand ReseedCommand { get; }
+        public IAsyncRelayCommand RecomputeCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> MakeReadyCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> MarkLateCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> MarkPaidCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> MarkUnpaidCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> AddPartialPaymentCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> ChooseStatusCommand { get; }
+        public IAsyncRelayCommand<OverviewRow> SendInvoiceEmailCommand { get; }
+        public IAsyncRelayCommand SendAllWithInvoiceCommand { get; }
 
-        public PaymentsViewModel(IPaymentsRepository repo, IEmailNotificationService email)
+        public IAsyncRelayCommand OpenMeterPageCommand { get; }
+        public IAsyncRelayCommand OpenInvoicesPageCommand { get; }
+
+        public PaymentsViewModel(IPaymentsRepository repo,
+                                 IPaymentSettingsProvider settings,
+                                 IRoomTenantQuery roomQuery,
+                                 IEmailNotificationService email,
+                                 IContractsRepository repoContract)
         {
+            _repoContract = repoContract;
             _repo = repo;
+            _settings = settings;
+            _roomQuery = roomQuery;
             _email = email;
 
-            var now = DateTime.Today;
-            SelectedYear = now.Year;
-            SelectedMonth = now.Month;
-
-            LoadCommand = new AsyncRelayCommand(LoadAsync);
+            LoadCyclesCommand = new AsyncRelayCommand(LoadCyclesAsync);
             CreateCycleCommand = new AsyncRelayCommand(CreateCycleAsync);
-            RecordPaymentCommand = new AsyncRelayCommand<RecordPaymentRequest>(RecordPaymentAsync);
-            MarkPartialCommand = new AsyncRelayCommand<RoomCharge>(MarkPartialAsync);
-            MarkPaidCommand = new AsyncRelayCommand<RoomCharge>(MarkPaidAsync);
-            SendLateRemindersCommand = new AsyncRelayCommand(SendLateRemindersAsync);
+            ReseedCommand = new AsyncRelayCommand(ReseedAsync);
+            RecomputeCommand = new AsyncRelayCommand(RecomputeAsync);
+            MakeReadyCommand = new AsyncRelayCommand<OverviewRow>(MakeReadyAsync);
+            MarkLateCommand = new AsyncRelayCommand<OverviewRow>(MarkLateAsync);
+            MarkPaidCommand = new AsyncRelayCommand<OverviewRow>(MarkPaidAsync);
+            MarkUnpaidCommand = new AsyncRelayCommand<OverviewRow>(MarkUnpaidAsync);
+            AddPartialPaymentCommand = new AsyncRelayCommand<OverviewRow>(AddPartialPaymentAsync);
+            ChooseStatusCommand = new AsyncRelayCommand<OverviewRow>(ChooseStatusAsync);
+            SendInvoiceEmailCommand = new AsyncRelayCommand<OverviewRow>(SendInvoiceEmailAsync);
+            SendAllWithInvoiceCommand = new AsyncRelayCommand(SendAllWithInvoiceAsync);
+
+            OpenMeterPageCommand = new AsyncRelayCommand(() => Shell.Current.GoToAsync("//payment_meterentry"));
+            OpenInvoicesPageCommand = new AsyncRelayCommand(() => Shell.Current.GoToAsync("//payment_invoices"));
         }
 
-        private async Task LoadAsync()
+        public async Task LoadCyclesAsync()
         {
             if (IsBusy) return;
             IsBusy = true;
             try
             {
-                CurrentCycle = await _repo.GetCycleAsync(SelectedYear, SelectedMonth);
-                RoomCharges.Clear();
-                if (CurrentCycle != null)
+                Cycles.Clear();
+                var all = await _repo.GetRecentCyclesAsync(24);
+                foreach (var c in all.OrderByDescending(c => new DateTime(c.Year, c.Month, 1)))
+                    Cycles.Add(new PaymentCycleLight(c));
+
+                if (SelectedCycle == null && Cycles.Count > 0)
                 {
-                    foreach (var rc in CurrentCycle.RoomCharges.OrderBy(r => r.RoomCode))
-                        RoomCharges.Add(rc);
-                    RecalcSummary();
+                    SelectedCycle = Cycles.First();
+                    await LoadSelectedCycleAsync();
                 }
+                StatusMessage = Cycles.Count == 0
+                    ? "Chưa có chu kỳ nào. Bấm 'Tạo chu kỳ mới'."
+                    : "";
             }
-            finally
+            catch (Exception ex)
             {
-                IsBusy = false;
+                StatusMessage = "Lỗi tải chu kỳ: " + ex.Message;
             }
+            finally { IsBusy = false; }
+            OnPropertyChanged(nameof(StatusMessage));
+        }
+
+        partial void OnSelectedCycleChanged(PaymentCycleLight? oldValue, PaymentCycleLight? newValue)
+        {
+            if (newValue != null)
+                _ = LoadSelectedCycleAsync();
+        }
+
+        private async Task LoadSelectedCycleAsync()
+        {
+            if (SelectedCycle == null) return;
+            Rows.Clear();
+            var cycleFull = await _repo.GetCycleAsync(SelectedCycle.Year, SelectedCycle.Month);
+            if (cycleFull?.RoomCharges != null)
+            {
+                foreach (var rc in cycleFull.RoomCharges.OrderBy(r => r.RoomCode))
+                    Rows.Add(new OverviewRow(rc, SelectedCycle.Year, SelectedCycle.Month));
+            }
+            Recalc();
         }
 
         private async Task CreateCycleAsync()
@@ -77,64 +128,320 @@ namespace AMS.ViewModels
             IsBusy = true;
             try
             {
-                // Create and initialize a cycle
-                var cycle = await _repo.CreateCycleAsync(SelectedYear, SelectedMonth);
-                // TODO: Initialize RoomCharges from active contracts
-                await _repo.SaveCycleAsync(cycle);
-                await LoadAsync();
+                var today = DateTime.Today;
+                var existsCurrent = Cycles.Any(c => c.Year == today.Year && c.Month == today.Month);
+                var y = existsCurrent && today.Month == 12 ? today.Year + 1 : today.Year;
+                var m = existsCurrent ? (today.Month == 12 ? 1 : today.Month + 1) : today.Month;
+
+                await _repo.CreateCycleAsync(y, m);
+                await LoadCyclesAsync();
+
+                StatusMessage = $"Đã tạo chu kỳ {m:00}/{y}.";
             }
-            finally
+            catch (Exception ex)
             {
-                IsBusy = false;
+                StatusMessage = "Lỗi tạo chu kỳ: " + ex.Message;
+            }
+            finally { IsBusy = false; }
+            OnPropertyChanged(nameof(StatusMessage));
+        }
+
+        private async Task ReseedAsync()
+        {
+            if (SelectedCycle == null) return;
+            await _repo.ReseedRoomChargesAsync(SelectedCycle.CycleId);
+            await LoadSelectedCycleAsync();
+            StatusMessage = "Đã đồng bộ phòng vào chu kỳ.";
+            OnPropertyChanged(nameof(StatusMessage));
+        }
+
+        private async Task RecomputeAsync()
+        {
+            if (SelectedCycle == null) return;
+            var sets = _settings.Get();
+            foreach (var r in Rows)
+            {
+                var rc = r.Source;
+                rc.ElectricAmount = rc.ElectricReading?.Amount ?? 0;
+                rc.WaterAmount = rc.WaterReading?.Amount ?? 0;
+                rc.CustomFeesTotal = (rc.Fees?.Sum(f => f.Amount) ?? 0);
+                rc.Status = EvaluateStatus(rc, sets);
+                await _repo.UpdateRoomChargeAsync(rc);
+                r.Refresh();
+            }
+            Recalc();
+            StatusMessage = "Đã tính lại trạng thái.";
+            OnPropertyChanged(nameof(StatusMessage));
+        }
+
+        private async Task MakeReadyAsync(OverviewRow? row)
+        {
+            if (row == null) return;
+            var sets = _settings.Get();
+            var rc = row.Source;
+
+            rc.ElectricAmount = rc.ElectricReading?.Amount ?? 0;
+            rc.WaterAmount = rc.WaterReading?.Amount ?? 0;
+            rc.CustomFeesTotal = (rc.Fees?.Sum(f => f.Amount) ?? 0);
+
+            var st = EvaluateStatus(rc, sets);
+            if (st == PaymentStatus.ReadyToSend || st == PaymentStatus.PartiallyPaid)
+                rc.Status = st;
+            else
+                await Shell.Current.DisplayAlertAsync("Chưa đủ", $"Phòng {rc.RoomCode} chưa đủ điều kiện.", "OK");
+
+            await _repo.UpdateRoomChargeAsync(rc);
+            row.Refresh();
+            Recalc();
+        }
+
+        private async Task MarkLateAsync(OverviewRow? row)
+        {
+            if (row == null) return;
+            row.Source.Status = PaymentStatus.Late;
+            await _repo.UpdateRoomChargeAsync(row.Source);
+            row.Refresh();
+            Recalc();
+        }
+
+        private async Task MarkPaidAsync(OverviewRow? row)
+        {
+            if (row == null || SelectedCycle == null) return;
+            var rc = row.Source;
+            var remaining = rc.AmountRemaining;
+            if (remaining <= 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Thông báo", "Phòng này đã thanh toán đủ.", "OK");
+                return;
+            }
+
+            await _repo.AddPaymentRecordAsync(new PaymentRecord
+            {
+                RoomChargeId = rc.RoomChargeId,
+                Amount = remaining,
+                PaidAt = DateTime.UtcNow,
+                IsPartial = false,
+                Note = "MarkPaid from overview"
+            });
+            await LoadSelectedCycleAsync();
+        }
+        private async Task ChooseStatusAsync(OverviewRow? row)
+        {
+            if (row == null) return;
+
+            var choice = await Shell.Current.DisplayActionSheet(
+                "Cập nhật trạng thái",
+                "Hủy", null,
+                "Đã trả", "Trả một phần", "Chưa trả", "Đánh dấu trễ");
+
+            switch (choice)
+            {
+                case "Đã trả":
+                    await MarkPaidAsync(row);
+                    break;
+                case "Trả một phần":
+                    await AddPartialPaymentAsync(row);
+                    break;
+                case "Chưa trả":
+                    await MarkUnpaidAsync(row);
+                    break;
+                case "Đánh dấu trễ":
+                    await MarkLateAsync(row);
+                    break;
+                default:
+                    break;
             }
         }
-
-        private async Task RecordPaymentAsync(RecordPaymentRequest req)
+        private async Task MarkUnpaidAsync(OverviewRow? row)
         {
-            if (req == null || req.RoomCharge == null) return;
-            // TODO: open prompt to get amount, add PaymentRecord and update repo
-            await Task.CompletedTask;
-        }
+            if (row == null) return;
+            var rc = row.Source;
+            rc.AmountPaid = 0;
+            rc.Status = PaymentStatus.ReadyToSend;
+            rc.PaidAt = null;
 
-        private async Task MarkPartialAsync(RoomCharge? rc)
-        {
-            if (rc == null) return;
-            rc.Status = PaymentStatus.PartiallyPaid;
             await _repo.UpdateRoomChargeAsync(rc);
-            RecalcSummary();
+            row.Refresh();
+            Recalc();
         }
 
-        private async Task MarkPaidAsync(RoomCharge? rc)
+        private async Task AddPartialPaymentAsync(OverviewRow? row)
         {
-            if (rc == null) return;
-            rc.AmountPaid = rc.TotalDue;
-            rc.Status = PaymentStatus.Paid;
-            rc.PaidAt = DateTime.UtcNow;
-            await _repo.UpdateRoomChargeAsync(rc);
-            RecalcSummary();
+            if (row == null) return;
+            var rc = row.Source;
+
+            var input = await Shell.Current.DisplayPromptAsync(
+                "Thanh toán một phần",
+                $"Nhập số tiền (Còn lại: {(rc.AmountRemaining):N0} đ):",
+                "Ghi nhận", "Hủy",
+                keyboard: Microsoft.Maui.Keyboard.Numeric);
+            if (string.IsNullOrWhiteSpace(input)) return;
+
+            if (!decimal.TryParse(input.Replace(".", "").Replace(",", ""), out var amount) || amount <= 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Số tiền không hợp lệ.", "OK");
+                return;
+            }
+
+            await _repo.AddPaymentRecordAsync(new PaymentRecord
+            {
+                RoomChargeId = rc.RoomChargeId,
+                Amount = amount,
+                PaidAt = DateTime.UtcNow,
+                IsPartial = true,
+                Note = "Partial from overview"
+            });
+            await LoadSelectedCycleAsync();
         }
 
-        private async Task SendLateRemindersAsync()
+        private async Task SendInvoiceEmailAsync(OverviewRow? row)
         {
-            if (CurrentCycle == null) return;
-            // TODO: collect targets and call _email.SendInvoiceAsync or dedicated reminder
-            await Task.CompletedTask;
+            if (row == null || SelectedCycle == null) return;
+
+            if (!TryFindInvoicePath(SelectedCycle.Year, SelectedCycle.Month, row.RoomCode, out var path))
+            {
+                await Shell.Current.DisplayAlertAsync("Chưa có hóa đơn", "Hãy vào trang Hóa đơn để tạo PDF trước.", "OK");
+                return;
+            }
+
+            var s = _settings.Get();
+            var info = await _roomQuery.GetForRoomAsync(row.RoomCode);
+            if (info.Emails.Count == 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Thiếu email", "Phòng này chưa có email người thuê.", "OK");
+                return;
+            }
+
+            await _email.SendInvoicePdfAsync(info, row.RoomCode, SelectedCycle.Year, SelectedCycle.Month, s, path);
+            await Shell.Current.DisplayAlertAsync("Đã gửi", $"Đã gửi hóa đơn cho {row.RoomCode}.", "OK");
         }
 
-        private void RecalcSummary()
+        private async Task SendAllWithInvoiceAsync()
         {
-            TotalDue = RoomCharges.Sum(r => r.TotalDue);
-            TotalPaid = RoomCharges.Sum(r => r.AmountPaid);
+            if (SelectedCycle == null) return;
+
+            var sent = 0; var skipped = 0;
+            foreach (var row in Rows)
+            {
+                if (!TryFindInvoicePath(SelectedCycle.Year, SelectedCycle.Month, row.RoomCode, out var path))
+                {
+                    skipped++;
+                    continue;
+                }
+                try
+                {
+                    var s = _settings.Get();
+                    var info = await _roomQuery.GetForRoomAsync(row.RoomCode);
+                    if (info.Emails.Count == 0) { skipped++; continue; }
+
+                    await _email.SendInvoicePdfAsync(info, row.RoomCode, SelectedCycle.Year, SelectedCycle.Month, s, path);
+                    sent++;
+                }
+                catch
+                {
+                    skipped++;
+                }
+            }
+
+            await Shell.Current.DisplayAlertAsync("Kết quả", $"Đã gửi: {sent}, Bỏ qua: {skipped} (chưa có PDF hoặc thiếu email).", "OK");
+        }
+
+        private static bool TryFindInvoicePath(int year, int month, string roomCode, out string path)
+        {
+            var folder = Path.Combine(FileSystem.AppDataDirectory, "invoices");
+            path = string.Empty;
+            if (!Directory.Exists(folder)) return false;
+            var prefix = $"{year}{month:00}-{roomCode}";
+            var file = Directory.GetFiles(folder, "*.pdf").FirstOrDefault(f => Path.GetFileName(f).StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            if (file == null) return false;
+            path = file;
+            return true;
+        }
+
+        private PaymentStatus EvaluateStatus(RoomCharge rc, PaymentSettings s)
+        {
+            if (rc.AmountPaid >= rc.TotalDue && rc.TotalDue > 0)
+                return PaymentStatus.Paid;
+
+            var needElec = (rc.ElectricReading?.Rate ?? s.DefaultElectricRate) > 0;
+            var elecOk = !needElec || (rc.ElectricReading?.Confirmed ?? false)
+                         && rc.ElectricReading!.Current >= rc.ElectricReading.Previous;
+
+            var needWater = (rc.WaterReading?.Rate ?? s.DefaultWaterRate) > 0;
+            var waterOk = !needWater || (rc.WaterReading?.Confirmed ?? false)
+                          && rc.WaterReading!.Current >= rc.WaterReading.Previous;
+
+            var totalOk = rc.BaseRent + (rc.Fees?.Sum(f => f.Amount) ?? 0)
+                          + (rc.ElectricReading?.Amount ?? 0)
+                          + (rc.WaterReading?.Amount ?? 0) >= 0;
+
+            if (elecOk && waterOk && totalOk)
+            {
+                if (rc.AmountPaid > 0 && rc.AmountPaid < rc.TotalDue) return PaymentStatus.PartiallyPaid;
+                return PaymentStatus.ReadyToSend;
+            }
+            return PaymentStatus.MissingData;
+        }
+
+        private void Recalc()
+        {
+            TotalDue = Rows.Sum(r => r.Source.TotalDue);
+            TotalPaid = Rows.Sum(r => r.Source.AmountPaid);
             TotalRemaining = TotalDue - TotalPaid;
-            LateCount = RoomCharges.Count(r => r.Status == PaymentStatus.Late);
+            ReadyCount = Rows.Count(r => r.Source.Status == PaymentStatus.ReadyToSend);
         }
     }
 
-    // small helper DTO for RecordPayment command
-    public class RecordPaymentRequest
+    public class PaymentCycleLight
     {
-        public RoomCharge? RoomCharge { get; set; }
-        public decimal Amount { get; set; }
-        public string? Note { get; set; }
+        public string CycleId { get; }
+        public int Year { get; }
+        public int Month { get; }
+        public string Display => $"{Month:00}/{Year}";
+
+        public PaymentCycleLight(PaymentCycle cycle)
+        {
+            CycleId = cycle.CycleId;
+            Year = cycle.Year;
+            Month = cycle.Month;
+        }
+    }
+    
+
+
+
+    public partial class OverviewRow : ObservableObject
+    {
+        public RoomCharge Source { get; }
+        public string RoomCode => Source.RoomCode;
+        public int Year { get; }
+        public int Month { get; }
+
+        [ObservableProperty] private string summary = "";
+        [ObservableProperty] private string statusText = "";
+
+        public OverviewRow(RoomCharge rc, int year, int month)
+        {
+            Source = rc;
+            Year = year;
+            Month = month;
+            Refresh();
+        }
+
+        public void Refresh()
+        {
+            Summary = $"Tổng: {Source.TotalDue:N0} đ | Đã trả: {Source.AmountPaid:N0} đ | Còn: {(Source.AmountRemaining):N0} đ";
+            StatusText = Source.Status switch
+            {
+                PaymentStatus.MissingData => "Thiếu dữ liệu",
+                PaymentStatus.ReadyToSend => "Sẵn sàng gửi",
+                PaymentStatus.SentFirst => "Đã gửi lần 1",
+                PaymentStatus.PartiallyPaid => "Đã trả một phần",
+                PaymentStatus.Paid => "Đã trả đủ",
+                PaymentStatus.Late => "Trễ hạn",
+                PaymentStatus.Closed => "Đã đóng",
+                _ => Source.Status.ToString()
+            };
+        }
     }
 }

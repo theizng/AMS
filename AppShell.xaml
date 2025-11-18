@@ -34,7 +34,7 @@
     <!-- FINANCIAL SECTION -->
     <FlyoutItem Title="Tài chính" FlyoutIcon="finance_icon.png">
         <ShellContent x:Name="Payment_OverviewShell"
-                      Title="Tiền thuê"
+                      Title="Trang tổng quan"
                       Route="payment_overview" />
         
         <ShellContent x:Name="Payment_MeterEntryShell"

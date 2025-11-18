@@ -3,62 +3,45 @@
     x:Class="AMS.Views.PaymentSettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Thiết lập thanh toán">
+    Title="Cài đặt thanh toán">
 
     <ScrollView>
-        <VerticalStackLayout Padding="14" Spacing="12">
+        <VerticalStackLayout Padding="16" Spacing="12">
 
-            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
-                <VerticalStackLayout Spacing="8">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Chu kỳ và Hạn" FontAttributes="Bold" FontSize="18"/>
-                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Ngày thu (1..28)" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" WidthRequest="90" Keyboard="Numeric" Text="{Binding DefaultDueDay}"/>
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Số ngày ân hạn" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" WidthRequest="90" Keyboard="Numeric" Text="{Binding GraceDays}"/>
-                    </Grid>
-                    <HorizontalStackLayout Spacing="8">
-                        <Switch IsToggled="{Binding AutoReminderEnabled}" />
-                        <Label Style="{DynamicResource TextPrimary}" Text="Tự động nhắc trễ hạn" VerticalTextAlignment="Center"/>
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Frame>
+            <Label Text="Thông tin chuyển khoản" FontAttributes="Bold" />
+            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <Label Grid.Row="0" Grid.Column="0" Text="Tên tài khoản" VerticalTextAlignment="Center"/>
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding NameAccount}" Placeholder="Nguyễn Văn A" />
 
-            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
-                <VerticalStackLayout Spacing="8">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Google Sheets" FontAttributes="Bold" FontSize="18"/>
-                    <Entry Style="{DynamicResource TextPrimary}" Placeholder="Spreadsheet ID" Text="{Binding SpreadsheetId}" />
-                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8" RowDefinitions="Auto,Auto">
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0" Text="Tab Điện" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="1" Text="{Binding ElectricSheetName}" />
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="2" Text="Tab Nước" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="3" Text="{Binding WaterSheetName}" />
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="0" Text="Tab Thông báo phí" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="1" Text="{Binding InvoiceSheetName}" />
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="2" Text="Range gốc" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="3" Text="{Binding BaseRange}" />
-                    </Grid>
-                    <Button Style="{DynamicResource TextPrimary}" Text="Kiểm tra kết nối" Command="{Binding TestSheetsCommand}" />
-                </VerticalStackLayout>
-            </Frame>
+                <Label Grid.Row="1" Grid.Column="0" Text="Số tài khoản" VerticalTextAlignment="Center"/>
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding BankAccount}" Keyboard="Numeric" Placeholder="123456789" />
 
-            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
-                <VerticalStackLayout Spacing="8">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Mặc định giá" FontAttributes="Bold" FontSize="18"/>
-                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Grid.Row="0" Text="Điện (đ/kWh)" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultElectricRate}"/>
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Grid.Row="0" Text="Nước (đ/m³)" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultWaterRate}"/>
+                <Label Grid.Row="2" Grid.Column="0" Text="Ngân hàng" VerticalTextAlignment="Center"/>
+                <Entry Grid.Row="2" Grid.Column="1" Text="{Binding BankName}" Placeholder="Vietcombank" />
 
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Grid.Row="1" Text="Internet (đ/phòng)" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultInternetFlat}"/>
-                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Grid.Row="1" Text="Vệ sinh (đ/phòng)" />
-                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" Grid.Row="1" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultCleaningFlat}"/>
-                    </Grid>
-                    <Button Style="{DynamicResource TextPrimary}" Text="Lưu thiết lập" Command="{Binding SaveSettingsCommand}" WidthRequest="140" />
-                </VerticalStackLayout>
-            </Frame>
+                <Label Grid.Row="3" Grid.Column="0" Text="Chi nhánh" VerticalTextAlignment="Center"/>
+                <Entry Grid.Row="3" Grid.Column="1" Text="{Binding Branch}" Placeholder="CN Thủ Đức" />
+            </Grid>
+
+            <BoxView HeightRequest="1" BackgroundColor="#E0E0E0"/>
+
+            <Label Text="Thiết lập chu kỳ" FontAttributes="Bold" />
+            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <Label Grid.Row="0" Grid.Column="0" Text="Ngày thu tiền" VerticalTextAlignment="Center"/>
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding DefaultDueDay}" Keyboard="Numeric" Placeholder="1..28" />
+
+                <Label Grid.Row="1" Grid.Column="0" Text="Ngày ân hạn" VerticalTextAlignment="Center"/>
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding GraceDays}" Keyboard="Numeric" Placeholder="số ngày" />
+            </Grid>
+
+            <BoxView HeightRequest="1" BackgroundColor="#E0E0E0"/>
+
+
+            <HorizontalStackLayout Spacing="10" Margin="0,8,0,0">
+                <Button Text="Tải" Command="{Binding LoadCommand}" />
+                <Button Text="Lưu" Command="{Binding SaveCommand}" />
+                <Label Text="{Binding Status}" VerticalTextAlignment="Center" TextColor="#607D8B" FontSize="12"/>
+            </HorizontalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>

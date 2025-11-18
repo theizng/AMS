@@ -12,10 +12,8 @@ namespace AMS.Data
         public DbSet<House> Houses { get; set; }
         public DbSet<RoomOccupancy> RoomOccupancies { get; set; } = null!;
         public DbSet<Bike> Bikes { get; set; } = null!;
-        public DbSet<Invoice> Invoices { get; set; } = null!;
         public DbSet<Contract> Contracts { get; set; } = null!;
         public DbSet<ContractAddendum> ContractAddendums { get; set; } = null!;
-
         // NEW: Payments domain
         public DbSet<PaymentCycle> PaymentCycles { get; set; } = null!;
         public DbSet<RoomCharge> RoomCharges { get; set; } = null!;
@@ -169,35 +167,7 @@ namespace AMS.Data
             });
 
             // PAYMENTS: legacy Invoices (kept)
-            modelBuilder.Entity<Invoice>(e =>
-            {
-                e.ToTable("Invoices");
-                e.HasKey(i => i.Id);
 
-                e.Property(i => i.RoomId).IsRequired();
-                e.Property(i => i.BillingMonth).IsRequired();
-
-                e.Property(i => i.Status).HasConversion<int>().HasDefaultValue(InvoiceStatus.Unpaid);
-                e.Property(i => i.BaseRent).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-                e.Property(i => i.Utilities).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-                e.Property(i => i.Extras).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-                e.Property(i => i.TotalAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-                e.Property(i => i.PaidAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-
-                e.HasOne(i => i.Room)
-                    .WithMany()
-                    .HasForeignKey(i => i.RoomId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                e.HasIndex(i => new { i.RoomId, i.BillingMonth }).IsUnique();
-
-                e.ToTable(t =>
-                {
-                    t.HasCheckConstraint("CK_Invoice_Total_NonNegative", "[TotalAmount] >= 0");
-                    t.HasCheckConstraint("CK_Invoice_Paid_NonNegative", "[PaidAmount] >= 0");
-                    t.HasCheckConstraint("CK_Invoice_Paid_Le_Total", "[PaidAmount] <= [TotalAmount]");
-                });
-            });
 
             // CONTRACT
             modelBuilder.Entity<Contract>(entity =>
@@ -279,7 +249,6 @@ namespace AMS.Data
                 e.Property(x => x.RoomCode).IsRequired().HasMaxLength(64);
 
                 e.Property(x => x.BaseRent).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-                e.Property(x => x.UtilityFeesTotal).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.CustomFeesTotal).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.ElectricAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.WaterAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
@@ -347,7 +316,7 @@ namespace AMS.Data
             {
                 e.HasKey(x => x.FeeInstanceId);
                 e.Property(x => x.RoomChargeId).IsRequired();
-                e.Property(x => x.FeeTypeId).IsRequired();
+                e.Property(x => x.FeeTypeId).IsRequired(false);
                 e.Property(x => x.Name).IsRequired().HasMaxLength(128);
                 e.Property(x => x.Rate).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.Quantity).HasColumnType("decimal(18,2)").HasDefaultValue(1);
