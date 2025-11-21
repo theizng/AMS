@@ -62,15 +62,15 @@
         <ShellContent x:Name="RevenueShell"
                   Title="Báo cáo doanh thu"
                   Route="report_revenue" />
-        
-        <ShellContent x:Name="UtilitiesShell"
-                  Title="Báo cáo chi phí"
-                  Route="report_utilities" />
-        
+
         <ShellContent x:Name="ProfitShell"
                   Title="Báo cáo lợi nhuận"
                   Route="report_profit" />
-        
+
+        <ShellContent x:Name="UtilitiesShell"
+                  Title="Báo cáo chi phí"
+                  Route="report_utilities" />
+
         <ShellContent x:Name="RoomStatusShell"
                   Title="Báo cáo tình trạng phòng"
                   Route="report_roomstatus" />

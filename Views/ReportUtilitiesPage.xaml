@@ -1,12 +1,60 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.ReportUtilitiesPage"
-             Title="ReportUtilitiesPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+<ContentPage
+    x:Class="AMS.Views.ReportUtilitiesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AMS.ViewModels"
+    xmlns:mc="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
+    Title="Báo cáo Chi phí điện nước">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="14">
+
+            <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="8">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Tháng" VerticalTextAlignment="Center"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" WidthRequest="60" Keyboard="Numeric" Text="{Binding Month}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Năm" VerticalTextAlignment="Center"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" WidthRequest="80" Keyboard="Numeric" Text="{Binding Year}"/>
+                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="Tải" Command="{Binding LoadCommand}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Style="{DynamicResource TextPrimary}" Text="Chi phí điện" FontAttributes="Bold"/>
+                                <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalElectric, StringFormat='{0:N0} đ'}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                        <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Style="{DynamicResource TextPrimary}" Text="Chi phí nước" FontAttributes="Bold"/>
+                                <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalWater, StringFormat='{0:N0} đ'}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                        <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Style="{DynamicResource TextPrimary}" Text="Sửa chữa / Phí chung" FontAttributes="Bold"/>
+                                <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRepairs, StringFormat='{0:N0} đ'}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
+
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Chi phí điện / nước / phí chung theo tháng" FontAttributes="Bold"/>
+                    <mc:ChartView HeightRequest="240" Chart="{Binding UtilitiesChart}" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

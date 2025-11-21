@@ -13,15 +13,15 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <Frame Padding="12" CornerRadius="10" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Tổng doanh thu" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalRevenue, StringFormat='{0:N0} đ'}"
+                        <Label Style="{DynamicResource TextPrimary}" Text="Tổng doanh thu" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRevenue, StringFormat='{0:N0} đ'}"
                                FontSize="18" TextColor="#1B5E20"/>
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="12" CornerRadius="10" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Doanh thu chưa thu" FontAttributes="Bold"/>
-                        <Label Text="{Binding UnpaidRevenue, StringFormat='{0:N0} đ'}"
+                        <Label Style="{DynamicResource TextPrimary}" Text="Doanh thu chưa thu" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding UnpaidRevenue, StringFormat='{0:N0} đ'}"
                                FontSize="18" TextColor="#C62828"/>
                     </VerticalStackLayout>
                 </Frame>
@@ -30,23 +30,23 @@
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Từ ngày" VerticalTextAlignment="Center"/>
-                        <DatePicker Grid.Column="1" Date="{Binding FromDate}" />
-                        <Label Grid.Column="2" Text="Đến ngày" VerticalTextAlignment="Center"/>
-                        <DatePicker Grid.Column="3" Date="{Binding ToDate}" />
-                        <Button Grid.Column="4" Text="Lọc" Command="{Binding FilterCommand}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Từ ngày" VerticalTextAlignment="Center"/>
+                        <DatePicker Style="{DynamicResource TextPrimary}" Grid.Column="1" Date="{Binding FromDate}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Đến ngày" VerticalTextAlignment="Center"/>
+                        <DatePicker Style="{DynamicResource TextPrimary}" Grid.Column="3" Date="{Binding ToDate}" />
+                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="Lọc" Command="{Binding FilterCommand}" />
                     </Grid>
 
                     <HorizontalStackLayout Spacing="8">
-                        <Button Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
-                        <Button Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Frame>
 
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout>
-                    <Label Text="Doanh thu theo tháng" FontAttributes="Bold"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Doanh thu theo tháng" FontAttributes="Bold"/>
                     <mc:ChartView HeightRequest="220" Chart="{Binding RevenueChart}" />
                 </VerticalStackLayout>
             </Frame>

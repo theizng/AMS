@@ -2,7 +2,7 @@
 using System.Linq;
 using AMS.Models;
 using Microcharts;
-using SkiaSharp; // for colors
+using SkiaSharp;
 
 namespace AMS.Helpers
 {
@@ -76,7 +76,6 @@ namespace AMS.Helpers
             return entries;
         }
 
-        // New: interleave Doanh thu and Lợi nhuận for a "double bar" per month
         public static IEnumerable<ChartEntry> BuildRevenueProfitPairedEntries(IEnumerable<MonthlyValue> source)
         {
             var revColor = SKColor.Parse("#42A5F5");
@@ -86,15 +85,45 @@ namespace AMS.Helpers
             {
                 yield return new ChartEntry((float)m.Revenue)
                 {
-                    Label = m.MonthLabel, // show month label under the first bar
+                    Label = m.MonthLabel,
                     ValueLabel = m.Revenue.ToString("N0"),
                     Color = revColor
                 };
                 yield return new ChartEntry((float)m.Profit)
                 {
-                    Label = "", // keep axis clean by hiding duplicate month label
+                    Label = "",
                     ValueLabel = m.Profit.ToString("N0"),
                     Color = profColor
+                };
+            }
+        }
+
+        // NEW: Triple bar per month (Electric, Water, GeneralFees)
+        public static IEnumerable<ChartEntry> BuildUtilitiesTripleEntries(IEnumerable<MonthlyValue> source)
+        {
+            var elecColor = SKColor.Parse("#42A5F5");
+            var waterColor = SKColor.Parse("#26C6DA");
+            var generalColor = SKColor.Parse("#8D6E63"); // brown tone for general fees
+
+            foreach (var m in source.OrderBy(s => s.Month))
+            {
+                yield return new ChartEntry((float)m.Utilities1)
+                {
+                    Label = m.MonthLabel,
+                    ValueLabel = m.Utilities1.ToString("N0"),
+                    Color = elecColor
+                };
+                yield return new ChartEntry((float)m.Utilities2)
+                {
+                    Label = "",
+                    ValueLabel = m.Utilities2.ToString("N0"),
+                    Color = waterColor
+                };
+                yield return new ChartEntry((float)m.GeneralFees)
+                {
+                    Label = "",
+                    ValueLabel = m.GeneralFees.ToString("N0"),
+                    Color = generalColor
                 };
             }
         }

@@ -1,12 +1,47 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.ReportProfitsPage"
-             Title="ReportProfitsPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+<ContentPage
+    x:Class="AMS.Views.ReportProfitsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AMS.ViewModels"
+    xmlns:mc="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
+    Title="Báo cáo Lợi nhuận">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="14">
+
+            <Frame Padding="12" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="4">
+                    <Label Style="{DynamicResource TextPrimary}" Text="Tổng lợi nhuận" FontAttributes="Bold"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalProfit, StringFormat='{0:N0} đ'}"
+                           FontSize="18" TextColor="#1B5E20"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="8">
+                    <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="8">
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Từ ngày" VerticalTextAlignment="Center"/>
+                        <DatePicker Style="{DynamicResource TextPrimary}" Grid.Column="1" Date="{Binding FromDate}" />
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Đến ngày" VerticalTextAlignment="Center"/>
+                        <DatePicker Style="{DynamicResource TextPrimary}" Grid.Column="3" Date="{Binding ToDate}" />
+                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="Lọc" Command="{Binding FilterCommand}" />
+                    </Grid>
+
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Lợi nhuận theo tháng" FontAttributes="Bold"/>
+                    <mc:ChartView HeightRequest="240" Chart="{Binding ProfitChart}" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

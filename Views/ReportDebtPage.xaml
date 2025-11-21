@@ -1,12 +1,101 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.ReportDebtPage"
-             Title="ReportDebtPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+<ContentPage
+    x:Class="AMS.Views.ReportDebtPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Báo cáo công nợ">
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="14">
+            <!-- Filters -->
+            <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="8">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+                        <Label Grid.Column="0" Text="Tháng" VerticalTextAlignment="Center"/>
+                        <Entry Grid.Column="1" WidthRequest="60" Keyboard="Numeric" Text="{Binding Month}"/>
+                        <Label Grid.Column="2" Text="Năm" VerticalTextAlignment="Center"/>
+                        <Entry Grid.Column="3" WidthRequest="80" Keyboard="Numeric" Text="{Binding Year}"/>
+                        <Picker Grid.Column="4"
+                                Title="Lọc trạng thái"
+                                ItemsSource="{Binding StatusFilterOptions}"
+                                SelectedItem="{Binding SelectedStatusFilter}" />
+                        <Button Grid.Column="5" Text="Tải" Command="{Binding LoadCommand}" />
+                    </Grid>
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                        <Button Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Summary -->
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Tổng phòng" FontAttributes="Bold"/>
+                        <Label Text="{Binding TotalRooms}" />
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Còn nợ" FontAttributes="Bold"/>
+                        <Label Text="{Binding DebtRooms}" TextColor="#C62828"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Đã trả đủ" FontAttributes="Bold"/>
+                        <Label Text="{Binding PaidRooms}" TextColor="#2E7D32"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Trễ hạn" FontAttributes="Bold"/>
+                        <Label Text="{Binding LateRooms}" TextColor="#EF6C00"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- List -->
+            <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Danh sách phòng" FontAttributes="Bold" FontSize="16"/>
+                    <CollectionView ItemsSource="{Binding Rows}" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Padding="10" Margin="0,6" CornerRadius="8" BorderColor="#E0E0E0">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding RoomCode}"
+                                               FontAttributes="Bold" />
+                                        <Border Grid.Row="0" Grid.Column="1"
+                                                Padding="8,4" StrokeThickness="0"
+                                                Background="{Binding StatusColor}">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="6" />
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding StatusText}" FontSize="12"/>
+                                        </Border>
+
+                                        <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding AmountRemainingDisplay}"
+                                                   TextColor="{Binding AmountColor}" />
+                                            <Button Grid.Column="1"
+                                                    Text="Nhắc đóng tiền"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemindCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    IsEnabled="{Binding CanRemind}" />
+                                        </Grid>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Chưa có dữ liệu." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#777"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

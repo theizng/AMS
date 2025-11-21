@@ -60,11 +60,13 @@ namespace AMS.ViewModels
                 var today = DateTime.Today;
                 var thisYear = today.Year;
 
-                // Current cycle summary
+                // Load chu kỳ thanh toán hiện tại -> Là tháng hiện tại truy cập app, nếu không có -> Tạo mới.
                 var currentCycle = await _payments.GetCycleAsync(today.Year, today.Month)
                                   ?? await _payments.CreateCycleAsync(today.Year, today.Month);
+                //Load đối tượng tình trạng thanh toán của phòng -> Là tình trạng thanh toán thuộc chu kỳ hiện tại.
                 var chargesCurrent = await _payments.GetRoomChargesForCycleAsync(currentCycle.CycleId);
 
+                //Doanh thu = Tổng
                 CurrentMonthRevenue = chargesCurrent.Sum(rc => rc.TotalDue);
                 var utilCurr = chargesCurrent.Sum(rc => rc.UtilityFeesTotal);
                 var customCurr = chargesCurrent.Sum(rc => rc.CustomFeesTotal);

@@ -165,6 +165,10 @@ namespace AMS
             //Đăng ký Viewmodels cho Reports:
             builder.Services.AddTransient<ReportsViewModel>();
             builder.Services.AddTransient<ReportRevenueViewModel>();
+            builder.Services.AddTransient<ReportUtilitiesViewModel>();
+            builder.Services.AddTransient<ReportProfitsViewModel>();
+            builder.Services.AddTransient<ReportDebtViewModel>();
+            builder.Services.AddTransient<ReportRoomStatusSimpleViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)

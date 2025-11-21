@@ -105,8 +105,8 @@
 	  <Compile Update="Views\PaymentMeterEntryPage.xaml.cs">
 	    <DependentUpon>PaymentMeterEntryPage.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Views\ReportRoomStatusPage.xaml.cs">
-	    <DependentUpon>ReportRoomStatusPage.xaml</DependentUpon>
+	  <Compile Update="Views\ReportDebtPage.xaml.cs">
+	    <DependentUpon>ReportDebtPage.xaml</DependentUpon>
 	  </Compile>
 	</ItemGroup>
 
@@ -168,13 +168,13 @@
 	  <MauiXaml Update="Views\PaymentsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Views\ReportDebtPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
 	  <MauiXaml Update="Views\ReportProfitsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\ReportRevenuePage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\ReportDebtPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\ReportRoomStatusPage.xaml">
