@@ -3,6 +3,7 @@ using AMS.Services;
 using AMS.Services.Interfaces;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,6 +26,7 @@ namespace AMS.ViewModels
         private readonly IOnlineMaintenanceReader _onlineReader;
         private readonly IMaintenanceSheetWriter _writer;
         private readonly IRoomsProvider _roomsProvider;
+        private readonly IEmailNotificationService _email;
 
         private ObservableCollection<MaintenanceRequest> _items = new();
         private string _searchText = "";
@@ -91,13 +93,15 @@ namespace AMS.ViewModels
             IMaintenanceSheetReader fileReader,
             IOnlineMaintenanceReader onlineReader,
             IMaintenanceSheetWriter writer,
-            IRoomsProvider roomsProvider
+            IRoomsProvider roomsProvider,
+            IEmailNotificationService emailNotificationService
             )
         {
             _fileReader = fileReader;
             _onlineReader = onlineReader;
             _writer = writer;
             _roomsProvider = roomsProvider;
+            _email = emailNotificationService;
             RefreshCommand = new Command(async () => await LoadAsync());
             SearchCommand = new Command(async () => await LoadAsync());
             ClearFilterCommand = new Command(async () =>
@@ -335,7 +339,6 @@ namespace AMS.ViewModels
                 return;
             }
 
-            // Since you removed "Đã hủy" from UI, don't include it here.
             var status = await Shell.Current.DisplayActionSheet("Trạng thái", "Hủy", null,
                 "Chưa xử lý", "Đang xử lý", "Đã xử lý", "Đã hủy");
             if (string.IsNullOrEmpty(status) || status == "Hủy") return;
@@ -349,18 +352,31 @@ namespace AMS.ViewModels
             var values = new Dictionary<string, object> { ["Trạng thái"] = status };
             if (!string.IsNullOrEmpty(priorityVi) && priorityVi != "Bỏ qua")
                 values["Mức độ ưu tiên"] = priorityVi;
-
+            decimal? costParsed = null;
             if (!string.IsNullOrWhiteSpace(costStr))
             {
                 var digits = new string(costStr.Where(ch => char.IsDigit(ch) || ch == '.' || ch == ',').ToArray());
                 if (decimal.TryParse(digits.Replace(",", ""), NumberStyles.Number, CultureInfo.InvariantCulture, out var cost))
+                {
                     values["Chi phí (nếu có)"] = cost;
+                    costParsed = cost;
+                }
             }
 
             try
             {
+                // Update remote (ignore any 429 retry logic; no post-update polling)
                 await _writer.UpdateAsync(item.RequestId!, values);
-                await LoadAsync(); // refresh
+
+                // Apply local state immediately for email & UI
+                item.Status = MapUiStatusToEnum(status);
+                if (!string.IsNullOrEmpty(priorityVi) && priorityVi != "Bỏ qua")
+                    item.Priority = priorityVi;
+                if (costParsed.HasValue)
+                    item.EstimatedCost = costParsed.Value;
+
+                await _email.SendMaintenanceStatusChangedAsync(item, default);
+                await LoadAsync(); // refresh whole list
             }
             catch (Exception ex)
             {
@@ -368,7 +384,47 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Không cập nhật được Google Sheet.", "OK");
             }
         }
+        private static MaintenanceStatus MapUiStatusToEnum(string vi) => vi switch
+        {
+            "Chưa xử lý" => MaintenanceStatus.New,
+            "Đang xử lý" => MaintenanceStatus.InProgress,
+            "Đã xử lý" => MaintenanceStatus.Done,
+            "Đã hủy" => MaintenanceStatus.Cancelled,
+            _ => MaintenanceStatus.New
+        };
+        private async Task<MaintenanceRequest?> TryGetUpdatedRequestAsync(string requestId, int attempts = 3, int delayMs = 600)
+        {
+            for (int i = 0; i < attempts; i++)
+            {
+                var r = await GetUpdatedRequestByIdAsync(requestId);
+                if (r != null) return r;
+                await Task.Delay(delayMs);
+            }
+            return null;
+        }
 
+        private async Task<MaintenanceRequest?> GetUpdatedRequestByIdAsync(string requestId)
+        {
+            IReadOnlyList<MaintenanceRequest> all;
+            var url = Preferences.Get("maintenance:sheet:url", _sheetUrl ?? "");
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                var urlWithCb = AppendCacheBuster(url);
+                all = await _onlineReader.ReadFromUrlAsync(urlWithCb);
+            }
+            else
+            {
+                var path = Preferences.Get("maintenance:sheet:path", _sheetPath ?? ""); // fixed key
+                if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
+                all = await _fileReader.ReadAsync(path);
+            }
+
+            foreach (var m in all)
+                if (!string.IsNullOrWhiteSpace(m.StatusVi) && TryParseStatusCell(m.StatusVi, out var parsed))
+                    m.Status = parsed;
+
+            return all.FirstOrDefault(x => x.RequestId == requestId);
+        }
         private async Task CreateAsync()
         {
             // Kept for now (no-op if you stop calling it from UI).

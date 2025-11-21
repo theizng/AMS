@@ -32,7 +32,12 @@ namespace AMS
             //Trang Cài đặt
             SetDiTemplate(SettingsShell, typeof(SettingsPage));
             //Trang báo cáo thống kê
-            SetDiTemplate(OverviewShell, typeof(OverviewPage));
+            SetDiTemplate(ReportOverviewShell, typeof(ReportsPage));
+            SetDiTemplate(RevenueShell, typeof(ReportRevenuePage));
+            SetDiTemplate(UtilitiesShell, typeof(ReportUtilitiesPage));
+            SetDiTemplate(ProfitShell, typeof(ReportProfitsPage));
+            SetDiTemplate(RoomStatusShell, typeof(ReportRoomStatusPage));
+            SetDiTemplate(DebtShell, typeof(ReportDebtPage));
             //SetDiTemplate(ReportsShell, typeof(ReportsPage));
             // Register routes for pages not in Shell tree (or for parameterized navigation)
             //Trang quản lý nhà

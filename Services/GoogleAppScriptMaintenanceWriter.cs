@@ -10,6 +10,7 @@ namespace AMS.Services
         private readonly string _scriptUrl;
         private readonly string _token;
         private readonly string? _sheetName;
+        private readonly string _endpoint; 
 
         public GoogleAppScriptMaintenanceWriter(HttpClient http, string scriptUrl, string token, string? sheetName = null)
         {
@@ -21,7 +22,10 @@ namespace AMS.Services
 
         public async Task UpdateAsync(string requestId, IDictionary<string, object> values, CancellationToken ct = default)
         {
-            var payload = new { token = _token, action = "update", requestId, values, sheetName = _sheetName };
+            var payload = new 
+            { 
+                token = _token, action = "update", requestId, values, sheetName = _sheetName };
+
             await PostExpectOk(payload, ct);
         }
 

@@ -1,7 +1,6 @@
 ﻿using AMS.Models;
 using AMS.Services.Interfaces;
 using Microsoft.Maui.Storage;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.IO;
 using System.Text;
@@ -13,7 +12,7 @@ namespace AMS.Services
     public class EmailNotificationService : IEmailNotificationService
     {
         private readonly IEmailService _email;
-
+        private readonly IContractsRepository _contracts;
         // Keys must match SettingsViewModel
         private const string K_SmtpHost = "email:smtp:host";
         private const string K_SmtpPort = "email:smtp:port";
@@ -23,9 +22,13 @@ namespace AMS.Services
         private const string K_SenderName = "email:sender:name";
         private const string K_SenderAddr = "email:sender:addr";
 
-        public EmailNotificationService(IEmailService email) => _email = email;
+        public EmailNotificationService(IEmailService email, IContractsRepository contracts)
+        {
+            _email = email;
+            _contracts = contracts;
+        }
 
-        // ========= Helpers =========
+       
 
         private static async Task<(string host, int port, bool ssl, string user, string pwd, string senderName, string senderAddr)> LoadSmtpAsync()
         {
@@ -133,23 +136,29 @@ namespace AMS.Services
         }
 
         // ========= MAINTENANCE STATUS UPDATE Notifications =========
-        public async Task SendMaintenanceStatusChangedAsync(string tenantEmail, MaintenanceRequest req, CancellationToken ct = default)
+        public async Task SendMaintenanceStatusChangedAsync(MaintenanceRequest req, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(tenantEmail)) return;
+            if (req == null || string.IsNullOrWhiteSpace(req.RoomCode)) return;
 
+            var contract = await _contracts.GetActiveContractByRoomAsync(req.RoomCode, DateTime.Now, default );
+            if (contract == null || contract.Tenants == null || contract.Tenants.Count ==0) return;
             var subject = $"[QLT] Cập nhật bảo trì - {req.RoomCode} - {req.StatusVi}";
             var body =
-            $@"Xin chào,
+                $@"Xin chào,
 
-            Yêu cầu bảo trì có mã {req.RequestId} cho phòng {req.RoomCode} đã được cập nhật trạng thái: {req.StatusVi}.
-            Phân loại: {req.Category}
-            Mô tả: {req.Description}
-            Chi phí ước tính: {(req.EstimatedCost.HasValue ? req.EstimatedCost.Value.ToString("N0") + " đ" : "(chưa có)")}
+                Yêu cầu bảo trì có mã {req.RequestId} cho phòng {req.RoomCode} đã được cập nhật trạng thái: {req.StatusVi}.
+                Phân loại: {req.Category}
+                Mô tả: {req.Description}
+                Chi phí ước tính: {(req.EstimatedCost.HasValue ? req.EstimatedCost.Value.ToString("N0") + " đ" : "(chưa có)")}
 
-            Trân trọng,
-            QLT";
+                Trân trọng,
+                QLT";
 
-            await SendAsync(tenantEmail, subject, body, ct: ct);
+            foreach (var t in contract.Tenants)
+            {
+                if (string.IsNullOrWhiteSpace(t.Email)) continue;
+                await SendAsync(t.Email, subject, body, ct: ct);
+            }
         }
 
 

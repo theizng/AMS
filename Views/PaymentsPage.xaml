@@ -9,8 +9,8 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Tạo chu kỳ" Priority="0" Order="Primary" Command="{Binding CreateCycleCommand}" />
         <ToolbarItem Text="Đồng bộ phòng" Priority="1" Order="Primary" Command="{Binding ReseedCommand}" />
-        <ToolbarItem Text="Tính trạng thái" Priority="2" Order="Primary" Command="{Binding RecomputeCommand}" />
-        <ToolbarItem Text="Gửi tất cả có hóa đơn" Priority="3" Order="Secondary" Command="{Binding SendAllWithInvoiceCommand}" />
+        <ToolbarItem Text="Làm mới" Priority="2" Order="Primary" Command="{Binding RecomputeCommand}" />
+        <ToolbarItem Text="Gửi hóa đơn cho tất cả phòng" Priority="3" Order="Secondary" Command="{Binding SendAllWithInvoiceCommand}" />
     </ContentPage.ToolbarItems>
 
     <Grid Padding="12" RowSpacing="10">
@@ -23,6 +23,7 @@
         <!-- Row 0: Cycle selector -->
         <HorizontalStackLayout Grid.Row="0" Spacing="8">
             <Picker 
+                Style="{DynamicResource TextPrimary}"
                 Title="Chọn chu kỳ"
                 WidthRequest="200"
                 ItemsSource="{Binding Cycles}"
@@ -35,33 +36,33 @@
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Tổng phải thu" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalDue, StringFormat='{0:N0} đ'}" />
+                        <Label Style="{DynamicResource TextPrimary}" Text="Tổng phải thu" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Đã thu" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}" />
+                        <Label Style="{DynamicResource TextPrimary}" Text="Đã thu" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Còn lại" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Còn lại" FontAttributes="Bold"/>
                         <!-- FIX: bind to TotalRemaining (viewmodel property) -->
-                        <Label Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" />
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Sẵn sàng gửi" FontAttributes="Bold"/>
-                        <Label Text="{Binding ReadyCount}" />
+                        <Label Style="{DynamicResource TextPrimary}" Text="Sẵn sàng gửi" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding ReadyCount}" />
                     </VerticalStackLayout>
                 </Frame>
             </Grid>
 
             <Label
-                Text="{Binding StatusMessage}"
+                Style="{DynamicResource TextPrimary}" Text="{Binding StatusMessage}"
                 TextColor="#FF7043"
                 FontSize="12"
                 IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmptyConverter}}" />
@@ -76,7 +77,7 @@
             <CollectionView.EmptyView>
                 <Grid Padding="20">
                     <Label
-                        Text="Chưa có dữ liệu cho chu kỳ đã chọn."
+                        Style="{DynamicResource TextPrimary}" Text="Chưa có dữ liệu cho chu kỳ đã chọn."
                         HorizontalOptions="Center"
                         VerticalOptions="Center"
                         TextColor="#666" />
@@ -103,7 +104,7 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Row 1: Room + Status badge (right) -->
-                            <Label Grid.Row="0" Grid.Column="0"
+                            <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0"
                                    Text="{Binding RoomCode}"
                                    FontAttributes="Bold" />
 
@@ -114,11 +115,11 @@
                                     <RoundRectangle CornerRadius="8" />
                                 </Border.StrokeShape>
                                 <!-- Vietnamese status text bound from OverviewRow.StatusText -->
-                                <Label Text="{Binding StatusText}" />
+                                <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusText}" />
                             </Border>
 
                             <!-- Row 2: Summary -->
-                            <Label Grid.Row="1" Grid.ColumnSpan="2"
+                            <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.ColumnSpan="2"
                                    Text="{Binding Summary}"
                                    LineBreakMode="TailTruncation"
                                    MaxLines="4" />
@@ -130,10 +131,10 @@
 
                                 <VerticalStackLayout Grid.Column="1" Spacing="6" HorizontalOptions="End">
                                     <!-- Single consolidated button -->
-                                    <Button Text="Cập nhật trạng thái"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Cập nhật trạng thái"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChooseStatusCommand}"
                                             CommandParameter="{Binding .}" />
-                                    <Button Text="Gửi hóa đơn (PDF)"
+                                    <Button Style="{DynamicResource TextPrimary}" Text="Gửi hóa đơn (PDF)"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendInvoiceEmailCommand}"
                                             CommandParameter="{Binding .}" />
                                 </VerticalStackLayout>

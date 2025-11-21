@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using AMS.Converters;
 using QuestPDF.Infrastructure;
 using DocumentFormat.OpenXml.VariantTypes;
+using Microcharts.Maui;
 namespace AMS
 {
     public static class MauiProgram
@@ -20,6 +21,7 @@ namespace AMS
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMicrocharts()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -179,6 +181,11 @@ namespace AMS
             builder.Services.AddTransient<PaymentsPage>();
             //Đăng ký Pages cho Reports:
             builder.Services.AddTransient<ReportsPage>();
+            builder.Services.AddTransient<ReportRevenuePage>();
+            builder.Services.AddTransient<ReportUtilitiesPage>();
+            builder.Services.AddTransient<ReportDebtPage>();
+            builder.Services.AddTransient<ReportProfitsPage>();
+            builder.Services.AddTransient<ReportRoomStatusPage>();
             //Đăng ký Pages cho Room:
             builder.Services.AddTransient<RoomsPage>();
             builder.Services.AddTransient<EditRoomPage>();

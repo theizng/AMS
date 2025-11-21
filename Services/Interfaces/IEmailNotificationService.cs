@@ -6,7 +6,7 @@ namespace AMS.Services.Interfaces
 {
     public interface IEmailNotificationService
     {
-        Task SendMaintenanceStatusChangedAsync(string tenantEmail, MaintenanceRequest request, CancellationToken ct = default);
+        Task SendMaintenanceStatusChangedAsync(MaintenanceRequest request, CancellationToken ct = default);
         Task SendInvoiceAsync(string tenantEmail, string subject, string body, CancellationToken ct = default);
         Task SendInvoicePdfAsync(RoomTenantInfo roomInfo, string roomCode, int year, int month, PaymentSettings settings, string pdfPath, CancellationToken ct = default);
         Task SendContractDraftAsync(Contract contract, CancellationToken ct = default);

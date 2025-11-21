@@ -55,12 +55,29 @@
     </FlyoutItem>
     <!--REPORT SECTION-->
     <FlyoutItem Title="Báo cáo và thống kê" FlyoutIcon="report_icon.png">
-        <ShellContent x:Name="OverviewShell"
+        <ShellContent x:Name="ReportOverviewShell"
                   Title="Tổng quan"
-                  Route="overview" />
+                  Route="report" />
+        
         <ShellContent x:Name="RevenueShell"
                   Title="Báo cáo doanh thu"
-                  Route="revenue" />
+                  Route="report_revenue" />
+        
+        <ShellContent x:Name="UtilitiesShell"
+                  Title="Báo cáo chi phí"
+                  Route="report_utilities" />
+        
+        <ShellContent x:Name="ProfitShell"
+                  Title="Báo cáo lợi nhuận"
+                  Route="report_profit" />
+        
+        <ShellContent x:Name="RoomStatusShell"
+                  Title="Báo cáo tình trạng phòng"
+                  Route="report_roomstatus" />
+        
+        <ShellContent x:Name="DebtShell"
+                  Title="Báo cáo công nợ"
+                  Route="report_debt" />
     </FlyoutItem>
 
     <!-- SETTINGS SECTION -->
