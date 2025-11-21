@@ -29,6 +29,7 @@ namespace AMS.ViewModels
         [ObservableProperty] private decimal totalDue;
         [ObservableProperty] private decimal totalPaid;
         [ObservableProperty] private decimal totalRemaining;
+        // ReadyCount now = count of rows that are sendable (data complete, unpaid, have PDF)
         [ObservableProperty] private int readyCount;
         [ObservableProperty] private string statusMessage = "";
 
@@ -264,7 +265,7 @@ namespace AMS.ViewModels
             if (row == null) return;
             var rc = row.Source;
             rc.AmountPaid = 0;
-            rc.Status = PaymentStatus.ReadyToSend;
+            rc.Status = PaymentStatus.UnPaid; // treat as unpaid & sendable when data complete
             rc.PaidAt = null;
 
             await _repo.UpdateRoomChargeAsync(rc);
@@ -365,11 +366,9 @@ namespace AMS.ViewModels
             return true;
         }
 
-        private PaymentStatus EvaluateStatus(RoomCharge rc, PaymentSettings s)
+        // Minimal cleanup: separate data completeness from payment progress; ReadyToSend acts as unpaid & complete
+        private bool IsDataComplete(RoomCharge rc, PaymentSettings s)
         {
-            if (rc.AmountPaid >= rc.TotalDue && rc.TotalDue > 0)
-                return PaymentStatus.Paid;
-
             var needElec = (rc.ElectricReading?.Rate ?? s.DefaultElectricRate) > 0;
             var elecOk = !needElec || (rc.ElectricReading?.Confirmed ?? false)
                          && rc.ElectricReading!.Current >= rc.ElectricReading.Previous;
@@ -378,16 +377,30 @@ namespace AMS.ViewModels
             var waterOk = !needWater || (rc.WaterReading?.Confirmed ?? false)
                           && rc.WaterReading!.Current >= rc.WaterReading.Previous;
 
-            var totalOk = rc.BaseRent + (rc.Fees?.Sum(f => f.Amount) ?? 0)
-                          + (rc.ElectricReading?.Amount ?? 0)
-                          + (rc.WaterReading?.Amount ?? 0) >= 0;
+            var totalOk = rc.BaseRent +
+                          (rc.Fees?.Sum(f => f.Amount) ?? 0) +
+                          (rc.ElectricReading?.Amount ?? 0) +
+                          (rc.WaterReading?.Amount ?? 0) >= 0;
 
-            if (elecOk && waterOk && totalOk)
-            {
-                if (rc.AmountPaid > 0 && rc.AmountPaid < rc.TotalDue) return PaymentStatus.PartiallyPaid;
-                return PaymentStatus.ReadyToSend;
-            }
-            return PaymentStatus.MissingData;
+            return elecOk && waterOk && totalOk;
+        }
+
+        private PaymentStatus EvaluateStatus(RoomCharge rc, PaymentSettings sets)
+        {
+            if (!IsDataComplete(rc, sets))
+                return PaymentStatus.MissingData;
+
+            if (rc.AmountPaid >= rc.TotalDue && rc.TotalDue > 0)
+                return PaymentStatus.Paid;
+
+            if (rc.AmountPaid > 0 && rc.AmountPaid < rc.TotalDue)
+                return PaymentStatus.PartiallyPaid;
+
+            if (rc.Status == PaymentStatus.Late)
+                return PaymentStatus.Late;
+
+            // Treat sendable unpaid as ReadyToSend (legacy meaning)
+            return PaymentStatus.ReadyToSend;
         }
 
         private void Recalc()
@@ -395,10 +408,21 @@ namespace AMS.ViewModels
             TotalDue = Rows.Sum(r => r.Source.TotalDue);
             TotalPaid = Rows.Sum(r => r.Source.AmountPaid);
             TotalRemaining = TotalDue - TotalPaid;
-            ReadyCount = Rows.Count(r => r.Source.Status == PaymentStatus.ReadyToSend);
+
+            var sets = _settings.Get();
+            // ReadyCount now counts rows that are unpaid & complete & have a PDF
+            ReadyCount = Rows.Count(r =>
+            {
+                var rc = r.Source;
+                var complete = IsDataComplete(rc, sets);
+                var unpaid = rc.AmountRemaining > 0 && rc.Status != PaymentStatus.Paid;
+                var hasPdf = TryFindInvoicePath(r.Year, r.Month, r.RoomCode, out _);
+                return complete && unpaid && hasPdf;
+            });
 
             PaidCount = Rows.Count(r => r.Source.Status == PaymentStatus.Paid);
             UnpaidCount = Rows.Count(r => r.Source.Status != PaymentStatus.Paid);
+
             PaidUnpaidPie = new DonutChart
             {
                 Entries = ChartHelper.BuildPaidUnpaidEntries(PaidCount, UnpaidCount).ToList(),
@@ -443,11 +467,11 @@ namespace AMS.ViewModels
 
         public void Refresh()
         {
-            Summary = $"Tổng: {Source.TotalDue:N0} đ | Đã trả: {Source.AmountPaid:N0} đ | Còn: {(Source.AmountRemaining):N0} đ";
+            Summary = $"Tổng: {Source.TotalDue:N0} đ | Đã trả: {Source.AmountPaid:N0} đ | Còn: {Source.AmountRemaining:N0} đ";
             StatusText = Source.Status switch
             {
                 PaymentStatus.MissingData => "Thiếu dữ liệu",
-                PaymentStatus.ReadyToSend => "Sẵn sàng gửi",
+                PaymentStatus.UnPaid => "Chưa trả",          // renamed for clarity
                 PaymentStatus.SentFirst => "Đã gửi lần 1",
                 PaymentStatus.PartiallyPaid => "Đã trả một phần",
                 PaymentStatus.Paid => "Đã trả đủ",

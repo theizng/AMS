@@ -51,17 +51,37 @@
 
             <!-- Charts row -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <!-- Revenue/Profit chart -->
                 <Frame Grid.Column="0" Padding="10" CornerRadius="12" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Doanh thu và Lợi nhuận (năm nay)" FontAttributes="Bold" />
-                        <mc:ChartView HeightRequest="230" Chart="{Binding RevenueProfitChart}" />
+                        <mc:ChartView Chart="{Binding RevenueProfitChart}"
+                                      HorizontalOptions="FillAndExpand"
+                                      VerticalOptions="FillAndExpand">
+                            <mc:ChartView.HeightRequest>
+                                <OnPlatform x:TypeArguments="x:Double">
+                                    <On Platform="WinUI, MacCatalyst">360</On>
+                                    <On Platform="Android, iOS">230</On>
+                                </OnPlatform>
+                            </mc:ChartView.HeightRequest>
+                        </mc:ChartView>
                     </VerticalStackLayout>
                 </Frame>
 
+                <!-- Paid/Unpaid pie (optional but safe) -->
                 <Frame Grid.Column="1" Padding="10" CornerRadius="12" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Thanh toán tháng này" FontAttributes="Bold" />
-                        <mc:ChartView HeightRequest="220" Chart="{Binding PaidUnpaidPie}" />
+                        <mc:ChartView Chart="{Binding PaidUnpaidPie}"
+                                      HorizontalOptions="FillAndExpand"
+                                      VerticalOptions="FillAndExpand">
+                            <mc:ChartView.HeightRequest>
+                                <OnPlatform x:TypeArguments="x:Double">
+                                    <On Platform="WinUI, MacCatalyst">320</On>
+                                    <On Platform="Android, iOS">220</On>
+                                </OnPlatform>
+                            </mc:ChartView.HeightRequest>
+                        </mc:ChartView>
                     </VerticalStackLayout>
                 </Frame>
             </Grid>

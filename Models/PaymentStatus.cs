@@ -6,6 +6,7 @@
         ReadyToSend,
         SentFirst,
         PartiallyPaid,
+        UnPaid,
         Paid,
         Late,
         Closed

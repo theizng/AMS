@@ -47,7 +47,16 @@
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout>
                     <Label Style="{DynamicResource TextPrimary}" Text="Doanh thu theo tháng" FontAttributes="Bold"/>
-                    <mc:ChartView HeightRequest="220" Chart="{Binding RevenueChart}" />
+                    <mc:ChartView Chart="{Binding RevenueChart}"
+                                  HorizontalOptions="FillAndExpand"
+                                  VerticalOptions="FillAndExpand">
+                        <mc:ChartView.HeightRequest>
+                            <OnPlatform x:TypeArguments="x:Double">
+                                <On Platform="WinUI, MacCatalyst">360</On>
+                                <On Platform="Android, iOS">220</On>
+                            </OnPlatform>
+                        </mc:ChartView.HeightRequest>
+                    </mc:ChartView>
                 </VerticalStackLayout>
             </Frame>
 

@@ -181,7 +181,7 @@ QLT";
         private static string StatusToText(PaymentStatus status) => status switch
         {
             PaymentStatus.MissingData => "Thiếu dữ liệu",
-            PaymentStatus.ReadyToSend => "Sẵn sàng gửi",
+            PaymentStatus.UnPaid => "Chưa trả",
             PaymentStatus.SentFirst => "Đã gửi lần 1",
             PaymentStatus.PartiallyPaid => "Đã trả một phần",
             PaymentStatus.Paid => "Đã trả đủ",

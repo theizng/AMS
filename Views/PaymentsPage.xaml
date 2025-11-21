@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:mc="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
+    xmlns:conv="clr-namespace:AMS.Converters"
     Title="Chu kỳ thanh toán">
 
     <ContentPage.ToolbarItems>
@@ -12,6 +13,12 @@
         <ToolbarItem Text="Làm mới" Priority="2" Order="Primary" Command="{Binding RecomputeCommand}" />
         <ToolbarItem Text="Gửi hóa đơn cho tất cả phòng" Priority="3" Order="Secondary" Command="{Binding SendAllWithInvoiceCommand}" />
     </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <conv:PaymentStatusToBadgeColorConverter x:Key="StatusBadgeBgConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <Grid Padding="12" RowSpacing="10">
         <Grid.RowDefinitions>
@@ -31,26 +38,31 @@
         </HorizontalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="8">
-            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+
+            <!-- KPIs: switch to 2x2 grid so they never get squeezed off-screen -->
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <Frame Grid.Row="0" Grid.Column="0" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Tổng phải thu" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
-                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+
+                <Frame Grid.Row="0" Grid.Column="1" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Đã thu" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
-                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+
+                <Frame Grid.Row="1" Grid.Column="0" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Còn lại" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
-                <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
+
+                <Frame Grid.Row="1" Grid.Column="1" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Sẵn sàng gửi" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding ReadyCount}" />
@@ -64,15 +76,10 @@
                 FontSize="12"
                 IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmptyConverter}}" />
 
-            <Frame Padding="8" CornerRadius="10" BorderColor="#CFD8DC">
-                <VerticalStackLayout Spacing="4">
-                    <Label Style="{DynamicResource TextPrimary}" Text="Tình trạng thanh toán" FontAttributes="Bold"/>
-                    <mc:ChartView HeightRequest="200" Chart="{Binding PaidUnpaidPie}" />
-                </VerticalStackLayout>
-            </Frame>
+
         </VerticalStackLayout>
 
-        <!-- Room charges list unchanged -->
+        <!-- Room charges -->
         <CollectionView Grid.Row="2" ItemsSource="{Binding Rows}" SelectionMode="None">
             <CollectionView.EmptyView>
                 <Grid Padding="20">
@@ -100,12 +107,18 @@
                             <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0"
                                    Text="{Binding RoomCode}" FontAttributes="Bold" />
 
-                            <Border Grid.Row="0" Grid.Column="1" Padding="8,4" StrokeThickness="0" Background="#EEE"
+                            <!-- Color-coded status badge -->
+                            <Border Grid.Row="0" Grid.Column="1" Padding="10,5"
+                                    Background="{Binding Source.Status, Converter={StaticResource StatusBadgeBgConverter}}"
+                                    StrokeThickness="0"
                                     HorizontalOptions="End" VerticalOptions="Start">
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="8" />
+                                    <RoundRectangle CornerRadius="12" />
                                 </Border.StrokeShape>
-                                <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusText}" />
+                                <Label Text="{Binding StatusText}"
+                                       TextColor="White"
+                                       FontAttributes="Bold"
+                                       FontSize="12"/>
                             </Border>
 
                             <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.ColumnSpan="2"

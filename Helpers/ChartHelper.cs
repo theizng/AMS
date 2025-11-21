@@ -14,7 +14,7 @@ namespace AMS.Helpers
             return source.Select(m => new ChartEntry((float)m.Revenue)
             {
                 Label = m.MonthLabel,
-                ValueLabel = m.Revenue.ToString("N0"),
+                ValueLabel = m.Revenue.ToString("N0") + " đ",
                 Color = color
             });
         }
@@ -25,7 +25,7 @@ namespace AMS.Helpers
             return source.Select(m => new ChartEntry((float)m.Profit)
             {
                 Label = m.MonthLabel,
-                ValueLabel = m.Profit.ToString("N0"),
+                ValueLabel = m.Profit.ToString("N0") + " đ",
                 Color = color
             });
         }
@@ -36,7 +36,7 @@ namespace AMS.Helpers
             return source.Select(m => new ChartEntry((float)m.Utilities1)
             {
                 Label = m.MonthLabel,
-                ValueLabel = m.Utilities1.ToString("N0"),
+                ValueLabel = m.Utilities1.ToString("N0") + " đ",
                 Color = color
             });
         }
@@ -47,7 +47,7 @@ namespace AMS.Helpers
             return source.Select(m => new ChartEntry((float)m.Utilities2)
             {
                 Label = m.MonthLabel,
-                ValueLabel = m.Utilities2.ToString("N0"),
+                ValueLabel = m.Utilities2.ToString("N0") + " đ",
                 Color = color
             });
         }
@@ -86,13 +86,13 @@ namespace AMS.Helpers
                 yield return new ChartEntry((float)m.Revenue)
                 {
                     Label = m.MonthLabel,
-                    ValueLabel = m.Revenue.ToString("N0"),
+                    ValueLabel = m.Revenue.ToString("N0") + " đ",
                     Color = revColor
                 };
                 yield return new ChartEntry((float)m.Profit)
                 {
                     Label = "",
-                    ValueLabel = m.Profit.ToString("N0"),
+                    ValueLabel = m.Profit.ToString("N0") + " đ",
                     Color = profColor
                 };
             }
@@ -103,26 +103,26 @@ namespace AMS.Helpers
         {
             var elecColor = SKColor.Parse("#42A5F5");
             var waterColor = SKColor.Parse("#26C6DA");
-            var generalColor = SKColor.Parse("#8D6E63"); // brown tone for general fees
+            var generalColor = SKColor.Parse("#8D6E63");
 
             foreach (var m in source.OrderBy(s => s.Month))
             {
                 yield return new ChartEntry((float)m.Utilities1)
                 {
                     Label = m.MonthLabel,
-                    ValueLabel = m.Utilities1.ToString("N0"),
+                    ValueLabel = m.Utilities1.ToString("N0") + " đ",
                     Color = elecColor
                 };
                 yield return new ChartEntry((float)m.Utilities2)
                 {
                     Label = "",
-                    ValueLabel = m.Utilities2.ToString("N0"),
+                    ValueLabel = m.Utilities2.ToString("N0") + " đ",
                     Color = waterColor
                 };
                 yield return new ChartEntry((float)m.GeneralFees)
                 {
                     Label = "",
-                    ValueLabel = m.GeneralFees.ToString("N0"),
+                    ValueLabel = m.GeneralFees.ToString("N0") + " đ",
                     Color = generalColor
                 };
             }

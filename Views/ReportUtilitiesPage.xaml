@@ -51,7 +51,16 @@
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout>
                     <Label Style="{DynamicResource TextPrimary}" Text="Chi phí điện / nước / phí chung theo tháng" FontAttributes="Bold"/>
-                    <mc:ChartView HeightRequest="240" Chart="{Binding UtilitiesChart}" />
+                    <mc:ChartView Chart="{Binding UtilitiesChart}"
+                                  HorizontalOptions="FillAndExpand"
+                                  VerticalOptions="FillAndExpand">
+                        <mc:ChartView.HeightRequest>
+                            <OnPlatform x:TypeArguments="x:Double">
+                                <On Platform="WinUI, MacCatalyst">360</On>
+                                <On Platform="Android, iOS">240</On>
+                            </OnPlatform>
+                        </mc:ChartView.HeightRequest>
+                    </mc:ChartView>
                 </VerticalStackLayout>
             </Frame>
 
