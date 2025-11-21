@@ -1,7 +1,9 @@
-﻿using AMS.Models;
+﻿using AMS.Helpers;
+using AMS.Models;
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microcharts;
 using Microsoft.Maui.Storage;
 using System;
 using System.Collections.ObjectModel;
@@ -29,6 +31,11 @@ namespace AMS.ViewModels
         [ObservableProperty] private decimal totalRemaining;
         [ObservableProperty] private int readyCount;
         [ObservableProperty] private string statusMessage = "";
+
+        // Microcharts KPI
+        [ObservableProperty] private int paidCount;
+        [ObservableProperty] private int unpaidCount;
+        [ObservableProperty] private Chart? paidUnpaidPie;
 
         public IAsyncRelayCommand LoadCyclesCommand { get; }
         public IAsyncRelayCommand CreateCycleCommand { get; }
@@ -389,6 +396,15 @@ namespace AMS.ViewModels
             TotalPaid = Rows.Sum(r => r.Source.AmountPaid);
             TotalRemaining = TotalDue - TotalPaid;
             ReadyCount = Rows.Count(r => r.Source.Status == PaymentStatus.ReadyToSend);
+
+            PaidCount = Rows.Count(r => r.Source.Status == PaymentStatus.Paid);
+            UnpaidCount = Rows.Count(r => r.Source.Status != PaymentStatus.Paid);
+            PaidUnpaidPie = new DonutChart
+            {
+                Entries = ChartHelper.BuildPaidUnpaidEntries(PaidCount, UnpaidCount).ToList(),
+                HoleRadius = 0.5f,
+                LabelTextSize = 28
+            };
         }
     }
 
@@ -406,9 +422,6 @@ namespace AMS.ViewModels
             Month = cycle.Month;
         }
     }
-    
-
-
 
     public partial class OverviewRow : ObservableObject
     {

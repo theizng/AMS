@@ -1,12 +1,91 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AMS.Views.ReportsPage"
-             Title="ReportsPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+<ContentPage
+    x:Class="AMS.Views.ReportsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:conv="clr-namespace:AMS.Converters"
+    xmlns:vm="clr-namespace:AMS.ViewModels"
+    xmlns:mc="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
+    Title="Báo cáo và thống kê">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <conv:PaymentStatusToColorConverter x:Key="PaymentStatusToColorConverter" />
+            <conv:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="14">
+
+            <!-- Top KPIs -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Doanh thu tháng này" FontAttributes="Bold" FontSize="14"/>
+                        <Label Text="{Binding CurrentMonthRevenue, StringFormat='{0:N0} đ'}"
+                               FontSize="18" TextColor="#1B5E20"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Lợi nhuận tháng này" FontAttributes="Bold" FontSize="14"/>
+                        <Label Text="{Binding CurrentMonthProfit, StringFormat='{0:N0} đ'}"
+                               FontSize="18" TextColor="#004D40"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Padding="12" CornerRadius="12" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Số người thuê" FontAttributes="Bold" FontSize="14"/>
+                        <Label Text="{Binding CurrentTenantCount}"
+                               FontSize="18" TextColor="#0D47A1"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- Export -->
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                <Button Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+            </HorizontalStackLayout>
+
+            <!-- Charts row -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Frame Grid.Column="0" Padding="10" CornerRadius="12" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Doanh thu và Lợi nhuận (năm nay)" FontAttributes="Bold" />
+                        <mc:ChartView HeightRequest="230" Chart="{Binding RevenueProfitChart}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame Grid.Column="1" Padding="10" CornerRadius="12" BorderColor="#CFD8DC">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Thanh toán tháng này" FontAttributes="Bold" />
+                        <mc:ChartView HeightRequest="220" Chart="{Binding PaidUnpaidPie}" />
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- Debts list (RoomCode + AmountRemaining) -->
+            <Frame Padding="10" CornerRadius="12" BorderColor="#CFD8DC">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Danh sách phòng còn nợ" FontAttributes="Bold" FontSize="16"/>
+                    <CollectionView ItemsSource="{Binding Debts}" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Padding="4">
+                                    <Label Grid.Column="0" Text="{Binding RoomCode}" FontAttributes="Bold"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding AmountRemaining, StringFormat='{0:N0} đ'}"
+                                           TextColor="#C62828"
+                                           HorizontalTextAlignment="End"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

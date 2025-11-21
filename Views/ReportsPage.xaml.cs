@@ -1,9 +1,21 @@
-namespace AMS.Views;
+using AMS.ViewModels;
+using Microsoft.Maui.Controls;
 
-public partial class ReportsPage : ContentPage
+namespace AMS.Views
 {
-	public ReportsPage()
-	{
-		InitializeComponent();
-	}
+    public partial class ReportsPage : ContentPage
+    {
+        public ReportsPage(ReportsViewModel vm)
+        {
+            InitializeComponent();
+            BindingContext = vm; // wire VM -> UI
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext is ReportsViewModel vm && vm.LoadCommand.CanExecute(null))
+                await vm.LoadCommand.ExecuteAsync(null);
+        }
+    }
 }

@@ -162,6 +162,9 @@ namespace AMS
             //Đăng ký Viewmodels cho Contracts:
             builder.Services.AddTransient<ContractsViewModel>();
             builder.Services.AddTransient<ContractEditViewModel>();
+            //Đăng ký Viewmodels cho Reports:
+            builder.Services.AddTransient<ReportsViewModel>();
+            builder.Services.AddTransient<ReportRevenueViewModel>();
             return builder;
         }
         public static MauiAppBuilder RegisterPages(this MauiAppBuilder builder)
