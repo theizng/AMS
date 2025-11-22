@@ -21,10 +21,11 @@
                     </Grid>
                     <HorizontalStackLayout Spacing="8">
                         <Button Style="{DynamicResource TextPrimary}" Text="Đồng bộ" Command="{Binding SyncCommand}" BackgroundColor="#E3F2FD" />
-                        <Button Style="{DynamicResource TextPrimary}" Text="Xác nhận chỉ số" Command="{Binding ConfirmCommand}" BackgroundColor="#E8F5E9" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Lưu chỉ số cho tất cả phòng" Command="{Binding SaveAllCommand}" BackgroundColor="#E8F5E9" />
                         <Button Style="{DynamicResource TextPrimary}" Text="Chuyển kỳ" Command="{Binding RollForwardCommand}" BackgroundColor="#FFF3CD" />
                     </HorizontalStackLayout>
                     <Label Style="{DynamicResource TextPrimary}" Text="{Binding SourceInfo}" FontSize="12" TextColor="#607D8B" />
+                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding LastSheetMessage}" FontSize="12" TextColor="#455A64" />
                 </VerticalStackLayout>
             </Frame>
 

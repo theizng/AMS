@@ -53,7 +53,7 @@ namespace AMS
         }
         public static MauiAppBuilder RegisterServices(this MauiAppBuilder builder)
         {
-            var scriptUrl = "https://script.google.com/macros/s/AKfycbx9CIEPWpbIMlJ-2kpd6GpxzCHYG4bXBHbCvL5vmWXMHaPZEYp8uD_k_ByCPmzYWQI/exec";
+            var scriptUrl = "https://script.google.com/macros/s/AKfycbxo0tnS474z74gRp6Xgpnbbws8UynNwgM81kgmAvI8n0Hc0OVhfjzoxc1wXrmKoVmDM/exec";
             var token = "PbR6tUEJDxdKVvheO7SCLb7IXufOVh1KlQQtGmm4l7294s9d3D6bgHueJ7xZOMqK";
 
 
@@ -63,7 +63,7 @@ namespace AMS
 #if WINDOWS || MACCATALYST || LINUX
             QuestPDF.Settings.License = LicenseType.Community;
             builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
-#else       
+#else
             builder.Services.AddSingleton<IContractPdfService, DisabledContractPdfService>();
 #endif
             builder.Services.AddSingleton<IPdfCapabilityService, PdfCapabilityService>();
@@ -75,7 +75,6 @@ namespace AMS
             //used for contract
             builder.Services.AddSingleton<IContractRoomGuard, ContractRoomGuard>();
             builder.Services.AddSingleton<IRoomStatusService, RoomStatusService>();
-            builder.Services.AddSingleton<IContractPdfService, ContractPdfService>();
             builder.Services.AddSingleton<IContractsRepository, ContractsRepository>();
             builder.Services.AddScoped<TenantsNamesConverter>();
             builder.Services.AddScoped<IRoomOccupancyAdminService, RoomOccupancyAdminService>();
@@ -130,6 +129,7 @@ namespace AMS
             builder.Services.AddSingleton<ISecureStorage>(SecureStorage.Default);
             builder.Services.AddSingleton<IAuthService, AuthService>();
             builder.Services.AddSingleton<IThemeService, ThemeService>();
+            builder.Services.AddSingleton<IPlatformExportGuard, PlatformExportGuard>();
             return builder;
         }
         public static MauiAppBuilder RegisterViewModels(this MauiAppBuilder builder)

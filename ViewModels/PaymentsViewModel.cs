@@ -38,6 +38,9 @@ namespace AMS.ViewModels
         [ObservableProperty] private int unpaidCount;
         [ObservableProperty] private Chart? paidUnpaidPie;
 
+        // Add observable property
+        [ObservableProperty] private string dueReminderMessage = "";
+
         public IAsyncRelayCommand LoadCyclesCommand { get; }
         public IAsyncRelayCommand CreateCycleCommand { get; }
         public IAsyncRelayCommand ReseedCommand { get; }
@@ -128,6 +131,7 @@ namespace AMS.ViewModels
                     Rows.Add(new OverviewRow(rc, SelectedCycle.Year, SelectedCycle.Month));
             }
             Recalc();
+            await CheckAndApplyLateFeesAsync(); // NEW
         }
 
         private async Task CreateCycleAsync()
@@ -180,6 +184,7 @@ namespace AMS.ViewModels
             Recalc();
             StatusMessage = "Đã tính lại trạng thái.";
             OnPropertyChanged(nameof(StatusMessage));
+            await CheckAndApplyLateFeesAsync(); // NEW
         }
 
         private async Task MakeReadyAsync(OverviewRow? row)
@@ -302,13 +307,61 @@ namespace AMS.ViewModels
             await LoadSelectedCycleAsync();
         }
 
+        // === NEW HELPER: determine missing reasons & sendability ===
+        private string[] GetMissingReasons(OverviewRow row)
+        {
+            var rc = row.Source;
+            var reasons = new System.Collections.Generic.List<string>();
+
+            // Electric
+            if (rc.ElectricReading == null ||
+                rc.ElectricReading.Current <= rc.ElectricReading.Previous ||
+                rc.ElectricReading.Current == 0)
+                reasons.Add("Cần cập nhật chỉ số điện");
+
+            // Water
+            if (rc.WaterReading == null ||
+                rc.WaterReading.Current <= rc.WaterReading.Previous ||
+                rc.WaterReading.Current == 0)
+                reasons.Add("Cần cập nhật chỉ số nước");
+
+            // Invoice PDF
+            if (!TryFindInvoicePath(row.Year, row.Month, row.RoomCode, out _))
+                reasons.Add("Cần tạo hóa đơn PDF");
+
+            return reasons.ToArray();
+        }
+
+        private bool IsSendable(OverviewRow row)
+        {
+            var rc = row.Source;
+            // Data completeness
+            var reasons = GetMissingReasons(row);
+            if (reasons.Length > 0) return false;
+
+            // Must be unpaid (or partially) and not paid
+            if (rc.Status == PaymentStatus.Paid || rc.AmountRemaining <= 0) return false;
+
+            return true;
+        }
+
         private async Task SendInvoiceEmailAsync(OverviewRow? row)
         {
             if (row == null || SelectedCycle == null) return;
 
+            // Intercept when not sendable: show missing reasons
+            if (!row.CanSendInvoice)
+            {
+                var reasons = row.MissingReasonsText ?? "Thiếu dữ liệu.";
+                await Shell.Current.DisplayAlertAsync("Không thể gửi", reasons, "OK");
+                return;
+            }
+
             if (!TryFindInvoicePath(SelectedCycle.Year, SelectedCycle.Month, row.RoomCode, out var path))
             {
                 await Shell.Current.DisplayAlertAsync("Chưa có hóa đơn", "Hãy vào trang Hóa đơn để tạo PDF trước.", "OK");
+                // Force refresh of flags
+                row.Refresh();
                 return;
             }
 
@@ -409,16 +462,7 @@ namespace AMS.ViewModels
             TotalPaid = Rows.Sum(r => r.Source.AmountPaid);
             TotalRemaining = TotalDue - TotalPaid;
 
-            var sets = _settings.Get();
-            // ReadyCount now counts rows that are unpaid & complete & have a PDF
-            ReadyCount = Rows.Count(r =>
-            {
-                var rc = r.Source;
-                var complete = IsDataComplete(rc, sets);
-                var unpaid = rc.AmountRemaining > 0 && rc.Status != PaymentStatus.Paid;
-                var hasPdf = TryFindInvoicePath(r.Year, r.Month, r.RoomCode, out _);
-                return complete && unpaid && hasPdf;
-            });
+            ReadyCount = Rows.Count(r => r.CanSendInvoice);
 
             PaidCount = Rows.Count(r => r.Source.Status == PaymentStatus.Paid);
             UnpaidCount = Rows.Count(r => r.Source.Status != PaymentStatus.Paid);
@@ -429,6 +473,82 @@ namespace AMS.ViewModels
                 HoleRadius = 0.5f,
                 LabelTextSize = 28
             };
+        }
+
+        // Add method
+        private async Task CheckAndApplyLateFeesAsync()
+        {
+            if (SelectedCycle == null) { DueReminderMessage = "Chưa chọn chu kỳ."; return; }
+
+            var settings = _settings.Get();
+            var dueDay = Math.Clamp(settings.DefaultDueDay, 1, 28);
+            var dueDate = new DateTime(SelectedCycle.Year, SelectedCycle.Month, dueDay);
+            var lateThreshold = dueDate.AddDays(settings.GraceDays);
+            var now = DateTime.Today;
+
+            bool isCurrentMonth = SelectedCycle.Year == now.Year && SelectedCycle.Month == now.Month;
+
+            if (isCurrentMonth)
+            {
+                if (now < dueDate)
+                    DueReminderMessage = $"Chưa đến ngày thu phí. Ngày thu: {dueDay:00}/{SelectedCycle.Month:00}. Hãy chuẩn bị ghi chỉ số.";
+                else if (now <= lateThreshold)
+                    DueReminderMessage = "Đã đến ngày thu phí. Vui lòng ghi chỉ số và gửi thông báo phí.";
+                else
+                    DueReminderMessage = "Đã quá hạn thu phí (hết ân hạn). Các phòng chưa trả sẽ bị đánh dấu trễ hạn.";
+            }
+            else
+            {
+                DueReminderMessage = $"Chu kỳ {SelectedCycle.Display}: Ngày thu phí là {dueDay:00}/{SelectedCycle.Month:00}. (Không phải tháng hiện tại)";
+            }
+
+            // Apply late fee only if past lateThreshold AND this is current month.
+            if (!isCurrentMonth || now <= lateThreshold) return;
+
+            const string LateFeeTypeName = "Phí đóng tiền phòng trễ hạn";
+            var feeTypes = await _repo.GetFeeTypesAsync();
+            var lateType = feeTypes.FirstOrDefault(f => f.Name.Equals(LateFeeTypeName, StringComparison.OrdinalIgnoreCase));
+            if (lateType == null)
+            {
+                lateType = await _repo.AddFeeTypeAsync(new FeeType
+                {
+                    Name = LateFeeTypeName,
+                    DefaultRate = settings.LateFeeRate,
+                    Active = true
+                });
+            }
+
+            var charges = await _repo.GetRoomChargesForCycleAsync(SelectedCycle.CycleId);
+            bool anyChanged = false;
+            foreach (var rc in charges)
+            {
+                if (rc.Status == PaymentStatus.Paid || rc.Status == PaymentStatus.Closed || rc.AmountRemaining <= 0) continue;
+
+                if (rc.Status != PaymentStatus.Late)
+                {
+                    rc.Status = PaymentStatus.Late;
+                    anyChanged = true;
+                }
+
+                var already = rc.Fees.Any(f => f.FeeTypeId == lateType.FeeTypeId || f.Name == LateFeeTypeName);
+                if (!already)
+                {
+                    var fi = new FeeInstance
+                    {
+                        RoomChargeId = rc.RoomChargeId,
+                        FeeTypeId = lateType.FeeTypeId,
+                        Name = lateType.Name,
+                        Rate = lateType.DefaultRate,
+                        Quantity = 1
+                    };
+                    await _repo.AddFeeToRoomAsync(rc.RoomChargeId, fi);
+                    rc.CustomFeesTotal = rc.Fees.Sum(f => f.Amount) + fi.Amount;
+                    anyChanged = true;
+                }
+            }
+
+            if (anyChanged)
+                await LoadSelectedCycleAsync(); // refresh rows + recalculation
         }
     }
 
@@ -456,6 +576,9 @@ namespace AMS.ViewModels
 
         [ObservableProperty] private string summary = "";
         [ObservableProperty] private string statusText = "";
+        [ObservableProperty] private bool canSendInvoice;
+        [ObservableProperty] private string? missingReasonsText;
+        [ObservableProperty] private bool showStatusBadge;
 
         public OverviewRow(RoomCharge rc, int year, int month)
         {
@@ -468,17 +591,50 @@ namespace AMS.ViewModels
         public void Refresh()
         {
             Summary = $"Tổng: {Source.TotalDue:N0} đ | Đã trả: {Source.AmountPaid:N0} đ | Còn: {Source.AmountRemaining:N0} đ";
-            StatusText = Source.Status switch
+
+            // Hide internal statuses MissingData / ReadyToSend from UI badge
+            statusText = Source.Status switch
             {
-                PaymentStatus.MissingData => "Thiếu dữ liệu",
-                PaymentStatus.UnPaid => "Chưa trả",          // renamed for clarity
+                PaymentStatus.UnPaid => "Chưa trả",
                 PaymentStatus.SentFirst => "Đã gửi lần 1",
                 PaymentStatus.PartiallyPaid => "Đã trả một phần",
                 PaymentStatus.Paid => "Đã trả đủ",
                 PaymentStatus.Late => "Trễ hạn",
                 PaymentStatus.Closed => "Đã đóng",
-                _ => Source.Status.ToString()
+                _ => "" // MissingData / ReadyToSend => blank
             };
+            StatusText = statusText;
+            ShowStatusBadge = !string.IsNullOrWhiteSpace(StatusText);
+
+            // Compute sendability & missing reasons
+            var reasons = new System.Collections.Generic.List<string>();
+
+            if (Source.ElectricReading == null ||
+                Source.ElectricReading.Current <= Source.ElectricReading.Previous ||
+                Source.ElectricReading.Current == 0)
+                reasons.Add("Cần cập nhật chỉ số điện");
+
+            if (Source.WaterReading == null ||
+                Source.WaterReading.Current <= Source.WaterReading.Previous ||
+                Source.WaterReading.Current == 0)
+                reasons.Add("Cần cập nhật chỉ số nước");
+
+            var hasPdf = FileExistsInvoice();
+            if (!hasPdf) reasons.Add("Cần tạo hóa đơn PDF");
+
+            var unpaid = Source.AmountRemaining > 0 && Source.Status != PaymentStatus.Paid;
+
+            CanSendInvoice = reasons.Count == 0 && unpaid;
+            MissingReasonsText = reasons.Count > 0 ? string.Join("\n", reasons) : null;
+        }
+
+        private bool FileExistsInvoice()
+        {
+            var folder = Path.Combine(FileSystem.AppDataDirectory, "invoices");
+            if (!Directory.Exists(folder)) return false;
+            var prefix = $"{Year}{Month:00}-{RoomCode}";
+            return Directory.GetFiles(folder, "*.pdf")
+                .Any(f => Path.GetFileName(f).StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

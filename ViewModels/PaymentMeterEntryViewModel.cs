@@ -17,7 +17,7 @@ namespace AMS.ViewModels
         private readonly IPaymentsRepository _repo;
         private readonly IOnlineMeterSheetReader _onlineReader;
         private readonly IMeterSheetReader _fileReader;
-        private readonly IOnlineMeterSheetWriter? _onlineWriter; // now holds scriptUrl+token internally
+        private readonly IOnlineMeterSheetWriter? _onlineWriter;
 
         [ObservableProperty] private bool isBusy;
         [ObservableProperty] private PaymentCycle? currentCycle;
@@ -26,10 +26,11 @@ namespace AMS.ViewModels
         [ObservableProperty] private string? localPath;
         [ObservableProperty] private string sourceInfo = "";
         [ObservableProperty] private bool canEditCurrent = true;
+        [ObservableProperty] private string lastSheetMessage = "";
 
         public IAsyncRelayCommand LoadCommand { get; }
         public IAsyncRelayCommand SyncCommand { get; }
-        public IAsyncRelayCommand ConfirmCommand { get; }
+        public IAsyncRelayCommand SaveAllCommand { get; }
         public IAsyncRelayCommand RollForwardCommand { get; }
         public IAsyncRelayCommand PickFileCommand { get; }
         public IAsyncRelayCommand EnterUrlCommand { get; }
@@ -50,7 +51,7 @@ namespace AMS.ViewModels
 
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SyncCommand = new AsyncRelayCommand(SyncAsync);
-            ConfirmCommand = new AsyncRelayCommand(ConfirmAsync);
+            SaveAllCommand = new AsyncRelayCommand(SaveAllReadingsAsync);
             RollForwardCommand = new AsyncRelayCommand(RollForwardAsync);
             PickFileCommand = new AsyncRelayCommand(PickFileAsync);
             EnterUrlCommand = new AsyncRelayCommand(EnterUrlAsync);
@@ -142,112 +143,185 @@ namespace AMS.ViewModels
 
                 MeterRows = new ObservableCollection<MeterRow>(rows.OrderBy(r => r.RoomCode));
 
-                if (CurrentCycle != null)
-                {
-                    var charges = await _repo.GetRoomChargesForCycleAsync(CurrentCycle.CycleId);
-                    foreach (var rc in charges)
-                    {
-                        var m = rows.FirstOrDefault(x => x.RoomCode.Equals(rc.RoomCode, StringComparison.OrdinalIgnoreCase));
-                        if (m == null) continue;
-
-                        rc.ElectricReading ??= new ElectricReading();
-                        if (m.PreviousElectric.HasValue) rc.ElectricReading.Previous = m.PreviousElectric.Value;
-                        if (m.CurrentElectric.HasValue) rc.ElectricReading.Current = m.CurrentElectric.Value;
-                        rc.ElectricAmount = rc.ElectricReading.Amount;
-
-                        rc.WaterReading ??= new WaterReading();
-                        if (m.PreviousWater.HasValue) rc.WaterReading.Previous = m.PreviousWater.Value;
-                        if (m.CurrentWater.HasValue) rc.WaterReading.Current = m.CurrentWater.Value;
-                        rc.WaterAmount = rc.WaterReading.Amount;
-
-                        if (rc.Status == PaymentStatus.MissingData &&
-                            (m.CurrentElectric.HasValue || m.CurrentWater.HasValue))
-                            rc.Status = PaymentStatus.ReadyToSend;
-
-                        await _repo.UpdateRoomChargeAsync(rc);
-                    }
-                }
-
-                await Shell.Current.DisplayAlertAsync("Đã đồng bộ", $"Đọc {MeterRows.Count} dòng.", "OK");
+                LastSheetMessage = $"Đồng bộ: {MeterRows.Count} dòng (chưa lưu).";
+                await Shell.Current.DisplayAlertAsync("Đã đồng bộ", "Dữ liệu đã tải vào ứng dụng, hãy kiểm tra trước khi lưu.", "OK");
             }
             catch (Exception ex)
             {
+                LastSheetMessage = "Lỗi đồng bộ: " + ex.Message;
                 await Shell.Current.DisplayAlertAsync("Lỗi", ex.Message, "OK");
             }
             finally { IsBusy = false; }
+        }
+
+        private static string BuildSingleSavePreview(MeterRow row, int effPrevElec, int effPrevWater)
+        {
+            var curElec = row.CurrentElectric?.ToString() ?? "(trống)";
+            var curWater = row.CurrentWater?.ToString() ?? "(trống)";
+            return
+                $"Phòng: {row.RoomCode}\n" +
+                $"Điện: Trước={effPrevElec}, Hiện={curElec}\n" +
+                $"Nước: Trước={effPrevWater}, Hiện={curWater}\n\nXác nhận lưu?";
+        }
+
+        private string BuildBulkSavePreview()
+        {
+            if (MeterRows == null || MeterRows.Count == 0) return "Không có phòng để lưu.";
+            var lines = MeterRows
+                .Select(r =>
+                {
+                    var elec = r.CurrentElectric.HasValue ? r.CurrentElectric.Value.ToString() : "-";
+                    var water = r.CurrentWater.HasValue ? r.CurrentWater.Value.ToString() : "-";
+                    return $"{r.RoomCode}: Điện={elec}, Nước={water}";
+                });
+            return string.Join("\n", lines) + "\n\nXác nhận lưu tất cả?";
         }
 
         private async Task SaveRowAsync(MeterRow? row)
         {
             if (row == null || CurrentCycle == null) return;
 
-            if (row.PreviousElectric.HasValue && row.CurrentElectric.HasValue)
-                row.ConsumptionElectric = row.CurrentElectric - row.PreviousElectric;
-            if (row.PreviousWater.HasValue && row.CurrentWater.HasValue)
-                row.ConsumptionWater = row.CurrentWater - row.PreviousWater;
-
             var charges = await _repo.GetRoomChargesForCycleAsync(CurrentCycle.CycleId);
             var rc = charges.FirstOrDefault(c => c.RoomCode.Equals(row.RoomCode, StringComparison.OrdinalIgnoreCase));
-            if (rc == null) return;
+            if (rc == null)
+            {
+                await Shell.Current.DisplayAlertAsync("Không tìm thấy", "Không tìm thấy RoomCharge.", "OK");
+                return;
+            }
 
             rc.ElectricReading ??= new ElectricReading();
-            if (row.PreviousElectric.HasValue) rc.ElectricReading.Previous = row.PreviousElectric.Value;
+            rc.WaterReading ??= new WaterReading();
+
+            var effPrevElec = row.PreviousElectric ?? rc.ElectricReading.Previous;
+            var effPrevWater = row.PreviousWater ?? rc.WaterReading.Previous;
+
+            var preview = BuildSingleSavePreview(row, effPrevElec, effPrevWater);
+            var confirm = await Shell.Current.DisplayAlertAsync("Xác nhận lưu", preview, "Lưu", "Hủy");
+            if (!confirm) return;
+
+            if (row.CurrentElectric.HasValue && row.CurrentElectric.Value < effPrevElec)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Chỉ số điện hiện tại nhỏ hơn tháng trước.", "OK");
+                return;
+            }
+            if (row.CurrentWater.HasValue && row.CurrentWater.Value < effPrevWater)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Chỉ số nước hiện tại nhỏ hơn tháng trước.", "OK");
+                return;
+            }
+
+            rc.ElectricReading.Previous = effPrevElec;
             if (row.CurrentElectric.HasValue) rc.ElectricReading.Current = row.CurrentElectric.Value;
 
-            rc.WaterReading ??= new WaterReading();
-            if (row.PreviousWater.HasValue) rc.WaterReading.Previous = row.PreviousWater.Value;
+            rc.WaterReading.Previous = effPrevWater;
             if (row.CurrentWater.HasValue) rc.WaterReading.Current = row.CurrentWater.Value;
 
-            rc.ElectricAmount = rc.ElectricReading.Amount;
-            rc.WaterAmount = rc.WaterReading.Amount;
+            if (row.CurrentElectric.HasValue)
+                rc.ElectricAmount = (rc.ElectricReading.Current >= rc.ElectricReading.Previous) ? rc.ElectricReading.Amount : rc.ElectricAmount;
+
+            if (row.CurrentWater.HasValue)
+                rc.WaterAmount = (rc.WaterReading.Current >= rc.WaterReading.Previous) ? rc.WaterReading.Amount : rc.WaterAmount;
 
             if (rc.Status == PaymentStatus.MissingData &&
-               (row.CurrentElectric.HasValue || row.CurrentWater.HasValue))
+                (row.CurrentElectric.HasValue || row.CurrentWater.HasValue))
                 rc.Status = PaymentStatus.ReadyToSend;
 
             await _repo.UpdateRoomChargeAsync(rc);
 
-            // Optional push to sheet (writer already knows scriptUrl/token)
             if (_onlineWriter != null && !string.IsNullOrWhiteSpace(SheetUrl))
             {
                 try
                 {
                     await _onlineWriter.UpdateRowAsync(row);
+                    LastSheetMessage = $"Đã ghi lên Sheet: {row.RoomCode}";
                 }
                 catch (Exception ex)
                 {
+                    LastSheetMessage = "Sheet update lỗi: " + ex.Message;
                     await Shell.Current.DisplayAlertAsync("Sheet update lỗi", ex.Message, "OK");
                 }
             }
 
-            await Shell.Current.DisplayAlertAsync("Đã lưu", $"Đã cập nhật phòng {row.RoomCode}.", "OK");
+            await Shell.Current.DisplayAlertAsync("Thành công", $"Đã lưu phòng {row.RoomCode}.", "OK");
         }
 
-        private async Task ConfirmAsync()
+        private async Task SaveAllReadingsAsync()
         {
-            if (CurrentCycle == null || IsBusy) return;
+            if (IsBusy || CurrentCycle == null) return;
+            if (MeterRows == null || MeterRows.Count == 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Không có dữ liệu", "Chưa có dòng nào để lưu.", "OK");
+                return;
+            }
+
+            var preview = BuildBulkSavePreview();
+            var confirm = await Shell.Current.DisplayAlertAsync("Xác nhận lưu tất cả", preview, "Lưu tất cả", "Hủy");
+            if (!confirm) return;
+
             IsBusy = true;
             try
             {
                 var charges = await _repo.GetRoomChargesForCycleAsync(CurrentCycle.CycleId);
-                foreach (var rc in charges)
+                var skipped = new System.Collections.Generic.List<string>();
+                var saved = new System.Collections.Generic.List<string>();
+
+                foreach (var row in MeterRows)
                 {
-                    if (rc.ElectricReading != null)
+                    var rc = charges.FirstOrDefault(c => c.RoomCode.Equals(row.RoomCode, StringComparison.OrdinalIgnoreCase));
+                    if (rc == null) continue;
+
+                    rc.ElectricReading ??= new ElectricReading();
+                    rc.WaterReading ??= new WaterReading();
+
+                    var effPrevElec = row.PreviousElectric ?? rc.ElectricReading.Previous;
+                    var effPrevWater = row.PreviousWater ?? rc.WaterReading.Previous;
+
+                    if (row.CurrentElectric.HasValue && row.CurrentElectric.Value < effPrevElec)
                     {
-                        rc.ElectricReading.Confirmed = true;
-                        rc.ElectricAmount = rc.ElectricReading.Amount;
+                        skipped.Add($"{row.RoomCode} (điện)");
+                        continue;
                     }
-                    if (rc.WaterReading != null)
+                    if (row.CurrentWater.HasValue && row.CurrentWater.Value < effPrevWater)
                     {
-                        rc.WaterReading.Confirmed = true;
-                        rc.WaterAmount = rc.WaterReading.Amount;
+                        skipped.Add($"{row.RoomCode} (nước)");
+                        continue;
+                    }
+
+                    rc.ElectricReading.Previous = effPrevElec;
+                    if (row.CurrentElectric.HasValue) rc.ElectricReading.Current = row.CurrentElectric.Value;
+
+                    rc.WaterReading.Previous = effPrevWater;
+                    if (row.CurrentWater.HasValue) rc.WaterReading.Current = row.CurrentWater.Value;
+
+                    if (row.CurrentElectric.HasValue)
+                        rc.ElectricAmount = (rc.ElectricReading.Current >= rc.ElectricReading.Previous) ? rc.ElectricReading.Amount : rc.ElectricAmount;
+
+                    if (row.CurrentWater.HasValue)
+                        rc.WaterAmount = (rc.WaterReading.Current >= rc.WaterReading.Previous) ? rc.WaterReading.Amount : rc.WaterAmount;
+
+                    if (rc.Status == PaymentStatus.MissingData &&
+                        (row.CurrentElectric.HasValue || row.CurrentWater.HasValue))
+                        rc.Status = PaymentStatus.ReadyToSend;
+
+                    await _repo.UpdateRoomChargeAsync(rc);
+                    saved.Add(row.RoomCode);
+
+                    if (_onlineWriter != null && !string.IsNullOrWhiteSpace(SheetUrl))
+                    {
+                        try { await _onlineWriter.UpdateRowAsync(row); }
+                        catch { /* ignore per-row sheet write errors in bulk */ }
                     }
                 }
-                foreach (var rc in charges)
-                    await _repo.UpdateRoomChargeAsync(rc);
 
-                CanEditCurrent = false;
-                await Shell.Current.DisplayAlertAsync("Xong", "Đã xác nhận tất cả chỉ số.", "OK");
+                LastSheetMessage = $"Đã lưu: {saved.Count} phòng. " +
+                                   (saved.Count > 0 ? $"[{string.Join(", ", saved)}] " : "") +
+                                   (skipped.Count > 0 ? $"Bỏ qua: {string.Join(", ", skipped)}." : "Không bỏ qua phòng nào.");
+
+                await Shell.Current.DisplayAlertAsync("Hoàn tất",
+                    skipped.Count == 0
+                        ? $"Đã lưu {saved.Count} phòng:\n{string.Join(", ", saved)}"
+                        : $"Đã lưu {saved.Count} phòng:\n{string.Join(", ", saved)}\n\nBỏ qua: {string.Join(", ", skipped)}",
+                    "OK");
             }
             finally { IsBusy = false; }
         }
@@ -289,16 +363,18 @@ namespace AMS.ViewModels
                     try
                     {
                         await _onlineWriter.RollForwardAsync();
+                        LastSheetMessage = "Roll-forward Sheet thành công.";
                     }
                     catch (Exception ex)
                     {
+                        LastSheetMessage = "Roll-forward lỗi: " + ex.Message;
                         await Shell.Current.DisplayAlertAsync("Roll forward sheet lỗi", ex.Message, "OK");
                     }
                 }
 
                 CanEditCurrent = true;
                 await Shell.Current.DisplayAlertAsync("Hoàn tất", "Đã chuyển kỳ thành công.", "OK");
-                await SyncAsync();
+                MeterRows.Clear();
             }
             finally { IsBusy = false; }
         }

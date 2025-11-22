@@ -2,6 +2,6 @@
 {
     public interface IPdfCapabilityService
     {
-        bool IsSupported { get; }
+        bool CanGeneratePdf { get; }
     }
 }

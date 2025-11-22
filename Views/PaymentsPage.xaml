@@ -38,30 +38,27 @@
         </HorizontalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="8">
-
-            <!-- KPIs: switch to 2x2 grid so they never get squeezed off-screen -->
+            <!-- KPIs unchanged -->
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <!-- frames unchanged -->
                 <Frame Grid.Row="0" Grid.Column="0" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Tổng phải thu" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalDue, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
-
                 <Frame Grid.Row="0" Grid.Column="1" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Đã thu" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalPaid, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
-
                 <Frame Grid.Row="1" Grid.Column="0" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Còn lại" FontAttributes="Bold"/>
                         <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRemaining, StringFormat='{0:N0} đ'}" />
                     </VerticalStackLayout>
                 </Frame>
-
                 <Frame Grid.Row="1" Grid.Column="1" Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="4">
                         <Label Style="{DynamicResource TextPrimary}" Text="Sẵn sàng gửi" FontAttributes="Bold"/>
@@ -76,10 +73,14 @@
                 FontSize="12"
                 IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmptyConverter}}" />
 
-
+            <Label
+                Style="{DynamicResource TextPrimary}"
+                Text="{Binding DueReminderMessage}"
+                TextColor="#D92C54"
+                FontAttributes="Bold"
+                FontSize="13"/>
         </VerticalStackLayout>
 
-        <!-- Room charges -->
         <CollectionView Grid.Row="2" ItemsSource="{Binding Rows}" SelectionMode="None">
             <CollectionView.EmptyView>
                 <Grid Padding="20">
@@ -107,8 +108,9 @@
                             <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0"
                                    Text="{Binding RoomCode}" FontAttributes="Bold" />
 
-                            <!-- Color-coded status badge -->
+                            <!-- Badge hidden for MissingData / ReadyToSend -->
                             <Border Grid.Row="0" Grid.Column="1" Padding="10,5"
+                                    IsVisible="{Binding ShowStatusBadge}"
                                     Background="{Binding Source.Status, Converter={StaticResource StatusBadgeBgConverter}}"
                                     StrokeThickness="0"
                                     HorizontalOptions="End" VerticalOptions="Start">
@@ -127,12 +129,34 @@
                             <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <Grid Grid.Column="0" />
                                 <VerticalStackLayout Grid.Column="1" Spacing="6" HorizontalOptions="End">
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Cập nhật trạng thái"
+
+                                    <Button Text="Cập nhật trạng thái"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChooseStatusCommand}"
                                             CommandParameter="{Binding .}" />
-                                    <Button Style="{DynamicResource TextPrimary}" Text="Gửi hóa đơn (PDF)"
+
+                                    <Button Text="Gửi hóa đơn (PDF)"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SendInvoiceEmailCommand}"
-                                            CommandParameter="{Binding .}" />
+                                            CommandParameter="{Binding .}">
+                                        <Button.Triggers>
+                                            <!-- Normal color when sendable -->
+                                            <DataTrigger TargetType="Button" Binding="{Binding CanSendInvoice}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="#1976D2"/>
+                                                <Setter Property="TextColor" Value="White"/>
+                                            </DataTrigger>
+                                            <!-- Inverted when not sendable -->
+                                            <DataTrigger TargetType="Button" Binding="{Binding CanSendInvoice}" Value="False">
+                                                <Setter Property="BackgroundColor" Value="White"/>
+                                                <Setter Property="BorderColor" Value="#D92C54"/>
+                                                <Setter Property="BorderWidth" Value="1"/>
+                                                <Setter Property="TextColor" Value="#D92C54"/>
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+
+                                    <!-- Optional: show missing reasons preview -->
+                                    <Label FontSize="11" TextColor="#D92C54"
+                                           IsVisible="{Binding CanSendInvoice, Converter={StaticResource InvertBoolConverter}}"
+                                           Text="{Binding MissingReasonsText}" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Grid>

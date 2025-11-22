@@ -10,19 +10,19 @@
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Tháng" VerticalTextAlignment="Center"/>
-                        <Entry Grid.Column="1" WidthRequest="60" Keyboard="Numeric" Text="{Binding Month}"/>
-                        <Label Grid.Column="2" Text="Năm" VerticalTextAlignment="Center"/>
-                        <Entry Grid.Column="3" WidthRequest="80" Keyboard="Numeric" Text="{Binding Year}"/>
-                        <Picker Grid.Column="4"
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Tháng" VerticalTextAlignment="Center"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" WidthRequest="60" Keyboard="Numeric" Text="{Binding Month}"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Năm" VerticalTextAlignment="Center"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" WidthRequest="80" Keyboard="Numeric" Text="{Binding Year}"/>
+                        <Picker Style="{DynamicResource TextPrimary}" Grid.Column="4"
                                 Title="Lọc trạng thái"
                                 ItemsSource="{Binding StatusFilterOptions}"
                                 SelectedItem="{Binding SelectedStatusFilter}" />
-                        <Button Grid.Column="5" Text="Tải" Command="{Binding LoadCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="5" Text="Tải" Command="{Binding LoadCommand}" />
                     </Grid>
                     <HorizontalStackLayout Spacing="8">
-                        <Button Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
-                        <Button Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Frame>
@@ -31,26 +31,26 @@
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Tổng phòng" FontAttributes="Bold"/>
-                        <Label Text="{Binding TotalRooms}" />
+                        <Label Style="{DynamicResource TextPrimary}" Text="Tổng phòng" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding TotalRooms}" />
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Còn nợ" FontAttributes="Bold"/>
-                        <Label Text="{Binding DebtRooms}" TextColor="#C62828"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Còn nợ" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding DebtRooms}" TextColor="#C62828"/>
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Đã trả đủ" FontAttributes="Bold"/>
-                        <Label Text="{Binding PaidRooms}" TextColor="#2E7D32"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Đã trả đủ" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding PaidRooms}" TextColor="#2E7D32"/>
                     </VerticalStackLayout>
                 </Frame>
                 <Frame Padding="8" CornerRadius="8" BorderColor="#CFD8DC">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Trễ hạn" FontAttributes="Bold"/>
-                        <Label Text="{Binding LateRooms}" TextColor="#EF6C00"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="Trễ hạn" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Text="{Binding LateRooms}" TextColor="#EF6C00"/>
                     </VerticalStackLayout>
                 </Frame>
             </Grid>
@@ -58,14 +58,14 @@
             <!-- List -->
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Danh sách phòng" FontAttributes="Bold" FontSize="16"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Danh sách phòng" FontAttributes="Bold" FontSize="16"/>
                     <CollectionView ItemsSource="{Binding Rows}" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Frame Padding="10" Margin="0,6" CornerRadius="8" BorderColor="#E0E0E0">
                                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="4">
                                         <Label Grid.Row="0" Grid.Column="0"
-                                               Text="{Binding RoomCode}"
+                                               Style="{DynamicResource TextPrimary}" Text="{Binding RoomCode}"
                                                FontAttributes="Bold" />
                                         <Border Grid.Row="0" Grid.Column="1"
                                                 Padding="8,4" StrokeThickness="0"
@@ -73,25 +73,48 @@
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="6" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding StatusText}" FontSize="12"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusText}" FontSize="12"/>
                                         </Border>
 
                                         <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                            <Label Grid.Column="0"
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="0"
                                                    Text="{Binding AmountRemainingDisplay}"
                                                    TextColor="{Binding AmountColor}" />
-                                            <Button Grid.Column="1"
+                                            <!-- Always enabled; command shows reason if not allowed -->
+                                            <Button Style="{DynamicResource TextPrimary}" Grid.Column="1"
                                                     Text="Nhắc đóng tiền"
                                                     Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemindCommand}"
-                                                    CommandParameter="{Binding .}"
-                                                    IsEnabled="{Binding CanRemind}" />
+                                                    CommandParameter="{Binding .}">
+                                                <Button.Triggers>
+                                                    <!-- Active style -->
+                                                    <DataTrigger TargetType="Button" Binding="{Binding CanRemind}" Value="True">
+                                                        <Setter Property="BackgroundColor" Value="#1976D2"/>
+                                                        <Setter Property="TextColor" Value="White"/>
+                                                    </DataTrigger>
+                                                    <!-- Inactive (show reasons on tap) -->
+                                                    <DataTrigger TargetType="Button" Binding="{Binding CanRemind}" Value="False">
+                                                        <Setter Property="BackgroundColor" Value="White"/>
+                                                        <Setter Property="BorderColor" Value="#D32F2F"/>
+                                                        <Setter Property="BorderWidth" Value="1"/>
+                                                        <Setter Property="TextColor" Value="#D32F2F"/>
+                                                    </DataTrigger>
+                                                </Button.Triggers>
+                                            </Button>
                                         </Grid>
+
+                                        <!-- Reasons (visible only when cannot remind) -->
+                                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="2" Grid.ColumnSpan="2"
+                                               Margin="0,6,0,0"
+                                               FontSize="11"
+                                               TextColor="#D32F2F"
+                                               IsVisible="{Binding CanRemind, Converter={StaticResource InvertBoolConverter}}"
+                                               Text="{Binding MissingReasonsText}" />
                                     </Grid>
                                 </Frame>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                         <CollectionView.EmptyView>
-                            <Label Text="Chưa có dữ liệu." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#777"/>
+                            <Label Style="{DynamicResource TextPrimary}" Text="Chưa có dữ liệu." HorizontalOptions="Center" VerticalOptions="Center" TextColor="#777"/>
                         </CollectionView.EmptyView>
                     </CollectionView>
                 </VerticalStackLayout>

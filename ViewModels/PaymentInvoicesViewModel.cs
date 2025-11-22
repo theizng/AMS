@@ -3,8 +3,10 @@ using AMS.Services;
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -16,8 +18,9 @@ namespace AMS.ViewModels
     {
         private readonly IPaymentsRepository _repo;
         private readonly IInvoiceScriptClient _script;
-        private readonly IRoomTenantQuery _roomQuery;               // still used for titles if needed later
+        private readonly IRoomTenantQuery _roomQuery;
         private readonly IPaymentSettingsProvider _settings;
+        private readonly IPlatformExportGuard _platformGuard;
 
         [ObservableProperty] private bool isBusy;
         [ObservableProperty] private int month;
@@ -26,25 +29,80 @@ namespace AMS.ViewModels
         [ObservableProperty] private ObservableCollection<InvoiceRowVM> items = new();
         [ObservableProperty] private string statusText = "";
 
+        public IReadOnlyList<int> Months { get; }
+        public IReadOnlyList<int> Years { get; }
+
         public IAsyncRelayCommand LoadCommand { get; }
-        public IAsyncRelayCommand<InvoiceRowVM> GeneratePdfCommand { get; }
+        public IAsyncRelayCommand GeneratePdfCommand { get; }
 
         public PaymentInvoicesViewModel(IPaymentsRepository repo,
                                         IInvoiceScriptClient scriptClient,
                                         IRoomTenantQuery roomQuery,
-                                        IPaymentSettingsProvider settings)
+                                        IPaymentSettingsProvider settings,
+                                        IPlatformExportGuard platformGuard)
         {
             _repo = repo;
             _script = scriptClient;
             _roomQuery = roomQuery;
             _settings = settings;
+            _platformGuard = platformGuard;
 
             var today = DateTime.Today;
             Month = today.Month;
             Year = today.Year;
 
+            Months = Enumerable.Range(1, 12).ToArray();
+            Years = Enumerable.Range(today.Year - 3, 7).ToArray();
+
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             GeneratePdfCommand = new AsyncRelayCommand<InvoiceRowVM>(GeneratePdfAsync);
+        }
+
+        [RelayCommand]
+        private async Task PrevMonthAsync()
+        {
+            if (IsBusy) return;
+            var m = Month - 1;
+            var y = Year;
+            if (m < 1) { m = 12; y--; }
+            Month = m; Year = y;
+            await LoadAsync();
+        }
+
+        [RelayCommand]
+        private async Task NextMonthAsync()
+        {
+            if (IsBusy) return;
+            var m = Month + 1;
+            var y = Year;
+            if (m > 12) { m = 1; y++; }
+            Month = m; Year = y;
+            await LoadAsync();
+        }
+
+        [RelayCommand]
+        private async Task OpenPdfAsync(InvoiceRowVM? row)
+        {
+            if (row?.LastPdfPath is null)
+            {
+                if (row != null) row.LastResult = "Không có file PDF để mở.";
+                return;
+            }
+            try
+            {
+                if (File.Exists(row.LastPdfPath))
+                {
+                    await Launcher.OpenAsync(new OpenFileRequest(Path.GetFileName(row.LastPdfPath), new ReadOnlyFile(row.LastPdfPath)));
+                }
+                else
+                {
+                    row.LastResult = "File PDF không tồn tại.";
+                }
+            }
+            catch (Exception ex)
+            {
+                if (row != null) row.LastResult = "Không mở được PDF: " + ex.Message;
+            }
         }
 
         public async Task LoadAsync()
@@ -57,10 +115,10 @@ namespace AMS.ViewModels
                 Items.Clear();
                 if (Cycle == null)
                 {
-                    statusText = "Chưa có chu kỳ. Vào Tổng quan để tạo.";
-                    StatusText = statusText;
+                    StatusText = "Chưa có chu kỳ. Vào Tổng quan để tạo.";
                     return;
                 }
+
                 var charges = await _repo.GetRoomChargesForCycleAsync(Cycle.CycleId);
                 foreach (var rc in charges.OrderBy(x => x.RoomCode))
                 {
@@ -71,7 +129,9 @@ namespace AMS.ViewModels
                 }
 
                 var created = Items.Count(i => i.HasPdf);
-                StatusText = $"Đã tạo hóa đơn: {created}/{Items.Count}";
+                StatusText = Items.Count == 0
+                    ? "Chưa có dữ liệu hóa đơn cho tháng/năm đã chọn."
+                    : $"Đã tạo hóa đơn: {created}/{Items.Count}";
             }
             finally { IsBusy = false; }
         }
@@ -170,10 +230,9 @@ namespace AMS.ViewModels
             };
         }
 
-        // Important: Only custom fees.
-        private static System.Collections.Generic.List<InvoiceLineItem> BuildCustomLineItemsOnly(RoomCharge rc)
+        private static List<InvoiceLineItem> BuildCustomLineItemsOnly(RoomCharge rc)
         {
-            var list = new System.Collections.Generic.List<InvoiceLineItem>();
+            var list = new List<InvoiceLineItem>();
 
             if (rc.Fees != null && rc.Fees.Count > 0)
             {
@@ -182,7 +241,7 @@ namespace AMS.ViewModels
                     list.Add(new InvoiceLineItem
                     {
                         Description = f.Name,
-                        Unit = "", // extend FeeInstance if you want to store UnitLabel per instance
+                        Unit = "",
                         UnitPrice = f.Rate,
                         Quantity = f.Quantity,
                         Amount = f.Amount

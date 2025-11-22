@@ -343,6 +343,106 @@ namespace AMS.Services
 
         // ===== Interface methods with CancellationToken (use _db, pass ct) =====
         //========================
+        public async Task RemoveFeeFromRoomAsync(string roomChargeId, string feeInstanceId, CancellationToken ct = default)
+        {
+            var rc = await _db.RoomCharges
+                .Include(r => r.Fees)
+                .FirstOrDefaultAsync(r => r.RoomChargeId == roomChargeId, ct);
+            if (rc == null || rc.Fees == null) return;
 
+            var fee = rc.Fees.FirstOrDefault(f => f.FeeInstanceId == feeInstanceId);
+            if (fee == null) return;
+
+            var amount = fee.Rate * fee.Quantity;
+            _db.FeeInstances.Remove(fee);
+
+            // Recalculate total from remaining (avoid subtract drift)
+            var remainingTotal = rc.Fees.Where(f => f.FeeInstanceId != feeInstanceId)
+                .Sum(f => f.Rate * f.Quantity);
+            rc.CustomFeesTotal = remainingTotal;
+
+            _db.RoomCharges.Update(rc);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task ApplyFeeTypeToAllExistingCyclesAsync(FeeType ft, CancellationToken ct = default)
+        {
+            // Load all cycles with room charges + fees
+            var cycles = await _db.PaymentCycles
+                .Include(c => c.RoomCharges).ThenInclude(rc => rc.Fees)
+                .ToListAsync(ct);
+
+            foreach (var cycle in cycles)
+            {
+                foreach (var rc in cycle.RoomCharges)
+                {
+                    if (rc.Fees.Any(f => f.FeeTypeId == ft.FeeTypeId)) continue;
+
+                    var fi = new FeeInstance
+                    {
+                        RoomChargeId = rc.RoomChargeId,
+                        FeeTypeId = ft.FeeTypeId,
+                        Name = ft.Name,
+                        Rate = ft.DefaultRate,
+                        Quantity = 1
+                    };
+                    await _db.FeeInstances.AddAsync(fi, ct);
+
+                    var sumExisting = rc.Fees.Sum(f => f.Rate * f.Quantity);
+                    rc.CustomFeesTotal = sumExisting + (fi.Rate * fi.Quantity);
+                    _db.RoomCharges.Update(rc);
+                }
+            }
+
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task RemoveFeeTypeFromAllCyclesAsync(string feeTypeId, CancellationToken ct = default)
+        {
+            var cycles = await _db.PaymentCycles
+                .Include(c => c.RoomCharges).ThenInclude(rc => rc.Fees)
+                .ToListAsync(ct);
+
+            foreach (var cycle in cycles)
+            {
+                foreach (var rc in cycle.RoomCharges)
+                {
+                    if (rc.Fees == null || rc.Fees.Count == 0) continue;
+                    var toRemove = rc.Fees.Where(f => f.FeeTypeId == feeTypeId).ToList();
+                    if (toRemove.Count == 0) continue;
+
+                    _db.FeeInstances.RemoveRange(toRemove);
+
+                    var remainingTotal = rc.Fees.Where(f => f.FeeTypeId != feeTypeId)
+                        .Sum(f => f.Rate * f.Quantity);
+                    rc.CustomFeesTotal = remainingTotal;
+                    _db.RoomCharges.Update(rc);
+                }
+            }
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task RemoveFeeTypeFromCycleAsync(string feeTypeId, string cycleId, CancellationToken ct = default)
+        {
+            var rcList = await _db.RoomCharges
+                .Where(r => r.CycleId == cycleId)
+                .Include(r => r.Fees)
+                .ToListAsync(ct);
+
+            foreach (var rc in rcList)
+            {
+                if (rc.Fees == null || rc.Fees.Count == 0) continue;
+                var toRemove = rc.Fees.Where(f => f.FeeTypeId == feeTypeId).ToList();
+                if (toRemove.Count == 0) continue;
+
+                _db.FeeInstances.RemoveRange(toRemove);
+
+                var remainingTotal = rc.Fees.Where(f => f.FeeTypeId != feeTypeId)
+                    .Sum(f => f.Rate * f.Quantity);
+                rc.CustomFeesTotal = remainingTotal;
+                _db.RoomCharges.Update(rc);
+            }
+            await _db.SaveChangesAsync(ct);
+        }
     }
 }

@@ -16,19 +16,25 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Filters (Month/Year like a search row) -->
+        <!-- Filters -->
         <HorizontalStackLayout Grid.Row="0" Spacing="8">
-            <Label Text="Tháng:" VerticalOptions="Center" />
-            <Entry WidthRequest="80" Keyboard="Numeric" HorizontalTextAlignment="Center" Text="{Binding Month}" />
-            <Label Text="Năm:" VerticalOptions="Center" />
-            <Entry WidthRequest="120" Keyboard="Numeric" HorizontalTextAlignment="Center" Text="{Binding Year}" />
-            <Button Text="Tải" Command="{Binding LoadCommand}" />
+            <Button Style="{DynamicResource TextPrimary}" Text="◀" Command="{Binding PrevMonthCommand}" />
+            <Label Style="{DynamicResource TextPrimary}" Text="Tháng:" VerticalOptions="Center" />
+            <Picker Style="{DynamicResource TextPrimary}" WidthRequest="100"
+                    ItemsSource="{Binding Months}"
+                    SelectedItem="{Binding Month}" />
+            <Label Style="{DynamicResource TextPrimary}" Text="Năm:" VerticalOptions="Center" />
+            <Picker Style="{DynamicResource TextPrimary}" WidthRequest="120"
+                    ItemsSource="{Binding Years}"
+                    SelectedItem="{Binding Year}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" VerticalOptions="Center" />
+            <Button Style="{DynamicResource TextPrimary}" Text="▶" Command="{Binding NextMonthCommand}" />
         </HorizontalStackLayout>
 
         <!-- Status row -->
         <HorizontalStackLayout Grid.Row="1" Spacing="8">
-            <Label Text="Trạng thái:" VerticalOptions="Center" />
-            <Label Text="{Binding StatusText}" VerticalOptions="Center" TextColor="#666" />
+            <Label Style="{DynamicResource TextPrimary}" Text="Trạng thái:" VerticalOptions="Center" />
+            <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusText}" VerticalOptions="Center" TextColor="#666" />
         </HorizontalStackLayout>
 
         <!-- List -->
@@ -43,7 +49,7 @@
                 <CollectionView.EmptyView>
                     <Grid Padding="20">
                         <Label
-                            Text="Chưa có dữ liệu hóa đơn cho tháng/năm đã chọn."
+                            Style="{DynamicResource TextPrimary}" Text="Chưa có dữ liệu hóa đơn cho tháng/năm đã chọn."
                             HorizontalOptions="Center"
                             VerticalOptions="Center"
                             TextColor="#666" />
@@ -70,28 +76,25 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Row 1: Room code + status pill -->
-                                <Label Grid.Row="0" Grid.Column="0"
+                                <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0"
                                        Text="{Binding RoomCode}"
                                        FontAttributes="Bold" />
 
                                 <Border Grid.Row="0" Grid.Column="1"
-                                        Padding="8,4" StrokeThickness="0" Background="#EEE"
+                                        Padding="8,4" StrokeThickness="0"
                                         HorizontalOptions="End" VerticalOptions="Start">
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="8" />
                                     </Border.StrokeShape>
 
-                                    <!-- Two labels toggled by HasPdf -->
-                                    <Grid>
-                                        <Label Text="Đã có hóa đơn" TextColor="#2E7D32" />
-                                        <Label Text="Chưa có hóa đơn" TextColor="#8D6E63">
-                                            <Label.Triggers>
-                                                <DataTrigger TargetType="Label" Binding="{Binding HasPdf}" Value="True">
-                                                    <Setter Property="IsVisible" Value="False" />
-                                                </DataTrigger>
-                                            </Label.Triggers>
-                                        </Label>
-                                    </Grid>
+                                    <Label Style="{DynamicResource TextPrimary}" Text="Chưa có hóa đơn" TextColor="#8D6E63">
+                                        <Label.Triggers Style="{DynamicResource TextPrimary}">
+                                            <DataTrigger TargetType="Label" Binding="{Binding HasPdf}" Value="True">
+                                                <Setter Property="Text" Value="Đã có hóa đơn" />
+                                                <Setter Property="TextColor" Value="#2E7D32" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
 
                                     <Border.Triggers>
                                         <DataTrigger TargetType="Border" Binding="{Binding HasPdf}" Value="True">
@@ -103,25 +106,30 @@
                                     </Border.Triggers>
                                 </Border>
 
-                                <!-- Row 2: Summary (full width, compact) -->
-                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                <!-- Row 2: Summary -->
+                                <Label Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.ColumnSpan="2"
                                        Text="{Binding Summary}"
-                                       LineBreakMode="TailTruncation"
-                                       MaxLines="4" />
+                                       LineBreakMode="WordWrap"
+                                       MaxLines="6" />
 
-                                <!-- Row 3: Actions (right) + LastResult (left) -->
-                                <Label Grid.Row="2" Grid.Column="0"
-                                       Text="{Binding LastResult}"
-                                       TextColor="#607D8B"
-                                       LineBreakMode="TailTruncation"
-                                       MaxLines="2"
-                                       VerticalTextAlignment="Center" />
-
-                                <Button
-                                    Grid.Row="2" Grid.Column="1"
-                                    Text="Tạo/ghi đè PDF"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GeneratePdfCommand}"
-                                    CommandParameter="{Binding .}" />
+                                <!-- Row 3: Actions + LastResult -->
+                                <HorizontalStackLayout Grid.Row="2" Grid.ColumnSpan="2" Spacing="8">
+                                    <Button
+                                        Style="{DynamicResource TextPrimary}" Text="Tạo/ghi đè PDF"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GeneratePdfCommand}"
+                                        CommandParameter="{Binding .}" />
+                                    <Button
+                                        Style="{DynamicResource TextPrimary}" Text="Mở PDF"
+                                        IsVisible="{Binding HasPdf}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenPdfCommand}"
+                                        CommandParameter="{Binding .}" />
+                                    <Label
+                                        Style="{DynamicResource TextPrimary}" Text="{Binding LastResult}"
+                                        TextColor="#607D8B"
+                                        VerticalTextAlignment="Center"
+                                        LineBreakMode="TailTruncation"
+                                        HorizontalOptions="FillAndExpand" />
+                                </HorizontalStackLayout>
                             </Grid>
                         </Frame>
                     </DataTemplate>

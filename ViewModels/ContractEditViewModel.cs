@@ -182,27 +182,18 @@ namespace AMS.ViewModels
             IsActive = Editable.Status == ContractStatus.Active;
             IsTerminated = Editable.Status == ContractStatus.Terminated;
 
-            // Does a contract PDF file exist on disk?
             _hasContractPdf = CheckContractPdfExists(Editable.ContractId);
-
-            // Do we have at least one addendum?
             var adds = IsPersisted ? await _addendumService.GetAddendumsAsync(Editable.ContractId) : Array.Empty<ContractAddendum>();
             _hasAddendum = adds.Count > 0;
 
             CanCreateAddendum = IsPersisted && IsActive && Editable.NeedsAddendum;
-            // To avoid activating before sending the contract PDF, enforce _hasContractPdf
             CanActivate = IsPersisted && IsDraft && Editable.Tenants.Count > 0 && _hasContractPdf;
-
-            // Terminate action moved to list page
             CanTerminate = false;
-
             CanDelete = IsPersisted && IsTerminated;
 
-            // Contract PDF + send (Draft)
-            CanGenerateContractPdfAndSend = _pdfCapability.IsSupported && IsPersisted && IsDraft;
-
-            // Addendum PDF flow (auto-send on generate)
-            CanGeneratePdf = _pdfCapability.IsSupported && IsPersisted && _hasAddendum && string.IsNullOrWhiteSpace(Editable.PdfUrl);
+            // Replaced IsSupported with CanGeneratePdf
+            CanGenerateContractPdfAndSend = _pdfCapability.CanGeneratePdf && IsPersisted && IsDraft;
+            CanGeneratePdf = _pdfCapability.CanGeneratePdf && IsPersisted && _hasAddendum && string.IsNullOrWhiteSpace(Editable.PdfUrl);
             CanSendAddendumEmail = IsPersisted && _hasAddendum && !string.IsNullOrWhiteSpace(Editable.PdfUrl);
         }
 
@@ -356,7 +347,7 @@ namespace AMS.ViewModels
         // CONTRACT PDF: create and send (Draft flow)
         private async Task GenerateAndSendContractPdfAsync()
         {
-            if (!_pdfCapability.IsSupported)
+            if (!_pdfCapability.CanGeneratePdf)
             {
                 await Shell.Current.DisplayAlertAsync("Không hỗ trợ", "Tính năng tạo PDF chỉ khả dụng trên phiên bản Desktop.", "OK");
                 return;
@@ -390,7 +381,7 @@ namespace AMS.ViewModels
         // ADDENDUM PDF: create latest addendum PDF and send immediately
         private async Task GenerateAddendumPdfAndSendAsync()
         {
-            if (!_pdfCapability.IsSupported)
+            if (!_pdfCapability.CanGeneratePdf)
             {
                 await Shell.Current.DisplayAlertAsync("Không hỗ trợ", "Tính năng tạo PDF chỉ khả dụng trên phiên bản Desktop.", "OK");
                 return;

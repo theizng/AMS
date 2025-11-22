@@ -20,24 +20,23 @@ namespace AMS.ViewModels
         [ObservableProperty] private int month = DateTime.Today.Month;
         [ObservableProperty] private int year = DateTime.Today.Year;
 
+        // Filter now uses normalized payment states (hide MissingData / ReadyToSend / SentFirst)
         [ObservableProperty] private string selectedStatusFilter = "Tất cả";
 
         [ObservableProperty] private ObservableCollection<RoomStatusRow> rows = new();
 
-        // Summary counters
         [ObservableProperty] private int totalRooms;
         [ObservableProperty] private int debtRooms;
         [ObservableProperty] private int paidRooms;
         [ObservableProperty] private int lateRooms;
 
         public IReadOnlyList<string> StatusFilterOptions { get; } = new[] {
-            "Tất cả",
-            "Thiếu dữ liệu",
-            "Sẵn sàng gửi",
-            "Đã gửi lần 1",
+            "Tất cả",   
+            "Chưa trả",
             "Đã trả một phần",
             "Đã trả đủ",
-            "Trễ hạn"
+            "Trễ hạn",
+            "Đã đóng"
         };
 
         public IAsyncRelayCommand LoadCommand { get; }
@@ -46,9 +45,9 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand ExportExcelCommand { get; }
 
         public ReportDebtViewModel(IPaymentsRepository payments,
-                                         IRoomTenantQuery roomTenantQuery,
-                                         IEmailNotificationService email,
-                                         IContractsRepository contracts)
+                                   IRoomTenantQuery roomTenantQuery,
+                                   IEmailNotificationService email,
+                                   IContractsRepository contracts)
         {
             _payments = payments;
             _roomTenantQuery = roomTenantQuery;
@@ -82,7 +81,7 @@ namespace AMS.ViewModels
                 var filtered = charges.AsEnumerable();
                 if (SelectedStatusFilter != "Tất cả")
                 {
-                    filtered = filtered.Where(c => StatusToText(c.Status) == SelectedStatusFilter);
+                    filtered = filtered.Where(c => MapDisplayStatus(c) == SelectedStatusFilter);
                 }
 
                 foreach (var rc in filtered.OrderBy(c => c.RoomCode))
@@ -107,8 +106,12 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Thông báo", "Phòng đã thanh toán đủ.", "OK");
                 return;
             }
+            if (row.IsDataIncomplete)
+            {
+                await Shell.Current.DisplayAlertAsync("Thiếu dữ liệu", row.MissingReasonsText ?? "Cần bổ sung dữ liệu trước khi nhắc.", "OK");
+                return;
+            }
 
-            // Fetch tenant emails via IRoomTenantQuery
             var info = await _roomTenantQuery.GetForRoomAsync(row.RoomCode);
             if (info.Emails.Count == 0)
             {
@@ -120,7 +123,7 @@ namespace AMS.ViewModels
             var body =
 $@"Xin chào,
 Phòng {row.RoomCode} còn nợ: {row.Source.AmountRemaining:N0} đ.
-Trạng thái hiện tại: {row.StatusText}.
+Trạng thái hiện tại: {row.DisplayStatus}.
 Vui lòng thanh toán sớm.
 
 Trân trọng,
@@ -129,8 +132,7 @@ QLT";
             try
             {
                 foreach (var mail in info.Emails.Where(e => !string.IsNullOrWhiteSpace(e)))
-                    await _email.SendInvoiceAsync(mail, subject, body); // reuse simple email method
-
+                    await _email.SendInvoiceAsync(mail, subject, body);
                 await Shell.Current.DisplayAlertAsync("Đã gửi", $"Đã gửi nhắc nợ cho {row.RoomCode}.", "OK");
             }
             catch (Exception ex)
@@ -142,16 +144,14 @@ QLT";
         private Task ExportPdfAsync() => Task.CompletedTask;
         private Task ExportExcelAsync() => Task.CompletedTask;
 
-        private static string StatusToText(PaymentStatus status) => status switch
+        // Display mapping used for filtering
+        private static string MapDisplayStatus(RoomCharge rc) => rc.Status switch
         {
-            PaymentStatus.MissingData => "Thiếu dữ liệu",
-            PaymentStatus.ReadyToSend => "Sẵn sàng gửi",
-            PaymentStatus.SentFirst => "Đã gửi lần 1",
-            PaymentStatus.PartiallyPaid => "Đã trả một phần",
             PaymentStatus.Paid => "Đã trả đủ",
+            PaymentStatus.PartiallyPaid => "Đã trả một phần",
             PaymentStatus.Late => "Trễ hạn",
             PaymentStatus.Closed => "Đã đóng",
-            _ => status.ToString()
+            _ => rc.AmountRemaining > 0 ? "Chưa trả" : "Đã trả đủ" // MissingData / ReadyToSend / SentFirst / UnPaid consolidated
         };
     }
 
@@ -159,35 +159,64 @@ QLT";
     {
         public RoomCharge Source { get; }
         public string RoomCode => Source.RoomCode;
-        public string StatusText => StatusToText(Source.Status);
-        public bool CanRemind => Source.AmountRemaining > 0;
-        public string AmountRemainingDisplay => $"Còn nợ: {Source.AmountRemaining:N0} đ";
 
-        public string StatusColor => Source.Status switch
+        // Normalized display (hide internal states)
+        public string DisplayStatus => Source.Status switch
         {
-            PaymentStatus.Paid => "#C8E6C9",
-            PaymentStatus.PartiallyPaid => "#FFF9C4",
-            PaymentStatus.Late => "#FFE0B2",
-            PaymentStatus.MissingData => "#E0E0E0",
-            PaymentStatus.ReadyToSend => "#BBDEFB",
-            PaymentStatus.SentFirst => "#BBDEFB",
+            PaymentStatus.Paid => "Đã trả đủ",
+            PaymentStatus.PartiallyPaid => "Đã trả một phần",
+            PaymentStatus.Late => "Trễ hạn",
+            PaymentStatus.Closed => "Đã đóng",
+            _ => Source.AmountRemaining > 0 ? "Chưa trả" : "Đã trả đủ"
+        };
+
+        // Badge color based on normalized status
+        public string StatusColor => DisplayStatus switch
+        {
+            "Đã trả đủ" => "#C8E6C9",
+            "Đã trả một phần" => "#FFF9C4",
+            "Trễ hạn" => "#FFE0B2",
+            "Đã đóng" => "#B0BEC5",
+            "Chưa trả" => IsDataIncomplete ? "#E0E0E0" : "#FFECB3",
             _ => "#E0E0E0"
         };
 
+        public string StatusText => DisplayStatus;
+
+        public bool CanRemind => Source.AmountRemaining > 0 && !IsDataIncomplete;
+
+        public string AmountRemainingDisplay => $"Còn nợ: {Source.AmountRemaining:N0} đ";
         public string AmountColor => Source.AmountRemaining > 0 ? "#C62828" : "#2E7D32";
 
-        public RoomStatusRow(RoomCharge rc) => Source = rc;
-
-        private static string StatusToText(PaymentStatus status) => status switch
+        // Data completeness check (similar heuristic)
+        public bool IsDataIncomplete
         {
-            PaymentStatus.MissingData => "Thiếu dữ liệu",
-            PaymentStatus.UnPaid => "Chưa trả",
-            PaymentStatus.SentFirst => "Đã gửi lần 1",
-            PaymentStatus.PartiallyPaid => "Đã trả một phần",
-            PaymentStatus.Paid => "Đã trả đủ",
-            PaymentStatus.Late => "Trễ hạn",
-            PaymentStatus.Closed => "Đã đóng",
-            _ => status.ToString()
-        };
+            get
+            {
+                var elecOk = Source.ElectricReading != null &&
+                             Source.ElectricReading.Current >= Source.ElectricReading.Previous &&
+                             Source.ElectricReading.Current > 0;
+                var waterOk = Source.WaterReading != null &&
+                              Source.WaterReading.Current >= Source.WaterReading.Previous &&
+                              Source.WaterReading.Current > 0;
+                return !(elecOk && waterOk);
+            }
+        }
+
+        public string? MissingReasonsText
+        {
+            get
+            {
+                if (!IsDataIncomplete) return null;
+                var parts = new System.Collections.Generic.List<string>();
+                if (Source.ElectricReading == null || Source.ElectricReading.Current <= Source.ElectricReading.Previous || Source.ElectricReading.Current == 0)
+                    parts.Add("Cần cập nhật chỉ số điện");
+                if (Source.WaterReading == null || Source.WaterReading.Current <= Source.WaterReading.Previous || Source.WaterReading.Current == 0)
+                    parts.Add("Cần cập nhật chỉ số nước");
+                return string.Join("\n", parts);
+            }
+        }
+
+        public RoomStatusRow(RoomCharge rc) => Source = rc;
     }
 }

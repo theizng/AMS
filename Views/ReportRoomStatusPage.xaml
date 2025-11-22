@@ -10,8 +10,8 @@
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Lọc trạng thái" VerticalTextAlignment="Center"/>
-                        <Picker Grid.Column="1"
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Lọc trạng thái" VerticalTextAlignment="Center"/>
+                        <Picker Style="{DynamicResource TextPrimary}" Grid.Column="1"
                                 Title="Chọn trạng thái"
                                 ItemsSource="{Binding StatusFilterOptions}"
                                 SelectedItem="{Binding SelectedStatusFilter}" />
@@ -19,22 +19,22 @@
                     </Grid>
 
                     <HorizontalStackLayout Spacing="8">
-                        <Button Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
-                        <Button Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Frame>
 
             <Frame Padding="10" CornerRadius="10" BorderColor="#CFD8DC">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Danh sách phòng" FontAttributes="Bold" FontSize="16"/>
+                    <Label Style="{DynamicResource TextPrimary}" Text="Danh sách phòng" FontAttributes="Bold" FontSize="16"/>
 
                     <CollectionView ItemsSource="{Binding Rooms}" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Frame Padding="10" Margin="0,6" CornerRadius="8" BorderColor="#E0E0E0">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <Label Grid.Column="0"
+                                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0"
                                                Text="{Binding RoomCode}"
                                                FontAttributes="Bold" />
                                         <Border Grid.Column="1"
@@ -44,7 +44,7 @@
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="6" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding StatusText}" FontSize="12"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Text="{Binding StatusText}" FontSize="12"/>
                                         </Border>
                                     </Grid>
                                 </Frame>
@@ -52,7 +52,7 @@
                         </CollectionView.ItemTemplate>
 
                         <CollectionView.EmptyView>
-                            <Label Text="Không có phòng."
+                            <Label Style="{DynamicResource TextPrimary}" Text="Không có phòng."
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"
                                    TextColor="#777" />

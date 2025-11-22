@@ -6,44 +6,62 @@
     Title="Chi phí">
 
     <ScrollView>
-        <VerticalStackLayout Padding="14" Spacing="14">
+        <VerticalStackLayout Padding="14" Spacing="18">
 
-            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Phí mặc định" FontAttributes="Bold" FontSize="18"/>
-                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
-                        <Label Grid.Column="0" Grid.Row="0" Text="Điện (đ/kWh)" />
-                        <Entry Grid.Column="1" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultElectricRate}"/>
-                        <Label Grid.Column="2" Grid.Row="0" Text="Nước (đ/m³)" />
-                        <Entry Grid.Column="3" Grid.Row="0" WidthRequest="120" Keyboard="Numeric" Text="{Binding DefaultWaterRate}"/>
-
+            <!-- PHÍ MẶC ĐỊNH -->
+            <Frame Padding="14" BorderColor="#CFD8DC" CornerRadius="12">
+                <VerticalStackLayout Spacing="12">
+                    <Label Style="{DynamicResource TextPrimary}" Text="Phí mặc định" FontAttributes="Bold" FontSize="20" />
+                    <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="14" RowDefinitions="Auto,Auto" RowSpacing="6">
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="0" Text="Điện (đ/kWh)" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Row="0" Grid.Column="1" Text="Nước (đ/m³)" FontAttributes="Bold"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="0" Keyboard="Numeric" Text="{Binding DefaultElectricRate}" Placeholder="0"/>
+                        <Entry Style="{DynamicResource TextPrimary}" Grid.Row="1" Grid.Column="1" Keyboard="Numeric" Text="{Binding DefaultWaterRate}" Placeholder="0"/>
+                        <Button Style="{DynamicResource TextPrimary}" Grid.RowSpan="2" Grid.Column="2"
+                                Text="Lưu"
+                                WidthRequest="120"
+                                Command="{Binding SaveDefaultFeesCommand}" />
                     </Grid>
-                    <HorizontalStackLayout Spacing="8">
-                        <Button Text="Lưu phí mặc định" Command="{Binding SaveDefaultFeesCommand}" WidthRequest="180" HorizontalOptions="Start"/>
-
-                    </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Frame>
 
-            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
-                <VerticalStackLayout Spacing="8">
-                    <HorizontalStackLayout Spacing="8">
-                        <Label Text="Loại phí tùy chỉnh" FontAttributes="Bold" FontSize="18" />
-                        <Button Text="Thêm loại phí" Command="{Binding AddFeeTypeCommand}" />
-                        <Button Text="Lưu thay đổi" Command="{Binding SaveFeeTypesCommand}" />
-                        <Button Text="Áp dụng cho tất cả phòng" Command="{Binding ApplyFeeToAllRoomsCommand}" />
-                        <Button Text="Xóa tất cả phí (chu kỳ này)" Command="{Binding DeleteAllFeesCommand}" />
-                    </HorizontalStackLayout>
+            <!-- LOẠI PHÍ TÙY CHỈNH -->
+            <Frame Padding="14" BorderColor="#CFD8DC" CornerRadius="12">
+                <VerticalStackLayout Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Loại phí tùy chỉnh" FontAttributes="Bold" FontSize="20" />
+                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="1" Text="Thêm" Command="{Binding AddFeeTypeCommand}" />
+                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Lưu DS" Command="{Binding SaveFeeTypesCommand}" />
+                    </Grid>
+
+                    <!-- Header -->
+                    <Grid ColumnDefinitions="*,70,120,100,70,70,50" Padding="0,4" ColumnSpacing="10">
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Tên phí" FontAttributes="Bold"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="1" Text="Định kỳ" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Đơn giá mặc định" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="3" Text="Đơn vị" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="Kích hoạt" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="5" Text="Áp dụng tất cả phòng" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="6" Text="Xóa" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                    </Grid>
 
                     <CollectionView ItemsSource="{Binding FeeTypes}" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Padding="0,6">
-                                    <Entry Grid.Column="0" Text="{Binding Name}" Placeholder="Tên phí (ví dụ: Rác, Giữ xe)"/>
-                                    <Switch Grid.Column="1" IsToggled="{Binding IsRecurring}" />
-                                    <Entry  Grid.Column="2" WidthRequest="120" Placeholder="Đơn giá mặc định" Keyboard="Numeric" Text="{Binding DefaultRate}"/>
-                                    <Entry  Grid.Column="3" WidthRequest="120" Placeholder="Đơn vị (m³, tháng...)" Text="{Binding UnitLabel}"/>
-                                    <Switch Grid.Column="4" IsToggled="{Binding Active}" />
+                                <Grid ColumnDefinitions="*,70,120,100,70,70,50" ColumnSpacing="10" Padding="0,4">
+                                    <Entry Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="{Binding Name}" Placeholder="Tên phí"/>
+                                    <Switch Grid.Column="1" IsToggled="{Binding IsRecurring}" HorizontalOptions="Center"/>
+                                    <Entry Style="{DynamicResource TextPrimary}" Grid.Column="2" Keyboard="Numeric" Text="{Binding DefaultRate}" Placeholder="0"/>
+                                    <Entry Style="{DynamicResource TextPrimary}" Grid.Column="3" Text="{Binding UnitLabel}" Placeholder="m³ / tháng / lần"/>
+                                    <Switch Grid.Column="4" IsToggled="{Binding Active}" HorizontalOptions="Center"/>
+                                    <Switch Grid.Column="5" IsToggled="{Binding ApplyAllRooms}" HorizontalOptions="Center"/>
+                                    <Button Style="{DynamicResource TextPrimary}" Grid.Column="6" Text="🗑"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteFeeTypeCommand}"
+                                            CommandParameter="{Binding .}"
+                                            BackgroundColor="#EF5350"
+                                            TextColor="White"
+                                            Padding="4,0"
+                                            WidthRequest="44"/>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
@@ -51,35 +69,54 @@
                 </VerticalStackLayout>
             </Frame>
 
-            <Frame Padding="10" BorderColor="#CFD8DC" CornerRadius="10">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Phí theo phòng (chu kỳ hiện tại)" FontAttributes="Bold" FontSize="18" />
+            <!-- PHÍ THEO PHÒNG -->
+            <Frame Padding="14" BorderColor="#CFD8DC" CornerRadius="12">
+                <VerticalStackLayout Spacing="12">
+                    <Label Style="{DynamicResource TextPrimary}" Text="Phí theo phòng (chu kỳ hiện tại)" FontAttributes="Bold" FontSize="20" />
+
                     <CollectionView ItemsSource="{Binding RoomCharges}" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Frame Padding="8" BorderColor="#ECEFF1" CornerRadius="8" Margin="0,6">
-                                    <VerticalStackLayout Spacing="6">
-                                        <HorizontalStackLayout Spacing="8">
-                                            <Label Text="{Binding RoomCode}" FontAttributes="Bold"/>
-                                            <Label Text="{Binding TotalFees, StringFormat='Tổng phí: {0:N0} đ'}" TextColor="#455A64"/>
-                                        </HorizontalStackLayout>
+                                <Frame Padding="12" BorderColor="#ECEFF1" CornerRadius="10" Margin="0,8">
+                                    <VerticalStackLayout Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="{Binding RoomCode}" FontAttributes="Bold" FontSize="16"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="1" Text="{Binding TotalFees, StringFormat='Tổng phí: {0:N0} đ'}"
+                                                   FontAttributes="Bold" TextColor="#2E7D32"/>
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*,70,90,110,50" Padding="0,2" ColumnSpacing="8">
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="Tên" FontAttributes="Bold"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="1" Text="SL" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="2" Text="Đơn giá" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="3" Text="Thành tiền" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                            <Label Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="Xóa" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                        </Grid>
 
                                         <CollectionView ItemsSource="{Binding Fees}" SelectionMode="None">
                                             <CollectionView.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Padding="0,4">
-                                                        <Label Grid.Column="0" Text="{Binding Name}"/>
-                                                        <Entry Grid.Column="1" WidthRequest="90" Text="{Binding Quantity}" Keyboard="Numeric"/>
-                                                        <Entry Grid.Column="2" WidthRequest="110" Text="{Binding Rate}" Keyboard="Numeric"/>
-                                                        <Label Grid.Column="3" Text="{Binding Amount, StringFormat='{0:N0} đ'}"/>
+                                                    <Grid ColumnDefinitions="*,70,90,110,50" ColumnSpacing="8" Padding="0,2">
+                                                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="0" Text="{Binding Name}" />
+                                                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="1" WidthRequest="70" Text="{Binding Quantity}" Keyboard="Numeric" HorizontalTextAlignment="Center"/>
+                                                        <Entry Style="{DynamicResource TextPrimary}" Grid.Column="2" WidthRequest="90" Text="{Binding Rate}" Keyboard="Numeric" HorizontalTextAlignment="Center"/>
+                                                        <Label Style="{DynamicResource TextPrimary}" Grid.Column="3" Text="{Binding Amount, StringFormat='{0:N0} đ'}" HorizontalTextAlignment="End"/>
+                                                        <Button Style="{DynamicResource TextPrimary}" Grid.Column="4" Text="✕"
+                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveFeeInstanceCommand}"
+                                                                CommandParameter="{Binding .}"
+                                                                BackgroundColor="#FF7043"
+                                                                TextColor="White"
+                                                                Padding="4,0"
+                                                                WidthRequest="44"/>
                                                     </Grid>
                                                 </DataTemplate>
                                             </CollectionView.ItemTemplate>
                                         </CollectionView>
 
-                                        <Button Text="Thêm phí vào phòng"
+                                        <Button Style="{DynamicResource TextPrimary}" Text="Thêm phí vào phòng"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AddFeeToRoomCommand}"
-                                                CommandParameter="{Binding .}" />
+                                                CommandParameter="{Binding .}"
+                                                HorizontalOptions="Start" />
                                     </VerticalStackLayout>
                                 </Frame>
                             </DataTemplate>

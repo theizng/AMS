@@ -296,7 +296,8 @@ namespace AMS.Data
                 e.ToTable(t =>
                 {
                     t.HasCheckConstraint("CK_RoomCharge_BaseRent_NonNegative", "[BaseRent] >= 0");
-                    t.HasCheckConstraint("CK_RoomCharge_Amounts_NonNegative", "[UtilityFeesTotal] >= 0 AND [CustomFeesTotal] >= 0 AND [ElectricAmount] >= 0 AND [WaterAmount] >= 0 AND [AmountPaid] >= 0");
+                    t.HasCheckConstraint("CK_RoomCharge_NonNegative",
+            "[CustomFeesTotal] >= 0 AND [ElectricAmount] >= 0 AND [WaterAmount] >= 0 AND [AmountPaid] >= 0 AND [BaseRent] >= 0");
                 });
             });
 

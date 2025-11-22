@@ -1,16 +1,18 @@
-﻿using AMS.Services.Interfaces;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using AMS.Services.Interfaces;
+using Microsoft.Maui.Devices;
+
 
 namespace AMS.Services
 {
-#if WINDOWS || MACCATALYST || LINUX
+    // Desktop-capable implementation of IPdfCapabilityService
     public class PdfCapabilityService : IPdfCapabilityService
     {
-        public bool IsSupported => true;
+        public bool CanGeneratePdf =>
+            DeviceInfo.Platform == DevicePlatform.WinUI
+            || DeviceInfo.Platform == DevicePlatform.MacCatalyst;
+
     }
-#else
-    public class PdfCapabilityService : IPdfCapabilityService
-    {
-        public bool IsSupported => false;
-    }
-#endif
 }

@@ -31,6 +31,7 @@ namespace AMS.ViewModels
         [ObservableProperty] private string emailBody = "Kính gửi {room}, hóa đơn (PDF đính kèm).";
 
         [ObservableProperty] private string status = "";
+        [ObservableProperty] private decimal lateFeeRate;
 
         public IAsyncRelayCommand LoadCommand { get; }
         public IAsyncRelayCommand SaveCommand { get; }
@@ -48,47 +49,34 @@ namespace AMS.ViewModels
         {
             var s = _provider.Get();
 
-            NameAccount = s.NameAccount ?? "";
-            BankAccount = s.BankAccount ?? "";
-            BankName = s.BankName ?? "";
-            Branch = s.Branch ?? "";
-
+            NameAccount = s.NameAccount;
+            BankAccount = s.BankAccount;
+            BankName = s.BankName;
+            Branch = s.Branch;
             DefaultDueDay = s.DefaultDueDay;
             GraceDays = s.GraceDays;
-
             DefaultElectricRate = s.DefaultElectricRate;
             DefaultWaterRate = s.DefaultWaterRate;
+            LateFeeRate = s.LateFeeRate;
+            Status = "Đã tải.";
 
-
-            Status = "Đã tải cấu hình.";
             return Task.CompletedTask;
         }
 
         private async Task SaveAsync()
         {
-            // Clamp due day (avoid invalid date)
-            var due = DefaultDueDay;
-            if (due < 1) due = 1;
-            if (due > 28) due = 28;
-            DefaultDueDay = due;
-
-            var s = new PaymentSettings
-            {
-                NameAccount = NameAccount?.Trim() ?? "",
-                BankAccount = BankAccount?.Trim() ?? "",
-                BankName = BankName?.Trim() ?? "",
-                Branch = Branch?.Trim() ?? "",
-
-                DefaultDueDay = DefaultDueDay,
-                GraceDays = GraceDays,
-
-                DefaultElectricRate = DefaultElectricRate,
-                DefaultWaterRate = DefaultWaterRate,
-
-            };
-
+            var s = _provider.Get();
+            s.NameAccount = NameAccount;
+            s.BankAccount = BankAccount;
+            s.BankName = BankName;
+            s.Branch = Branch;
+            s.DefaultDueDay = DefaultDueDay;
+            s.GraceDays = GraceDays;
+            s.DefaultElectricRate = DefaultElectricRate;
+            s.DefaultWaterRate = DefaultWaterRate;
+            s.LateFeeRate = LateFeeRate;
             await _provider.SaveAsync(s);
-            Status = "Đã lưu cấu hình.";
+            Status = "Đã lưu.";
         }
     }
 }

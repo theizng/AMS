@@ -6,24 +6,17 @@ using Microsoft.Maui.Storage;
 
 namespace AMS.Services
 {
-    // Simple Preferences-backed provider
     public class PaymentSettingsProvider : IPaymentSettingsProvider
     {
-        // Keys
         private const string K_NameAccount = "pay:nameAccount";
         private const string K_BankAccount = "pay:bankAccount";
         private const string K_BankName = "pay:bankName";
         private const string K_Branch = "pay:branch";
         private const string K_DueDay = "pay:dueDay";
         private const string K_GraceDays = "pay:graceDays";
-
         private const string K_ElecRate = "pay:def:elecRate";
         private const string K_WaterRate = "pay:def:waterRate";
-        private const string K_InternetFlat = "pay:def:internet";
-        private const string K_CleaningFlat = "pay:def:cleaning";
-
-        private const string K_EmailSubject = "pay:email:subject";
-        private const string K_EmailBody = "pay:email:body";
+        private const string K_LateFee = "pay:def:lateFee";
 
         public PaymentSettings Get()
         {
@@ -35,10 +28,9 @@ namespace AMS.Services
                 Branch = Preferences.Get(K_Branch, ""),
                 DefaultDueDay = Preferences.Get(K_DueDay, 5),
                 GraceDays = Preferences.Get(K_GraceDays, 0),
-
                 DefaultElectricRate = decimal.TryParse(Preferences.Get(K_ElecRate, "0"), out var er) ? er : 0,
                 DefaultWaterRate = decimal.TryParse(Preferences.Get(K_WaterRate, "0"), out var wr) ? wr : 0,
-
+                LateFeeRate = decimal.TryParse(Preferences.Get(K_LateFee, "50000"), out var lf) ? lf : 50000m
             };
             return s;
         }
@@ -49,13 +41,11 @@ namespace AMS.Services
             Preferences.Set(K_BankAccount, s.BankAccount ?? "");
             Preferences.Set(K_BankName, s.BankName ?? "");
             Preferences.Set(K_Branch, s.Branch ?? "");
-
             Preferences.Set(K_DueDay, s.DefaultDueDay);
             Preferences.Set(K_GraceDays, s.GraceDays);
-
             Preferences.Set(K_ElecRate, s.DefaultElectricRate.ToString());
             Preferences.Set(K_WaterRate, s.DefaultWaterRate.ToString());
-
+            Preferences.Set(K_LateFee, s.LateFeeRate.ToString());
             return Task.CompletedTask;
         }
     }
