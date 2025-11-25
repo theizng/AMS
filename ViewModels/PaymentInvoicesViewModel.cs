@@ -221,6 +221,7 @@ namespace AMS.ViewModels
                 TenantEmails = info.Emails.ToArray(),
 
                 BaseRent = rc.BaseRent,
+                BikePrice = rc.BikePrice,
                 CustomLineItems = items.ToArray(),
                 TotalDue = rc.TotalDue,
                 NameAccount = s.NameAccount ?? "",
@@ -269,10 +270,12 @@ namespace AMS.ViewModels
             var elecCons = rc.ElectricReading != null ? rc.ElectricReading.Current - rc.ElectricReading.Previous : 0;
             var waterCons = rc.WaterReading != null ? rc.WaterReading.Current - rc.WaterReading.Previous : 0;
             Summary =
-                $"Hóa đơn phòng {rc.RoomCode} \nTiền phòng: {rc.BaseRent:N0} đ \n" +
-                $"Điện: {elecCons} kWh × {(rc.ElectricReading?.Rate ?? 0):N0} = {rc.ElectricAmount:N0} đ  \n" +
+                $"Tiền phòng: {rc.BaseRent:N0} đ \n" +
+                $"Điện: {elecCons} kWh × {(rc.ElectricReading?.Rate ?? 0):N0} = {rc.ElectricAmount:N0} đ |" +
                 $"Nước: {waterCons} m³ × {(rc.WaterReading?.Rate ?? 0):N0} = {rc.WaterAmount:N0} đ  \n" +
-                $"Phí khác: {rc.CustomFeesTotal:N0} đ | Tổng phí: {(rc.UtilityFeesTotal + rc.CustomFeesTotal):N0} đ\n";
+                $"Tiền xe máy: {rc.BikePrice:N0} đ \n" +
+                $"Phí khác: {rc.CustomFeesTotal:N0} đ\n" +
+                $"Tổng tiền hóa đơn: {rc.TotalDue:N0} đ \n";
         }
     }
 }

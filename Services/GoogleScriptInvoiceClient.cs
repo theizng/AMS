@@ -38,7 +38,6 @@ namespace AMS.Services
                 contractStartDateIso = payload.ContractStartDateIso,
                 paymentDueDateIso = payload.PaymentDueDateIso,
 
-                // meters / rates
                 unitPriceElectric = payload.UnitPriceElectric,
                 previousElectricReading = payload.PreviousElectricReading,
                 currentElectricReading = payload.CurrentElectricReading,
@@ -50,16 +49,17 @@ namespace AMS.Services
                 previousWaterDateIso = payload.PreviousWaterDateIso,
                 currentWaterDateIso = payload.CurrentWaterDateIso,
 
-                // tenants
                 tenantNames = payload.TenantNames,
                 tenantPhones = payload.TenantPhones,
                 tenantEmails = payload.TenantEmails,
 
-                // line items base + custom
                 baseRent = payload.BaseRent,
                 customLineItems = payload.CustomLineItems,
                 thongBaoPhiSum = payload.TotalDue,
-                // bank placeholders (NEW)
+
+                // NEW bike field
+                bikePrice = payload.BikePrice,
+
                 nameAccount = payload.NameAccount,
                 bankAccount = payload.BankAccount,
                 bankName = payload.BankName,

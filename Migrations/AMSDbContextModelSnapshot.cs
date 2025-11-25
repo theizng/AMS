@@ -554,6 +554,11 @@ namespace AMS.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("BikePrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<decimal>("CustomFeesTotal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,2)")

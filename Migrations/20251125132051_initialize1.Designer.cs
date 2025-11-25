@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AMS.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    [Migration("20251118083220_hi3")]
-    partial class hi3
+    [Migration("20251125132051_initialize1")]
+    partial class initialize1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -557,6 +557,11 @@ namespace AMS.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("BikePrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<decimal>("CustomFeesTotal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,2)")
@@ -602,9 +607,9 @@ namespace AMS.Migrations
 
                     b.ToTable("RoomCharges", t =>
                         {
-                            t.HasCheckConstraint("CK_RoomCharge_Amounts_NonNegative", "[UtilityFeesTotal] >= 0 AND [CustomFeesTotal] >= 0 AND [ElectricAmount] >= 0 AND [WaterAmount] >= 0 AND [AmountPaid] >= 0");
-
                             t.HasCheckConstraint("CK_RoomCharge_BaseRent_NonNegative", "[BaseRent] >= 0");
+
+                            t.HasCheckConstraint("CK_RoomCharge_NonNegative", "[CustomFeesTotal] >= 0 AND [ElectricAmount] >= 0 AND [WaterAmount] >= 0 AND [AmountPaid] >= 0 AND [BaseRent] >= 0");
                         });
                 });
 

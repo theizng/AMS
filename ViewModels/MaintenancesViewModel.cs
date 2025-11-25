@@ -3,7 +3,6 @@ using AMS.Services;
 using AMS.Services.Interfaces;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
-using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -27,6 +27,8 @@ namespace AMS.ViewModels
         private readonly IMaintenanceSheetWriter _writer;
         private readonly IRoomsProvider _roomsProvider;
         private readonly IEmailNotificationService _email;
+        // NEW: payments repo for applying maintenance cost to RoomCharge
+        private readonly IPaymentsRepository _paymentsRepo;
 
         private ObservableCollection<MaintenanceRequest> _items = new();
         private string _searchText = "";
@@ -81,7 +83,7 @@ namespace AMS.ViewModels
         public ICommand PhoneTapCommand { get; }
         public ICommand CreateRequestCommand { get; }
         public ICommand DeleteRequestCommand { get; }
-        public ICommand SyncRoomsCommand { get; }   // NEW
+        public ICommand SyncRoomsCommand { get; }
 
         public string? SheetUrl
         {
@@ -94,7 +96,8 @@ namespace AMS.ViewModels
             IOnlineMaintenanceReader onlineReader,
             IMaintenanceSheetWriter writer,
             IRoomsProvider roomsProvider,
-            IEmailNotificationService emailNotificationService
+            IEmailNotificationService emailNotificationService,
+            IPaymentsRepository paymentsRepository // NEW
             )
         {
             _fileReader = fileReader;
@@ -102,6 +105,8 @@ namespace AMS.ViewModels
             _writer = writer;
             _roomsProvider = roomsProvider;
             _email = emailNotificationService;
+            _paymentsRepo = paymentsRepository;
+
             RefreshCommand = new Command(async () => await LoadAsync());
             SearchCommand = new Command(async () => await LoadAsync());
             ClearFilterCommand = new Command(async () =>
@@ -115,14 +120,10 @@ namespace AMS.ViewModels
             UpdateRequestCommand = new Command<MaintenanceRequest>(async item => await UpdateAsync(item));
             PhoneTapCommand = new Command<string?>(phone =>
             {
-                try { if (!string.IsNullOrWhiteSpace(phone)) PhoneDialer.Open(phone); }
-                catch { }
+                try { if (!string.IsNullOrWhiteSpace(phone)) PhoneDialer.Open(phone); } catch { }
             });
-
             CreateRequestCommand = new Command(async () => await CreateAsync());
             DeleteRequestCommand = new Command<MaintenanceRequest>(async item => await DeleteAsync(item));
-
-            // NEW: sync rooms button
             SyncRoomsCommand = new Command(async () => await SyncRoomsAsync());
 
             _sheetPath = Preferences.Get("maintenance:sheet:path", null);
@@ -196,7 +197,6 @@ namespace AMS.ViewModels
                 var url = Preferences.Get("maintenance:sheet:url", _sheetUrl ?? "");
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    // Cache buster to avoid stale exports after updates
                     var urlWithCb = AppendCacheBuster(url);
                     try { all = await _onlineReader.ReadFromUrlAsync(urlWithCb); }
                     catch (Exception ex)
@@ -264,7 +264,6 @@ namespace AMS.ViewModels
             return url.Contains("?") ? $"{url}&{cb}" : $"{url}?{cb}";
         }
 
-        // Exact mapping for UI labels -> enum (these strings come from our own StatusOptions).
         private static bool TryParseStatusFilterLabel(string label, out MaintenanceStatus status)
         {
             status = MaintenanceStatus.New;
@@ -273,29 +272,27 @@ namespace AMS.ViewModels
                 case "Chưa xử lý": status = MaintenanceStatus.New; return true;
                 case "Đang xử lý": status = MaintenanceStatus.InProgress; return true;
                 case "Đã xử lý": status = MaintenanceStatus.Done; return true;
-                case "Hủy": status = MaintenanceStatus.Cancelled; return true; 
-                default: return false; // includes "Tất cả" and any unknown
+                case "Hủy": status = MaintenanceStatus.Cancelled; return true;
+                default: return false;
             }
         }
 
-        // Robust parser for sheet cell text -> enum (handles diacritics and 'đ'/'Đ').
         private static bool TryParseStatusCell(string? vi, out MaintenanceStatus status)
         {
             status = MaintenanceStatus.New;
             if (string.IsNullOrWhiteSpace(vi)) return false;
 
-            var key = NormalizeKey(vi); // remove diacritics, lowercase, normalize spaces, map đ->d
+            var key = NormalizeKey(vi);
             switch (key)
             {
                 case "chua xu ly": status = MaintenanceStatus.New; return true;
                 case "dang xu ly": status = MaintenanceStatus.InProgress; return true;
                 case "da xu ly": status = MaintenanceStatus.Done; return true;
-                case "huy": status = MaintenanceStatus.Cancelled; return true; // keep supported if appears
+                case "huy": status = MaintenanceStatus.Cancelled; return true;
                 default: return false;
             }
         }
 
-        // Remove diacritics, normalize spaces/case AND convert 'đ'/'Đ' to 'd'
         private static string NormalizeKey(string input)
         {
             input ??= string.Empty;
@@ -310,11 +307,7 @@ namespace AMS.ViewModels
                     sb.Append(c);
             }
             var noDia = sb.ToString().Normalize(NormalizationForm.FormC);
-
-            // Crucial for Vietnamese: đ/Đ are base letters, map them to 'd'
             noDia = noDia.Replace('đ', 'd').Replace('Đ', 'd');
-
-            // Collapse multiple spaces
             while (noDia.Contains("  ")) noDia = noDia.Replace("  ", " ");
             return noDia;
         }
@@ -365,7 +358,6 @@ namespace AMS.ViewModels
 
             try
             {
-                // Update remote (ignore any 429 retry logic; no post-update polling)
                 await _writer.UpdateAsync(item.RequestId!, values);
 
                 // Apply local state immediately for email & UI
@@ -376,6 +368,13 @@ namespace AMS.ViewModels
                     item.EstimatedCost = costParsed.Value;
 
                 await _email.SendMaintenanceStatusChangedAsync(item, default);
+
+                // NEW: if solved with cost, add fee to current cycle's RoomCharge
+                if (status == "Đã xử lý" && costParsed.HasValue && costParsed.Value >= 0m)
+                {
+                    await TryApplyMaintenanceFeeToRoomAsync(item, costParsed.Value);
+                }
+
                 await LoadAsync(); // refresh whole list
             }
             catch (Exception ex)
@@ -384,6 +383,7 @@ namespace AMS.ViewModels
                 await Shell.Current.DisplayAlertAsync("Lỗi", "Không cập nhật được Google Sheet.", "OK");
             }
         }
+
         private static MaintenanceStatus MapUiStatusToEnum(string vi) => vi switch
         {
             "Chưa xử lý" => MaintenanceStatus.New,
@@ -392,6 +392,7 @@ namespace AMS.ViewModels
             "Đã hủy" => MaintenanceStatus.Cancelled,
             _ => MaintenanceStatus.New
         };
+
         private async Task<MaintenanceRequest?> TryGetUpdatedRequestAsync(string requestId, int attempts = 3, int delayMs = 600)
         {
             for (int i = 0; i < attempts; i++)
@@ -414,7 +415,7 @@ namespace AMS.ViewModels
             }
             else
             {
-                var path = Preferences.Get("maintenance:sheet:path", _sheetPath ?? ""); // fixed key
+                var path = Preferences.Get("maintenance:sheet:path", _sheetPath ?? "");
                 if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
                 all = await _fileReader.ReadAsync(path);
             }
@@ -425,9 +426,9 @@ namespace AMS.ViewModels
 
             return all.FirstOrDefault(x => x.RequestId == requestId);
         }
+
         private async Task CreateAsync()
         {
-            // Kept for now (no-op if you stop calling it from UI).
             var rooms = await _roomsProvider.GetRoomsAsync(includeInactive: false);
             var selectable = rooms.Where(r => r.Active).ToList();
             if (selectable.Count == 0)
@@ -506,7 +507,56 @@ namespace AMS.ViewModels
             }
         }
 
-        // ========== Rooms sync ==========
+        // NEW: Apply maintenance cost as a FeeInstance to current month's RoomCharge
+        private async Task TryApplyMaintenanceFeeToRoomAsync(MaintenanceRequest item, decimal cost, CancellationToken ct = default)
+        {
+            try
+            {
+                var roomCode = item.RoomCode?.Trim();
+                if (string.IsNullOrWhiteSpace(roomCode))
+                {
+                    await Shell.Current.DisplayAlertAsync("Không thể tạo phí", "Không xác định được Mã phòng trên yêu cầu.", "OK");
+                    return;
+                }
+
+                var now = DateTime.Today;
+                var cycle = await _paymentsRepo.GetCycleAsync(now.Year, now.Month)
+                            ?? await _paymentsRepo.CreateCycleAsync(now.Year, now.Month);
+
+                var rcs = await _paymentsRepo.GetRoomChargesForCycleAsync(cycle.CycleId);
+                var rc = rcs.FirstOrDefault(r => string.Equals(r.RoomCode, roomCode, StringComparison.OrdinalIgnoreCase));
+
+                if (rc == null)
+                {
+                    // Try reseed to add missing RCs from active contracts/occupancies
+                    await _paymentsRepo.ReseedRoomChargesAsync(cycle.CycleId);
+                    rcs = await _paymentsRepo.GetRoomChargesForCycleAsync(cycle.CycleId);
+                    rc = rcs.FirstOrDefault(r => string.Equals(r.RoomCode, roomCode, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (rc == null)
+                {
+                    await Shell.Current.DisplayAlertAsync("Không thể tạo phí", $"Không tìm thấy hóa đơn phòng (RoomCharge) cho phòng {roomCode} trong chu kỳ {now:MM/yyyy}.", "OK");
+                    return;
+                }
+
+                var name = $"Bảo trì {item.RequestId}".Trim();
+                if (!string.IsNullOrWhiteSpace(item.Category)) name += $" ({item.Category})";
+                var fee = new FeeInstance
+                {
+                    Name = name,
+                    Rate = cost,
+                    Quantity = 1
+                };
+
+                await _paymentsRepo.AddFeeToRoomAsync(rc.RoomChargeId, fee, ct);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Maintenance] Apply fee failed: {ex.Message}");
+                await Shell.Current.DisplayAlertAsync("Lỗi", "Không thể tạo phí bảo trì cho hóa đơn phòng.", "OK");
+            }
+        }
 
         private async Task SyncRoomsAsync()
         {
@@ -537,7 +587,6 @@ namespace AMS.ViewModels
 
         private async Task<IReadOnlyList<RoomInfo>> GetRoomsFromDbAsync()
         {
-            // Include inactive so the sheet knows ALL RoomCodes; the script hides inactive via Active=false.
             return await _roomsProvider.GetRoomsAsync(includeInactive: true);
         }
 

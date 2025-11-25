@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AMS.Helpers;
 using AMS.Models;
@@ -8,6 +10,8 @@ using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microcharts;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Storage;
 
 namespace AMS.ViewModels
 {
@@ -133,8 +137,125 @@ namespace AMS.ViewModels
             }
         }
 
-        private Task ExportPdfAsync() => Task.CompletedTask;
-        private Task ExportExcelAsync() => Task.CompletedTask;
+        private async Task ExportPdfAsync()
+        {
+            if (IsBusy) return;
+
+            try
+            {
+                var folder = Path.Combine(FileSystem.AppDataDirectory, "reports");
+                Directory.CreateDirectory(folder);
+
+                var today = DateTime.Today;
+                var fileName = $"Overview_{today:yyyyMM}.pdf";
+                var path = Path.Combine(folder, fileName);
+
+                var sb = new StringBuilder();
+                sb.AppendLine("BÁO CÁO TỔNG QUAN");
+                sb.AppendLine($"Tháng hiện tại: {today:MM/yyyy}");
+                sb.AppendLine($"Doanh thu tháng này: {CurrentMonthRevenue:N0} đ");
+                sb.AppendLine($"Lợi nhuận tháng này: {CurrentMonthProfit:N0} đ");
+                sb.AppendLine($"Số người thuê hiện tại: {CurrentTenantCount}");
+                sb.AppendLine();
+                sb.AppendLine("THANH TOÁN THÁNG NÀY");
+                sb.AppendLine($"Đã trả: {PaidCount} | Chưa trả: {UnpaidCount}");
+
+                sb.AppendLine();
+                sb.AppendLine("DANH SÁCH PHÒNG NỢ");
+                sb.AppendLine($"{"Phòng",-12} {"Còn nợ",-16}");
+                sb.AppendLine(new string('-', 40));
+                if (Debts.Count == 0)
+                {
+                    sb.AppendLine("(Không có)");
+                }
+                else
+                {
+                    foreach (var d in Debts.OrderByDescending(x => x.AmountRemaining))
+                        sb.AppendLine($"{d.RoomCode,-12} {d.AmountRemaining,-16:N0}");
+                }
+                sb.AppendLine();
+                sb.AppendLine("DOANH THU & LỢI NHUẬN NĂM NAY");
+                sb.AppendLine($"{"Tháng",-10} {"Doanh thu",-16} {"Lợi nhuận",-16}");
+                sb.AppendLine(new string('-', 60));
+                var yearRev = 0m;
+                var yearProf = 0m;
+                foreach (var mv in RevenueProfitByMonth.OrderBy(x => x.Month))
+                {
+                    yearRev += mv.Revenue;
+                    yearProf += mv.Profit;
+                    sb.AppendLine($"{mv.Month:00}/{today.Year,-10} {mv.Revenue,-16:N0} {mv.Profit,-16:N0}");
+                }
+                sb.AppendLine(new string('-', 60));
+                sb.AppendLine($"Tổng năm: {yearRev:N0} đ | Lợi nhuận năm: {yearProf:N0} đ");
+
+                await File.WriteAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+                await Shell.Current.DisplayAlertAsync("Đã xuất PDF", $"Đã lưu: {fileName}\nThư mục: {folder}", "OK");
+                try { await Launcher.OpenAsync(new OpenFileRequest(fileName, new ReadOnlyFile(path))); } catch { }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi xuất PDF", ex.Message, "OK");
+            }
+        }
+
+        private async Task ExportExcelAsync()
+        {
+            if (IsBusy) return;
+
+            try
+            {
+                var folder = Path.Combine(FileSystem.AppDataDirectory, "reports");
+                Directory.CreateDirectory(folder);
+
+                var today = DateTime.Today;
+                var fileName = $"Overview_{today:yyyyMM}.csv";
+                var path = Path.Combine(folder, fileName);
+
+                var sb = new StringBuilder();
+
+                // Section: Summary
+                sb.AppendLine("# Tổng quan");
+                sb.AppendLine($"# Tháng hiện tại: {today:MM/yyyy}");
+                sb.AppendLine($"# Doanh thu tháng này: {CurrentMonthRevenue:N0} đ");
+                sb.AppendLine($"# Lợi nhuận tháng này: {CurrentMonthProfit:N0} đ");
+                sb.AppendLine($"# Số người thuê hiện tại: {CurrentTenantCount}");
+                sb.AppendLine();
+
+                // Section: Paid/Unpaid
+                sb.AppendLine("# Thanh toán tháng này");
+                sb.AppendLine("Paid,Unpaid");
+                sb.AppendLine($"{PaidCount},{UnpaidCount}");
+                sb.AppendLine();
+
+                // Section: Debts
+                sb.AppendLine("# Danh sách phòng nợ");
+                sb.AppendLine("RoomCode,AmountRemaining");
+                if (Debts.Count == 0)
+                {
+                    sb.AppendLine(",");
+                }
+                else
+                {
+                    foreach (var d in Debts.OrderByDescending(x => x.AmountRemaining))
+                        sb.AppendLine($"{d.RoomCode},{d.AmountRemaining:0.##}");
+                }
+                sb.AppendLine();
+
+                // Section: Revenue & Profit by month
+                sb.AppendLine("# Doanh thu & Lợi nhuận năm nay");
+                sb.AppendLine("Month,Revenue,Profit");
+                foreach (var mv in RevenueProfitByMonth.OrderBy(x => x.Month))
+                    sb.AppendLine($"{today.Year}-{mv.Month:00},{mv.Revenue:0.##},{mv.Profit:0.##}");
+
+                await File.WriteAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+                await Shell.Current.DisplayAlertAsync("Đã xuất Excel", $"Đã lưu: {fileName}\nThư mục: {folder}", "OK");
+                try { await Launcher.OpenAsync(new OpenFileRequest(fileName, new ReadOnlyFile(path))); } catch { }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi xuất Excel", ex.Message, "OK");
+            }
+        }
     }
 
     //CÁC DÒNG DANH SÁCH NỢ

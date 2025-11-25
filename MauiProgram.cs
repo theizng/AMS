@@ -53,7 +53,7 @@ namespace AMS
         }
         public static MauiAppBuilder RegisterServices(this MauiAppBuilder builder)
         {
-            var scriptUrl = "https://script.google.com/macros/s/AKfycbxo0tnS474z74gRp6Xgpnbbws8UynNwgM81kgmAvI8n0Hc0OVhfjzoxc1wXrmKoVmDM/exec";
+            var scriptUrl = "https://script.google.com/macros/s/AKfycbxRqBZdK6zUa19csovVovEH04njnKlfF38KOBVefxbnu2XEMxCi0x7m-irFSeidzOOg/exec";
             var token = "PbR6tUEJDxdKVvheO7SCLb7IXufOVh1KlQQtGmm4l7294s9d3D6bgHueJ7xZOMqK";
 
 

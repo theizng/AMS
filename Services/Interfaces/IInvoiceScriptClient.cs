@@ -43,6 +43,7 @@ namespace AMS.Services.Interfaces
         // Line items (base + custom)
         public decimal BaseRent { get; set; }
         public decimal TotalDue { get; set; }
+        public decimal BikePrice { get; set; }
         public InvoiceLineItem[] CustomLineItems { get; set; } = [];
 
 

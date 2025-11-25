@@ -249,6 +249,7 @@ namespace AMS.Data
                 e.Property(x => x.RoomCode).IsRequired().HasMaxLength(64);
 
                 e.Property(x => x.BaseRent).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+                e.Property(x => x.BikePrice).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.CustomFeesTotal).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.ElectricAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
                 e.Property(x => x.WaterAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);

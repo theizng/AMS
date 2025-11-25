@@ -2,9 +2,13 @@
 using AMS.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Storage;
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace AMS.ViewModels
@@ -20,9 +24,7 @@ namespace AMS.ViewModels
         [ObservableProperty] private int month = DateTime.Today.Month;
         [ObservableProperty] private int year = DateTime.Today.Year;
 
-        // Filter now uses normalized payment states (hide MissingData / ReadyToSend / SentFirst)
         [ObservableProperty] private string selectedStatusFilter = "Tất cả";
-
         [ObservableProperty] private ObservableCollection<RoomStatusRow> rows = new();
 
         [ObservableProperty] private int totalRooms;
@@ -31,7 +33,7 @@ namespace AMS.ViewModels
         [ObservableProperty] private int lateRooms;
 
         public IReadOnlyList<string> StatusFilterOptions { get; } = new[] {
-            "Tất cả",   
+            "Tất cả",
             "Chưa trả",
             "Đã trả một phần",
             "Đã trả đủ",
@@ -141,17 +143,117 @@ QLT";
             }
         }
 
-        private Task ExportPdfAsync() => Task.CompletedTask;
-        private Task ExportExcelAsync() => Task.CompletedTask;
+        // Generate PDF-like text report based on UI content
+        private async Task ExportPdfAsync()
+        {
+            if (IsBusy) return;
+            if (Rows.Count == 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Xuất PDF", "Không có dữ liệu để xuất.", "OK");
+                return;
+            }
 
-        // Display mapping used for filtering
+            try
+            {
+                var folder = Path.Combine(FileSystem.AppDataDirectory, "reports");
+                Directory.CreateDirectory(folder);
+
+                var fileName = $"Debt_{Year}{Month:00}.pdf";
+                var path = Path.Combine(folder, fileName);
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"BÁO CÁO CÔNG NỢ THÁNG {Month:00}/{Year}");
+                sb.AppendLine($"Lọc: {SelectedStatusFilter}");
+                sb.AppendLine($"Tổng phòng: {TotalRooms}, Nợ: {DebtRooms}, Đã trả đủ: {PaidRooms}, Trễ hạn: {LateRooms}");
+                sb.AppendLine(new string('-', 100));
+                sb.AppendLine($"{"Phòng",-12} {"Trạng thái",-18} {"Còn nợ",-18} {"Tiền phòng",-14} {"Điện",-12} {"Nước",-12} {"Phí khác",-12} {"Xe",-10} {"Tổng",-14} {"Ghi chú"}");
+                sb.AppendLine(new string('-', 100));
+
+                foreach (var row in Rows.OrderBy(r => r.RoomCode))
+                {
+                    var rc = row.Source;
+                    var note = row.IsDataIncomplete ? (row.MissingReasonsText ?? "Thiếu dữ liệu") : "";
+                    sb.AppendLine($"{rc.RoomCode,-12} {row.DisplayStatus,-18} {rc.AmountRemaining, -18:N0} {rc.BaseRent,-14:N0} {rc.ElectricAmount,-12:N0} {rc.WaterAmount,-12:N0} {rc.CustomFeesTotal,-12:N0} {rc.BikePrice,-10:N0} {rc.TotalDue,-14:N0} {note}");
+                }
+
+                await File.WriteAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+
+                await Shell.Current.DisplayAlertAsync("Đã xuất PDF", $"Đã lưu: {fileName}\nThư mục: {folder}", "OK");
+                try { await Launcher.OpenAsync(new OpenFileRequest(fileName, new ReadOnlyFile(path))); } catch { }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi xuất PDF", ex.Message, "OK");
+            }
+        }
+
+        // Generate Excel-friendly CSV based on UI content
+        private async Task ExportExcelAsync()
+        {
+            if (IsBusy) return;
+            if (Rows.Count == 0)
+            {
+                await Shell.Current.DisplayAlertAsync("Xuất Excel", "Không có dữ liệu để xuất.", "OK");
+                return;
+            }
+
+            try
+            {
+                var folder = Path.Combine(FileSystem.AppDataDirectory, "reports");
+                Directory.CreateDirectory(folder);
+
+                var fileName = $"Debt_{Year}{Month:00}.csv";
+                var path = Path.Combine(folder, fileName);
+
+                var sb = new StringBuilder();
+                // Header includes filter and summary as first lines (prefixed with #)
+                sb.AppendLine($"# Báo cáo công nợ tháng {Month:00}/{Year}");
+                sb.AppendLine($"# Lọc: {SelectedStatusFilter}");
+                sb.AppendLine($"# Tổng phòng: {TotalRooms}, Nợ: {DebtRooms}, Đã trả đủ: {PaidRooms}, Trễ hạn: {LateRooms}");
+                sb.AppendLine("RoomCode,DisplayStatus,AmountRemaining,BaseRent,ElectricAmount,WaterAmount,CustomFeesTotal,BikePrice,TotalDue,Incomplete,MissingReasons");
+
+                foreach (var row in Rows.OrderBy(r => r.RoomCode))
+                {
+                    var rc = row.Source;
+                    var incomplete = row.IsDataIncomplete ? "Yes" : "No";
+                    var reasons = (row.MissingReasonsText ?? "").Replace("\n", " | ");
+
+                    string esc(string s) => s.Contains(',') ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
+
+                    var line = string.Join(",",
+                        esc(rc.RoomCode),
+                        esc(row.DisplayStatus),
+                        rc.AmountRemaining.ToString("0.##"),
+                        rc.BaseRent.ToString("0.##"),
+                        rc.ElectricAmount.ToString("0.##"),
+                        rc.WaterAmount.ToString("0.##"),
+                        rc.CustomFeesTotal.ToString("0.##"),
+                        rc.BikePrice.ToString("0.##"),
+                        rc.TotalDue.ToString("0.##"),
+                        esc(incomplete),
+                        esc(reasons)
+                    );
+                    sb.AppendLine(line);
+                }
+
+                await File.WriteAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+
+                await Shell.Current.DisplayAlertAsync("Đã xuất Excel", $"Đã lưu: {fileName}\nThư mục: {folder}", "OK");
+                try { await Launcher.OpenAsync(new OpenFileRequest(fileName, new ReadOnlyFile(path))); } catch { }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Lỗi xuất Excel", ex.Message, "OK");
+            }
+        }
+
         private static string MapDisplayStatus(RoomCharge rc) => rc.Status switch
         {
             PaymentStatus.Paid => "Đã trả đủ",
             PaymentStatus.PartiallyPaid => "Đã trả một phần",
             PaymentStatus.Late => "Trễ hạn",
             PaymentStatus.Closed => "Đã đóng",
-            _ => rc.AmountRemaining > 0 ? "Chưa trả" : "Đã trả đủ" // MissingData / ReadyToSend / SentFirst / UnPaid consolidated
+            _ => rc.AmountRemaining > 0 ? "Chưa trả" : "Đã trả đủ"
         };
     }
 
@@ -160,7 +262,6 @@ QLT";
         public RoomCharge Source { get; }
         public string RoomCode => Source.RoomCode;
 
-        // Normalized display (hide internal states)
         public string DisplayStatus => Source.Status switch
         {
             PaymentStatus.Paid => "Đã trả đủ",
@@ -170,7 +271,6 @@ QLT";
             _ => Source.AmountRemaining > 0 ? "Chưa trả" : "Đã trả đủ"
         };
 
-        // Badge color based on normalized status
         public string StatusColor => DisplayStatus switch
         {
             "Đã trả đủ" => "#C8E6C9",
@@ -188,7 +288,6 @@ QLT";
         public string AmountRemainingDisplay => $"Còn nợ: {Source.AmountRemaining:N0} đ";
         public string AmountColor => Source.AmountRemaining > 0 ? "#C62828" : "#2E7D32";
 
-        // Data completeness check (similar heuristic)
         public bool IsDataIncomplete
         {
             get
