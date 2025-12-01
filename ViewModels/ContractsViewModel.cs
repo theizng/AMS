@@ -8,6 +8,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.Maui.ApplicationModel; // for Launcher
+using Microsoft.Maui.Storage;
+using System.IO;
 
 namespace AMS.ViewModels
 {
@@ -42,6 +45,7 @@ namespace AMS.ViewModels
         public IAsyncRelayCommand<Contract> GeneratePdfCommand { get; }
         public IAsyncRelayCommand<Contract> SendEmailCommand { get; }
         public IAsyncRelayCommand<Contract> TerminateCommand { get; } // NEW
+        public IAsyncRelayCommand<Contract> OpenPdfCommand { get; }   // NEW
         public IRelayCommand ClearFilterCommand { get; }
 
         public ContractsViewModel(IContractsRepository repo,
@@ -73,6 +77,7 @@ namespace AMS.ViewModels
             //GeneratePdfCommand = new AsyncRelayCommand<Contract>(GeneratePdfAsync);
             //SendEmailCommand = new AsyncRelayCommand<Contract>(SendEmailAsync);
             TerminateCommand = new AsyncRelayCommand<Contract>(TerminateAsync); // NEW
+            OpenPdfCommand = new AsyncRelayCommand<Contract>(OpenPdfAsync);     // NEW
             ClearFilterCommand = new RelayCommand(() =>
             {
                 SearchText = "";
@@ -372,6 +377,35 @@ namespace AMS.ViewModels
                 Status = ContractStatus.Active,
                 PdfUrl = snap.PdfUrl
             };
+        }
+
+        // NEW: open contract PDF like Invoice ViewModel (local file path)
+        private async Task OpenPdfAsync(Contract? c)
+        {
+            if (c == null) return;
+
+            var path = c.PdfUrl; // stored local path to the PDF
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                await Shell.Current.DisplayAlertAsync("Không có PDF", "Hợp đồng này chưa có tệp PDF.", "OK");
+                return;
+            }
+
+            try
+            {
+                if (File.Exists(path))
+                {
+                    await Launcher.OpenAsync(new OpenFileRequest(Path.GetFileName(path), new ReadOnlyFile(path)));
+                }
+                else
+                {
+                    await Shell.Current.DisplayAlertAsync("Không tìm thấy", "File PDF không tồn tại.", "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlertAsync("Không mở được PDF", ex.Message, "OK");
+            }
         }
     }
 }

@@ -45,7 +45,7 @@
 
             <!-- Export -->
             <HorizontalStackLayout Spacing="8">
-                <Button Style="{DynamicResource TextPrimary}" Text="Xuất PDF" Command="{Binding ExportPdfCommand}" />
+
                 <Button Style="{DynamicResource TextPrimary}" Text="Xuất Excel" Command="{Binding ExportExcelCommand}" />
             </HorizontalStackLayout>
 

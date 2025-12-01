@@ -48,7 +48,7 @@
             <Label Text="Ghi chú (nếu có)" />
             <Editor Text="{Binding Notes}" AutoSize="TextChanges" HeightRequest="100" Placeholder="ví dụ: Đi làm về trễ sau 11h đêm"/>
 
-            <Label Text="Liên hệ khẩn cấp (mỗi dòng 1 mục) *" />
+            <Label Text="Liên hệ khẩn cấp (mỗi dòng 1 mục)" />
             <Editor Text="{Binding EmergencyContactsText}" AutoSize="TextChanges" HeightRequest="100" />
 
             <Button Text="Lưu" Command="{Binding SaveCommand}" BackgroundColor="#2196F3" TextColor="White" />

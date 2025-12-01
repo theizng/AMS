@@ -39,10 +39,6 @@
                         </Label.Triggers>
                     </Label>
 
-
-                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.LastWaterMeter, StringFormat='Chỉ số nước: {0:N0}'}" />
-                    <Label Style="{DynamicResource TextPrimary}" Text="{Binding Room.LastElectricMeter, StringFormat='Chỉ số điện: {0:N0}'}" />
-          
                 </VerticalStackLayout>
             </Frame>
 

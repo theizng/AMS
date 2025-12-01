@@ -203,6 +203,7 @@
                                             </DataTrigger>
                                         </Button.Triggers>
                                     </Button>
+
                                 </VerticalStackLayout>
                             </Grid>
                         </Frame>
